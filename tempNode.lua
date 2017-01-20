@@ -60,9 +60,13 @@ function M.connect ( client, baseTopic )
     
     -- TODO detect errror in getSensorData and retry reading if reasonable
     
-    local sucess, t, h = util.getSensorData ( dhtPin );
+    local success, t, h = util.getSensorData ( dhtPin );
     
-    if ( sucess ) then
+    if ( not success ) then -- first retry
+        success, t, h = util.getSensorData ( dhtPin );
+    end
+    
+    if ( success ) then
         print ( "[APP] publish temperature t=", t );
         client:publish ( baseTopic .. "/value/temperature", util.createJsonValueMessage ( t, "C" ), 0, retain, -- qos, retain
             function ( client )
