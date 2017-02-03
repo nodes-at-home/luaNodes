@@ -376,7 +376,10 @@ M.node.version = VERSION .. " (" .. M.node.app .. ")";
 M.node.retain = 1; -- 0: no retain
 
 M.node.mode = "prod";
-M.node.mqttBroker = PROD_MQTT_BROKER;
+
+if ( not M.node.mqttBroker ) then
+    M.node.mqttBroker = PROD_MQTT_BROKER;
+end
 
 return M;
 

@@ -71,24 +71,25 @@ function M.getSensorData ( pin )
     elseif( status == dht.ERROR_CHECKSUM ) then
     
         print ( "[DHT] Checksum error" );
-        temperature = 0;
-        humidity = 0;
+        temperature = nil;
+        humidity = nil;
         
     elseif( status == dht.ERROR_TIMEOUT ) then
     
         print ( "[DHT] Time out" );
-        temperature = 0;
-        humidity = 0;
+        temperature = nil;
+        humidity = nil;
         
     end
     
-    local success = status == dht.OK;
+    local result = status == dht.OK; 
     
     -- Release module
     dht = nil;
     package.loaded [ "dht" ] = nil;
     
-    return success, temperature, humidity;
+--    local success = status == dht.OK;
+    return result, temperature, humidity;
     
 end
 
