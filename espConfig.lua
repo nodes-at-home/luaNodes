@@ -354,6 +354,32 @@ local NODE_CONFIG_TAB = {
                     },
                 },
 
+    [2028701] = { 
+                    app = "tempNode",
+                    class = "sensor", type = "DHT22_bmp280", location = "lounge",  
+                    -- wifi = { ip = "192.168.2.35", gateway = PROD_GATEWAY, netmask = PROD_NETMASK },
+                    mqttBroker = "192.168.137.1",
+                    appCfg = {
+                        useOfflineCallback = false,
+                        dhtPin = 4,
+                        bme280SdaPin = 2,         -- green
+                        bme280SclPin = 1,         -- yellow
+                        timeBetweenSensorReadings = 15 * 60 * 1000, -- ms
+                        timeBetweenSensorReadings = 1 * 60 * 1000, -- ms
+                    },
+                    timer = {
+                        startup = 0,
+                        startupDelay1 = 2 * 1000,
+                        startupDelay2 = 5 * 1000,
+                        wifiLoop = 1,
+                        wifiLoopPeriod = 1 * 1000,
+                        periodic = 2,
+                        periodicPeriod = 15 * 60 * 1000,
+                        deepSleep = 3,
+                        deepSleepDelay = 60 * 1000, -- ms, only if not useOfflineCallback
+                    },
+                },
+                
 
 };
 
