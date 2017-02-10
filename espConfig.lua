@@ -19,6 +19,8 @@ local VERSION = "V0.24"
 local PROD_GATEWAY = "192.168.2.1";
 local PROD_NETMASK = "255.255.255.0";
 local PROD_MQTT_BROKER = "192.168.2.117";
+local PROD_TRACE_SERVER_IP = "192.168.2.117";
+local PROD_TRACE_SERVER_PORT = "10001";
 
 -- key is node.chipid ()
 local NODE_CONFIG_TAB = {
@@ -380,6 +382,28 @@ local NODE_CONFIG_TAB = {
                     },
                 },
                 
+    [2677460] = {
+                    app = "noNode",
+                    class = "nonode", type = "test", location = "anywhere",  
+                     wifi = { ip = "192.168.2.36", gateway = PROD_GATEWAY, netmask = PROD_NETMASK },
+--                    mqttBroker = "192.168.137.1",
+                    appCfg = {
+                        useOfflineCallback = false,
+                        timeBetweenSensorReadings = 15 * 60 * 1000, -- ms
+                        timeBetweenSensorReadings = 1 * 60 * 1000, -- ms
+                    },
+                    timer = {
+                        startup = 0,
+                        startupDelay1 = 2 * 1000,
+                        startupDelay2 = 5 * 1000,
+                        wifiLoop = 1,
+                        wifiLoopPeriod = 1 * 1000,
+                        periodic = 2,
+                        periodicPeriod = 15 * 60 * 1000,
+                        deepSleep = 3,
+                        deepSleepDelay = 60 * 1000, -- ms, only if not useOfflineCallback
+                    },
+                },
 
 };
 
@@ -405,6 +429,18 @@ M.node.mode = "prod";
 
 if ( not M.node.mqttBroker ) then
     M.node.mqttBroker = PROD_MQTT_BROKER;
+end
+
+if ( not M.node.trace ) then
+    M.node.trace = {};
+end
+
+if ( not M.node.trace.ip ) then
+    M.node.trace.ip = PROD_TRACE_SERVER_IP;
+end
+
+if ( not M.node.trace.port ) then
+    M.node.trace.port = PROD_TRACE_SERVER_PORT;
 end
 
 return M;

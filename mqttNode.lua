@@ -27,6 +27,10 @@ local wifiLoopPeriod = espConfig.node.timer.wifiLoopPeriod;
 local periodicTimmer = espConfig.node.timer.periodic;
 local periodicPeriod = espConfig.node.timer.periodicPeriod;
 
+local traceSocket;
+local traceServerIp = espConfig.node.trace.ip;
+local traceServerPort = espConfig.node.trace.port;
+
 ----------------------------------------------------------------------------------------
 -- private
 
@@ -95,6 +99,39 @@ local function wifiLoop ()
                                 end
                             end
                         end
+                    elseif ( topic == espConfig.node.topic .. "/service/trace" ) then
+                        if ( payload == "ON" ) then
+                            if ( not traceSocket ) then
+                                traceSocket = net.createConnection ( net.TCP, 0 ); -- no secure
+                                print ( "[TRACE] connecting to " .. traceServerIp .. ":" .. traceServerPort );
+                                traceSocket:connect ( traceServerPort, traceServerIp );
+                                print ( "[TRACE] connection ", traceSocket:getpeer () );
+                                traceSocket:on ( "connection", 
+                                    function ( socket, errorCode )
+                                        socket:send ( node.chipid () .. "#***" .. node.chipid () .. " is tracing ***\n"  );
+                                        -- redirect
+                                        node.output ( 
+                                            function ( s )
+                                                socket:send ( node.chipid () .. "#" .. s .. "\n" );
+                                            end,
+                                            1               -- additional serial out  
+                                        ); 
+                                    end 
+                                );
+                                traceSocket:on ( "disconnection",
+                                    function ( socket, errCode )
+                                        traceSocket = nil;
+                                        node.output ( nil );
+                                    end
+                                );
+                            end  
+                        else
+                            if ( traceSocket ) then
+                                traceSocket:send ( node.chipid () .. "#***" .. node.chipid () .. "tracing ENDS ***\n"  );
+                                traceSocket:close ();
+                                traceSocket = nil;
+                            end
+                        end 
                     else
                         M.appNode.message ( client, topic, payload );
                     end
@@ -141,6 +178,12 @@ local function wifiLoop ()
                                         print ( "[MQTT] subscribe to topic=" .. topic );
                                         client:subscribe ( topic, 0, -- ..., qos
                                             function ( client )
+                                                local topic = espConfig.node.topic .. "/service/+";
+                                                print ( "[MQTT] subscribe to topic=" .. topic );
+                                                client:subscribe ( topic, 0, -- ..., qos
+                                                    function ( client )
+                                                    end
+                                                );
                                             end
                                         );
                                     end
