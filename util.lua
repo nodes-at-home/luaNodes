@@ -57,7 +57,7 @@ end
 
 function M.getSensorData ( pin )
 
-    print ( "[DHT] pin=", pin );
+    print ( "[DHT] pin=" .. pin );
 
     local dht = require ( "dht" );
     
@@ -65,8 +65,8 @@ function M.getSensorData ( pin )
     
     if( status == dht.OK ) then
 
-        print ( "[DHT] Temperature: "..temperature.." C" );
-        print ( "[DHT] Humidity: "..humidity.."%" );
+        print ( "[DHT] Temperature: " .. temperature .. " C" );
+        print ( "[DHT] Humidity: " .. humidity .. "%" );
         
     elseif( status == dht.ERROR_CHECKSUM ) then
     
@@ -96,7 +96,7 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded", moduleName )
+print ( "[MODULE] loaded: " .. moduleName )
 
 return M;
 

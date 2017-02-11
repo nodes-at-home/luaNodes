@@ -62,13 +62,13 @@ local function publishValues ( client, baseTopic, temperature, humidity, pressur
 
     -- all Values
     if ( temperature and humidity and pressure ) then
-        print ( "[APP] publish temperature t=", temperature );
+        print ( "[APP] publish temperature t=" .. temperature );
         client:publish ( baseTopic .. "/value/temperature", util.createJsonValueMessage ( temperature, "C" ), 0, retain, -- qos, retain
             function ( client )
-                print ( "[APP] publish humidity h=", humidity );
+                print ( "[APP] publish humidity h=" .. humidity );
                 client:publish ( baseTopic .. "/value/humidity", util.createJsonValueMessage ( humidity, "%" ), 0, retain, -- qos, retain
                     function ( client )
-                        print ( "[APP] publish pressure p=", pressure );
+                        print ( "[APP] publish pressure p=" .. pressure );
                         client:publish ( baseTopic .. "/value/pressure", util.createJsonValueMessage ( pressure, "hPa" ), 0, retain, -- qos, retain
                             function ( client )
                                 goDeepSleep ( client );
@@ -80,10 +80,10 @@ local function publishValues ( client, baseTopic, temperature, humidity, pressur
         );
     -- only temperature and humidity
     elseif ( temperature and humidity ) then
-        print ( "[APP] publish temperature t=", temperature );
+        print ( "[APP] publish temperature t=" .. temperature );
         client:publish ( baseTopic .. "/value/temperature", util.createJsonValueMessage ( temperature, "C" ), 0, retain, -- qos, retain
             function ( client )
-                print ( "[APP] publish humidity h=", humidity );
+                print ( "[APP] publish humidity h=" .. humidity );
                 client:publish ( baseTopic .. "/value/humidity", util.createJsonValueMessage ( humidity, "%" ), 0, retain, -- qos, retain
                     function ( client )
                         goDeepSleep ( client );
@@ -93,10 +93,10 @@ local function publishValues ( client, baseTopic, temperature, humidity, pressur
         );
     -- only pressure and temperature
     elseif ( pressure and temperature ) then
-        print ( "[APP] publish pressure p=", pressure );
+        print ( "[APP] publish pressure p=" .. pressure );
         client:publish ( baseTopic .. "/value/pressure", util.createJsonValueMessage ( pressure, "hPa" ), 0, retain, -- qos, retain
             function ( client )
-                print ( "[APP] publish temperature t=", temperature );
+                print ( "[APP] publish temperature t=" .. temperature );
                 client:publish ( baseTopic .. "/value/temperature", util.createJsonValueMessage ( temperature, "C" ), 0, retain, -- qos, retain
                     function ( client )
                         goDeepSleep ( client );
@@ -123,28 +123,28 @@ function M.connect ( client, baseTopic )
         if ( not success ) then -- first retry
             success, temperature, humidity = util.getSensorData ( dhtPin );
         end
-        print ( "[APP] t=", temperature, "h=", humidity );
+        print ( "[APP] t=" .. temperature .. " ,h=" .. humidity );
     end
     
     if ( bme280SdaPin and bme280SclPin ) then
         local ret = bme280.init ( bme280SdaPin, bme280SclPin, nil, nil, nil, 0 ); -- initialize to sleep mode: temp_oss, press_oss, humi_oss, power_mode, sleep_mode
-        print ( "[BMP] ret=", ret );
+        print ( "[BMP] ret=" .. ret );
         if ( not ret ) then
             print ( "[BMP] retry")
             ret = bme280.init ( bme280SdaPin, bme280SclPin, nil, nil, nil, 0 );
-            print ( "[BMP] ret=", ret );
+            print ( "[BMP] ret=" .. ret );
         end
         if ( ret ) then
             bme280.startreadout ( 0, -- default delay 113ms
                 function ()
                     local pressure = bme280.baro () / 1000;
-                    print ( "[BMP] pressure=", pressure );
+                    print ( "[BMP] pressure=" .. pressure );
                     if ( dhtPin ) then
-                        print ( "[BMP] t=", temperature, "h=", humidity );
+                        print ( "[BMP] t=" .. temperature .. " ,h=" .. humidity );
                         publishValues ( client, baseTopic, temperature, humidity, pressure );
                     else
                         temperature = bme280.temp () / 100;
-                        print ( "[BMP] temperature=", temperature );
+                        print ( "[BMP] temperature=" .. temperature );
                         publishValues ( client, baseTopic, temperature, nil, pressure );
                     end
                 end
@@ -170,19 +170,18 @@ end
 
 local function message ( client, topic, payload )
 
-    print ( "[APP] message: topic=", topic, " payload=", payload );
+    print ( "[APP] message: topic=" .. topic .. " ,payload=", payload );
 
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded", moduleName )
+print ( "[MODULE] loaded: " .. moduleName )
 
 if ( espConfig.node.appCfg.useOfflineCallback ) then
     M.offline = offline;
 end
--- M.message = message;
 
 return M;
 

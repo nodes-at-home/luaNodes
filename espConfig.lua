@@ -416,7 +416,7 @@ local NODE_CONFIG_TAB = {
 --------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded", moduleName )
+print ( "[MODULE] loaded: " .. moduleName )
 
 M.node = NODE_CONFIG_TAB [node.chipid ()];
 

@@ -40,8 +40,8 @@ local function changeState ( client, topic, payload )
     gpio.write ( ledPin, payload == "ON" and gpio.HIGH or gpio.LOW );
     
     local relayPin = payload == "ON" and relayPin2 or relayPin1;
-    print ( "[APP] relayPin=", relayPin );
-    print ( "[APP] publish state=", payload, "to", topic );
+    print ( "[APP] relayPin=" .. relayPin );
+    print ( "[APP] publish state=" .. payload .. " to" .. topic );
 
     client:publish ( topic .. "/value/state", payload, 0, retain, -- qos, retain 
         function () 
@@ -63,7 +63,7 @@ end
 
 function M.connect ( client, topic )
 
-    print ( "[APP] connected with topic=", topic );
+    print ( "[APP] connected with topic=" .. topic );
     
     flashLed ( 2 );
 --    changeState ( client, topic .. "/" .. nodeDevice, "OFF" ); -- default
@@ -84,7 +84,7 @@ end
 
 function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=", topic, " payload=", payload );
+    print ( "[APP] message: topic=" .. topic .. " ,payload=" .. payload );
     
     local topicParts = util.splitTopic ( topic );
     local device = topicParts [#topicParts];
@@ -108,7 +108,7 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded", moduleName )
+print ( "[MODULE] loaded: " .. moduleName )
 
 gpio.mode ( ledPin, gpio.OUTPUT );
 flashLed ( 3 );

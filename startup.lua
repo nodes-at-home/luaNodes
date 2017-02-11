@@ -57,7 +57,7 @@ local function startApp ()
         print ( "[STARTUP] update file found" );
         require ( "update" ).update ();
     else
-        print ( "[STARTUP] start app=", espConfig.node.app  );
+        print ( "[STARTUP] start app=" .. espConfig.node.app  );
         if ( espConfig.node.appCfg.disablePrint ) then
             print ( "[STARTUP] DISABLE PRINT" );
             oldprint = print;
@@ -101,14 +101,14 @@ end
 --------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded", moduleName )
+print ( "[MODULE] loaded: " .. moduleName )
 
 if ( adc.force_init_mode ( adc.INIT_VDD33 ) ) then
   node.restart ();
   return; -- don't bother continuing, the restart is scheduled
 end
 
-print ( "[STARTUP] version=", espConfig.node.version );
+print ( "[STARTUP] version=" .. espConfig.node.version );
 print ( "[STARTUP] waiting for application start" );
 
 -- boot reason https://nodemcu.readthedocs.io/en/master/en/modules/node/#nodebootreason
@@ -120,7 +120,7 @@ print ( "[STARTUP] waiting for application start" );
 -- 5, wake from deep sleep
 -- 6, external reset
 local rawcode, bootreason = node.bootreason ();
-print ( "[STARTUP] boot: rawcode=", rawcode, "reason=", bootreason );
+print ( "[STARTUP] boot: rawcode=" .. rawcode .. " ,reason=" .. bootreason );
 if ( espConfig.node.appCfg.useQuickStartupAfterDeepSleep and bootreason == 5 ) then
     print ( "[STARTUP] quick start" );
     startApp ();

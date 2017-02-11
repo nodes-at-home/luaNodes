@@ -25,13 +25,13 @@ local retain = espConfig.node.retain;
 
 function M.connect ( client, topic )
 
-    print ( "[APP] connected: topic=", topic );
+    print ( "[APP] connected: topic=" .. topic );
     
 end
 
 function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=", topic, " payload=", payload );
+    print ( "[APP] message: topic=" .. topic .. " ,payload=", payload );
     
 end
 
@@ -45,14 +45,14 @@ end
 
 function M.periodic ( client, topic )
 	
-    print ( "[APP] periodic: topic=", topic );
+    print ( "[APP] periodic: topic=" .. topic );
 
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded", moduleName )
+print ( "[MODULE] loaded: " .. moduleName )
 
 return M;
 

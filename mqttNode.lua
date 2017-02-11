@@ -49,7 +49,7 @@ local function wifiLoop ()
         -- tmr.stop ( TIMER_WIFI_LOOP );
 
         print ( "[WIFI] dnsname=" .. wifi.sta.gethostname () );
-        print ( "[WIFI] network=", wifi.sta.getip () );
+        print ( "[WIFI] network=" .. wifi.sta.getip () );
         print ( "[WIFI] mac=" .. wifi.sta.getmac () );
     
         -- Setup MQTT client and events
@@ -81,17 +81,17 @@ local function wifiLoop ()
                                 local url = file.readline ();
                                 file.close ();
                                 if ( url and url == payload ) then
-                                    print ( "[UPDATE] already updated with", payload );
+                                    print ( "[UPDATE] already updated with " .. payload );
                                     forceUpdate = false;
                                  end
                             end
                         end
                         if ( forceUpdate ) then
                             -- start update procedure
-                            print ( "[UPDATE] start heap:", node.heap () )
+                            print ( "[UPDATE] start heap: " .. node.heap () )
                             if ( file.open ( "update.url", "w" ) ) then
                                 local success = file.write ( payload );
-                                print ( "[UPDATE] update url write success=", success );
+                                print ( "[UPDATE] update url write success=" .. success );
                                 file.close ();
                                 if ( success ) then
                                     print ( "[UPDATE] restart for second step" );
@@ -105,7 +105,7 @@ local function wifiLoop ()
                                 traceSocket = net.createConnection ( net.TCP, 0 ); -- no secure
                                 print ( "[TRACE] connecting to " .. traceServerIp .. ":" .. traceServerPort );
                                 traceSocket:connect ( traceServerPort, traceServerIp );
-                                print ( "[TRACE] connection ", traceSocket:getpeer () );
+                                print ( "[TRACE] connection " .. traceSocket:getpeer () );
                                 traceSocket:on ( "connection", 
                                     function ( socket, errorCode )
                                         socket:send ( node.chipid () .. "#***" .. node.chipid () .. " is tracing ***\n"  );
@@ -158,7 +158,7 @@ local function wifiLoop ()
                 tmr.stop ( wifiLoopTimer );
 
                 print ( "[MQTT] connected to MQTT Broker" )
-                print ( "[MQTT] node=", espConfig.node.topic );
+                print ( "[MQTT] node=" .. espConfig.node.topic );
                 
                 -- subscribe to update topic
                 local topic = espConfig.node.topic .. "/service/update";
@@ -196,11 +196,11 @@ local function wifiLoop ()
             end,
 
             function ( client, reason ) 
-                print ( "[MQTT] not connected reason=", reason );
+                print ( "[MQTT] not connected reason=" .. reason );
             end
         
         );
-        print ( "[MQTT] connect result=", result );
+        print ( "[MQTT] connect result=" .. result );
     else
         print ( "[WIFI] Connecting..." );
     end
@@ -253,7 +253,7 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded", moduleName )
+print ( "[MODULE] loaded: " .. moduleName )
 
 return M;
 

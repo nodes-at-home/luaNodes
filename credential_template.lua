@@ -39,7 +39,7 @@ end
 
 --------------------------------------------------------------------
 
-print ( "[MODULE] loaded", moduleName )
+print ( "[MODULE] loaded: " .. moduleName )
 
 -- M.init ( "prod" );
 

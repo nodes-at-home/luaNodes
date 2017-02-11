@@ -81,14 +81,14 @@ local function wifiLoop ()
             url = file.readline ();
             file.close ();
             host, port, path = splitUrl ( url );
-            print ( "[UPDATE] url=", url, "host=", host, "port=", port, "path=", path );
+            print ( "[UPDATE] url=" .. url .. " ,host=" .. host .. " ,port=" .. port .. " ,path=" .. path );
             
             require ( "httpDL" );
             
             httpDL.download ( host, port, path .. "/" .. updateListFile, updateListFile,
                 function ()
                     if ( file.open ( updateListFile ) ) then
-                        print ( "[UPDATE] open file ", updateListFile );
+                        print ( "[UPDATE] open file " .. updateListFile );
                         local line = file.readline ();
                         while ( line ) do
                             line = line:gsub ( "[\n\r]+", "" );
@@ -119,7 +119,7 @@ function updateFile ()
 
     local fileName = updateList [updateListIndex];
     local fileUrl = path .. "/" .. fileName .. LUA_POSTFIX;
-    print ( "[UPDATE] i=", updateListIndex, "fileName=", fileName, "url=", fileUrl );
+    print ( "[UPDATE] i=" .. updateListIndex .. " ,fileName=" .. fileName .. " ,url=" .. fileUrl );
 
     require ( "httpDL" );
         
@@ -128,7 +128,7 @@ function updateFile ()
             if ( rc == "ok" ) then
                 if ( updateListIndex < #updateList ) then
                     updateListIndex = updateListIndex + 1;
-                    print ( "[UPDATE] updating no=", updateListIndex );
+                    print ( "[UPDATE] updating no=" .. updateListIndex );
                     node.task.post ( 
                         function () 
                             updateFile (); -- updates only the next file
@@ -150,7 +150,7 @@ end
 
 function compileAndRename ()
 
-    print ( "[UPDATE] compileAndRename: heap=", node.heap () );
+    print ( "[UPDATE] compileAndRename: heap=" .. node.heap () );
     
     -- TODO activate compile
 
@@ -165,7 +165,7 @@ function compileAndRename ()
     
     for i, fileName in ipairs ( updateList ) do
 
-        print ( "[UPDATE] rename", fileName );
+        print ( "[UPDATE] rename " .. fileName );
         
         local luaFileName = fileName .. LUA_POSTFIX;
         local oldLuaFileName = OLD_PREFIX .. luaFileName;
@@ -182,11 +182,11 @@ function compileAndRename ()
         file.remove ( lcFileName );
         
         if ( not file.rename ( otaLuaFileName, luaFileName  ) ) then
-            print ( "[UPDATE] ERROR renaming", otaLuaFileName );
+            print ( "[UPDATE] ERROR renaming" .. otaLuaFileName );
             return; 
         end
         if ( file.exists ( otaLcFileName ) and not file.rename ( otaLcFileName, lcFileName  ) ) then
-            print ( "[UPDATE] ERROR renaming", otaLcFileName );
+            print ( "[UPDATE] ERROR renaming" .. otaLcFileName );
             return; 
         end
         
@@ -198,11 +198,11 @@ function compileAndRename ()
     file.remove ( OLD_PREFIX .. updateListFile );
 
     if ( not file.rename ( updateUrlFile, OLD_PREFIX .. updateUrlFile  ) ) then
-        print ( "[UPDATE] ERROR renaming", updateUrlFile );
+        print ( "[UPDATE] ERROR renaming" .. updateUrlFile );
         return; 
     end
     if ( not file.rename ( updateListFile, OLD_PREFIX .. updateListFile  ) ) then
-        print ( "[UPDATE] ERROR renaming", updateListFile );
+        print ( "[UPDATE] ERROR renaming" .. updateListFile );
         return; 
     end
     
@@ -222,7 +222,7 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded", moduleName )
+print ( "[MODULE] loaded: " .. moduleName )
 
 return M;
 

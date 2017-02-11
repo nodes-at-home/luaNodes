@@ -78,6 +78,6 @@ function M.download ( host, port, url, path, callback )
 
 end
 
-print ( "[MODULE] loaded", moduleName )
+print ( "[MODULE] loaded: " .. moduleName )
 
 return M;

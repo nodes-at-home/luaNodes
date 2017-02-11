@@ -37,7 +37,7 @@ local function changeState ( client, topic, payload )
 
     gpio.write ( ledPin, payload == "ON" and gpio.LOW or gpio.HIGH );
     gpio.write ( relayPin, payload == "ON" and gpio.HIGH or gpio.LOW );
-    print ( "[APP] publish state=", payload, "to", topic );
+    print ( "[APP] publish state=" .. payload .. " to" .. topic );
     client:publish ( topic .. "/value/state", payload, 0, retain, function () end ); -- qos, retain
 
 end
@@ -54,7 +54,7 @@ end
 
 function M.connect ( client, topic )
 
-    print ( "[APP] connected with topic=", topic );
+    print ( "[APP] connected with topic=" .. topic );
     
 --    flashLed ( 2 );
     
@@ -78,7 +78,7 @@ end
 
 function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=", topic, " payload=", payload );
+    print ( "[APP] message: topic=" .. topic .. " ,payload=" .. payload );
     
     local topicParts = util.splitTopic ( topic );
     local device = topicParts [#topicParts];
@@ -102,7 +102,7 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded", moduleName )
+print ( "[MODULE] loaded: " .. moduleName )
 
 gpio.mode ( ledPin, gpio.OUTPUT );
 --flashLed ( 3 );

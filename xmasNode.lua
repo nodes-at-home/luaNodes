@@ -112,24 +112,24 @@ end
 
 local function changeState ( client, topic, payload )
 
-    print ( "[APP] chnage to state=", payload, "at", topic );
+    print ( "[APP] chnage to state=" .. payload .. " ,at" .. topic );
     
     -- payload ist json
     local json = cjson.decode ( payload );
     if ( json.state ) then
 
-        print ( "[JSON] state=", json.state );
+        print ( "[JSON] state=" .. json.state );
         
         -- prepare answer
         state = json.state;
         local jsonState = cjson.encode ( { state = state } );
         if ( state == "ON" ) then
             if ( json.brightness ) then
-                print ( "[JSON] brightness=", json.brightness );
+                print ( "[JSON] brightness=" .. json.brightness );
                 brightness = json.brightness;
             end
             if ( json.color ) then
-                print ( "[JSON] color=", json.color, "r=", json.color.r, "g=", json.color.g, "b=", json.color.b );
+                print ( "[JSON] color=" .. json.color .. " ,r=" .. json.color.r .. " ,g=" .. json.color.g .. " ,b=" .. json.color.b );
                 red = json.color.r;
                 green = json.color.g;
                 blue = json.color.b;
@@ -141,7 +141,7 @@ local function changeState ( client, topic, payload )
         local arduino = "###";
         if ( state == "ON" ) then
             if ( json.color ) then
-                print ( "[APP] red=", red, "green=", green, "blue=", blue );
+                print ( "[APP] red=" .. red .. " ,green=" .. green .. " ,blue=" .. blue );
                 if ( useRGB ) then -- use rgb
                     arduino = arduino .. "M6";
                     arduino = arduino .. "R" .. red;
@@ -176,7 +176,7 @@ end
 
 function M.connect ( client, topic )
 
-    print ( "[APP] connected with topic=", topic );
+    print ( "[APP] connected with topic=" .. topic );
     
     -- initialize uart
 --    uart.alt ( uartAlternatePins );
@@ -189,7 +189,7 @@ end
 
 function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=", topic, " payload=", payload );
+    print ( "[APP] message: topic=" .. topic .. " ,payload=" .. payload );
     
     local topicParts = util.splitTopic ( topic );
     local device = topicParts [#topicParts];
@@ -211,7 +211,7 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded", moduleName )
+print ( "[MODULE] loaded: " .. moduleName )
 
 gpio.mode ( arduinoResetPin, gpio.OUTPUT );
 gpio.write ( arduinoResetPin, gpio.LOW ); -- hold the arduino in reset mode
