@@ -18,7 +18,7 @@ local CREDENTIALS = {
 
     prod = { ssid = "ssid", password = "pw"},
     dev = { ssid = "ssid", password = "pw"},
-    -- some mor configs
+    -- some more configs
     
 };
 

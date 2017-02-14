@@ -27,7 +27,7 @@ local wifiLoopPeriod = espConfig.node.timer.wifiLoopPeriod;
 local periodicTimmer = espConfig.node.timer.periodic;
 local periodicPeriod = espConfig.node.timer.periodicPeriod;
 
-local traceSocket;
+local traceSocket = nil;
 local traceServerIp = espConfig.node.trace.ip;
 local traceServerPort = espConfig.node.trace.port;
 
@@ -91,7 +91,7 @@ local function wifiLoop ()
                             print ( "[UPDATE] start heap: " .. node.heap () )
                             if ( file.open ( "update.url", "w" ) ) then
                                 local success = file.write ( payload );
-                                print ( "[UPDATE] update url write success=" .. success );
+                                print ( "[UPDATE] update url write success=" .. tostring ( success ) );
                                 file.close ();
                                 if ( success ) then
                                     print ( "[UPDATE] restart for second step" );
@@ -101,11 +101,11 @@ local function wifiLoop ()
                         end
                     elseif ( topic == espConfig.node.topic .. "/service/trace" ) then
                         if ( payload == "ON" ) then
-                            if ( not traceSocket ) then
+                            if ( traceSocket == nil ) then
+                                print ( traceSocket );
                                 traceSocket = net.createConnection ( net.TCP, 0 ); -- no secure
                                 print ( "[TRACE] connecting to " .. traceServerIp .. ":" .. traceServerPort );
                                 traceSocket:connect ( traceServerPort, traceServerIp );
-                                print ( "[TRACE] connection " .. traceSocket:getpeer () );
                                 traceSocket:on ( "connection", 
                                     function ( socket, errorCode )
                                         socket:send ( node.chipid () .. "#***" .. node.chipid () .. " is tracing ***\n"  );
@@ -160,11 +160,11 @@ local function wifiLoop ()
                 print ( "[MQTT] connected to MQTT Broker" )
                 print ( "[MQTT] node=" .. espConfig.node.topic );
                 
-                -- subscribe to update topic
-                local topic = espConfig.node.topic .. "/service/update";
-                print ( "[MQTT] subscribe to topic=" .. topic );
-                client:subscribe ( topic, 2, -- ..., qos: receive update only once
-                    function ( client )
+--                -- subscribe to update topic
+--                local topic = espConfig.node.topic .. "/service/update";
+--                print ( "[MQTT] subscribe to topic=" .. topic );
+--                client:subscribe ( topic, 2, -- ..., qos: receive update only once
+--                    function ( client )
                         local version = espConfig.node.version;
                         print ( "[MQTT] send <" .. version .. "> to topic=" .. espConfig.node.topic );
                         client:publish ( espConfig.node.topic, version, 0, retain, -- ..., qos, retain
@@ -190,8 +190,8 @@ local function wifiLoop ()
                                 );
                             end
                         );
-                    end
-                );
+--                    end
+--                );
                 
             end,
 
@@ -200,7 +200,7 @@ local function wifiLoop ()
             end
         
         );
-        print ( "[MQTT] connect result=" .. result );
+        print ( "[MQTT] connect result=" .. tostring ( result ) );
     else
         print ( "[WIFI] Connecting..." );
     end

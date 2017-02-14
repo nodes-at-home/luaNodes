@@ -49,7 +49,7 @@ local NODE_CONFIG_TAB = {
                     },
                 },
 
-    [1495931] = { 
+    [1495931] = { -- obsolete
                     app = "tempNode",
                     class = "sensor", type = "DHT11", location = "lounge",  
                     wifi = { ip = "192.168.2.21", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
@@ -358,16 +358,14 @@ local NODE_CONFIG_TAB = {
 
     [2028701] = { 
                     app = "tempNode",
-                    class = "sensor", type = "DHT22_bmp280", location = "lounge",  
-                    -- wifi = { ip = "192.168.2.35", gateway = PROD_GATEWAY, netmask = PROD_NETMASK },
-                    mqttBroker = "192.168.137.1",
+                    class = "sensor", type = "DHT11", location = "lounge",  
+                     wifi = { ip = "192.168.2.35", gateway = PROD_GATEWAY, netmask = PROD_NETMASK },
                     appCfg = {
                         useOfflineCallback = false,
                         dhtPin = 4,
                         bme280SdaPin = 2,         -- green
                         bme280SclPin = 1,         -- yellow
                         timeBetweenSensorReadings = 15 * 60 * 1000, -- ms
-                        timeBetweenSensorReadings = 1 * 60 * 1000, -- ms
                     },
                     timer = {
                         startup = 0,

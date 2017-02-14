@@ -37,7 +37,7 @@ local function changeState ( client, topic, payload )
 
     gpio.write ( ledPin, payload == "ON" and gpio.LOW or gpio.HIGH );
     gpio.write ( relayPin, payload == "ON" and gpio.HIGH or gpio.LOW );
-    print ( "[APP] publish state=" .. payload .. " to" .. topic );
+    print ( "[APP] publish state=" .. payload .. " to " .. topic );
     client:publish ( topic .. "/value/state", payload, 0, retain, function () end ); -- qos, retain
 
 end

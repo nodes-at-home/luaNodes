@@ -112,13 +112,13 @@ end
 
 local function changeState ( client, topic, payload )
 
-    print ( "[APP] chnage to state=" .. payload .. " ,at" .. topic );
+    print ( "[APP] change to state=" .. payload .. " at " .. topic );
     
     -- payload ist json
     local json = cjson.decode ( payload );
     if ( json.state ) then
 
-        print ( "[JSON] state=" .. json.state );
+        print ( "[JSON] state=" .. tostring ( json.state ) );
         
         -- prepare answer
         state = json.state;

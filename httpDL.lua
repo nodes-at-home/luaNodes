@@ -23,7 +23,7 @@ function M.download ( host, port, url, path, callback )
     isHttpReponseOk = false;
     httpResponseCode = -1;
     
-	local conn = net.createConnection ( net.TCP, false );
+	local conn = net.createConnection ( net.TCP, 0 );
 	
     conn:on ( "connection", 
         function ( conn )

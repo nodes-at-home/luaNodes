@@ -41,7 +41,7 @@ local function changeState ( client, topic, payload )
     
     local relayPin = payload == "ON" and relayPin2 or relayPin1;
     print ( "[APP] relayPin=" .. relayPin );
-    print ( "[APP] publish state=" .. payload .. " to" .. topic );
+    print ( "[APP] publish state=" .. payload .. " to " .. topic );
 
     client:publish ( topic .. "/value/state", payload, 0, retain, -- qos, retain 
         function () 

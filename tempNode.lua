@@ -12,7 +12,6 @@ local M = {};
 _G [moduleName] = M;
 
 require  ( "util" );
-require ( "bme280" );
 
 -------------------------------------------------------------------------------
 --  Settings
@@ -123,7 +122,11 @@ function M.connect ( client, baseTopic )
         if ( not success ) then -- first retry
             success, temperature, humidity = util.getSensorData ( dhtPin );
         end
-        print ( "[APP] t=" .. temperature .. " ,h=" .. humidity );
+        if ( success ) then
+            print ( "[APP] t=" .. temperature .. " ,h=" .. humidity );
+        else
+            print ( "[APP] no values" );
+        end
     end
     
     if ( bme280SdaPin and bme280SclPin ) then

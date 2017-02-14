@@ -100,10 +100,20 @@ local function wifiLoop ()
                     end
                     file.close ();
                     -- start task for update
-                    updateListIndex = 1;
-                    collectgarbage ();
-                    print ( "[UPDATE] start update task chain" );
-                    node.task.post ( function () updateFile () end ); -- updates only the next file
+                    if ( #updateList > 0 ) then -- update
+                        updateListIndex = 1;
+                        collectgarbage ();
+                        print ( "[UPDATE] start update task chain" );
+                        node.task.post ( function () updateFile () end ); -- updates only the next file
+                    else -- close update
+                        print ( "[UPDATE] NO update files -> FINISH" );
+                        node.task.post ( 
+                            function () 
+                                compileAndRename (); 
+                                node.restart (); 
+                            end 
+                        );
+                    end
                 end
             );
             
