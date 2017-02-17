@@ -380,11 +380,64 @@ local NODE_CONFIG_TAB = {
                     },
                 },
                 
+    [13423304] = {
+                    app = "sonoffNode",
+                    class = "switch", type = "sonoff", location = "location1",
+                    wifi = { ip = "192.168.2.36", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
+                    appCfg = {
+                        device = "socket",
+                        relayPin = 6, -- inclusive blue led
+                        ledPin = 7, -- green led
+                        useLedForState = false,
+                        buttonPin = 3,
+                        flashHighPulseLength = 50 * 1000,   -- ms
+                        flashLowPulseLength = 200 * 1000,   -- ms
+                    },
+                    timer = {
+                        startup = 0,
+                        startupDelay1 = 2 * 1000,
+                        startupDelay2 = 5 * 1000,
+                        wifiLoop = 1,
+                        wifiLoopPeriod = 1 * 1000,
+                        periodic = 2,
+                        periodicPeriod = 15 * 60 * 1000,
+                        debounce = 3,
+                        debounceDelay = 500,
+                    },
+                },
+                
+    [13423040] = {
+                    app = "sonoffNode",
+                    class = "switch", type = "sonoff", location = "location2",
+                    wifi = { ip = "192.168.2.37", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
+                    appCfg = {
+                        device = "socket",
+                        relayPin = 6, -- inclusive blue led
+                        ledPin = 7, -- green led
+                        useLedForState = false,
+                        buttonPin = 3,
+                        flashHighPulseLength = 50 * 1000,   -- ms
+                        flashLowPulseLength = 200 * 1000,   -- ms
+                    },
+                    timer = {
+                        startup = 0,
+                        startupDelay1 = 2 * 1000,
+                        startupDelay2 = 5 * 1000,
+                        wifiLoop = 1,
+                        wifiLoopPeriod = 1 * 1000,
+                        periodic = 2,
+                        periodicPeriod = 15 * 60 * 1000,
+                        debounce = 3,
+                        debounceDelay = 500,
+                    },
+                },
+                
     [2677460] = {
                     app = "noNode",
                     class = "nonode", type = "test", location = "anywhere",  
-                     wifi = { ip = "192.168.2.36", gateway = PROD_GATEWAY, netmask = PROD_NETMASK },
+                     wifi = { ip = "192.168.2.90", gateway = PROD_GATEWAY, netmask = PROD_NETMASK },
 --                    mqttBroker = "192.168.137.1",
+--                    mode = "surface",
                     appCfg = {
                         useOfflineCallback = false,
                         timeBetweenSensorReadings = 15 * 60 * 1000, -- ms
@@ -423,25 +476,17 @@ M.node.topic = "nodes@home/" .. M.node.class .. "/" .. M.node.type .. "/" .. M.n
 M.node.version = VERSION .. " (" .. M.node.app .. ")";
 M.node.retain = 1; -- 0: no retain
 
-M.node.mode = "prod";
+-- wifi
+if ( not M.node.mode ) then M.node.mode = "prod"; end
 
-if ( not M.node.mqttBroker ) then
-    M.node.mqttBroker = PROD_MQTT_BROKER;
-end
+-- mqtt broker
+if ( not M.node.mqttBroker ) then M.node.mqttBroker = PROD_MQTT_BROKER; end
 
-if ( not M.node.trace ) then
-    M.node.trace = {};
-end
-
-if ( not M.node.trace.ip ) then
-    M.node.trace.ip = PROD_TRACE_SERVER_IP;
-end
-
-if ( not M.node.trace.port ) then
-    M.node.trace.port = PROD_TRACE_SERVER_PORT;
-end
+-- tcp trace
+if ( not M.node.trace ) then M.node.trace = {}; end
+if ( not M.node.trace.ip ) then M.node.trace.ip = PROD_TRACE_SERVER_IP; end
+if ( not M.node.trace.port ) then M.node.trace.port = PROD_TRACE_SERVER_PORT; end
 
 return M;
 
 --------------------------------------------------------------------
-

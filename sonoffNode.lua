@@ -25,17 +25,20 @@ local nodeDevice = espConfig.node.appCfg.device or "lamp";
 
 local relayPin = espConfig.node.appCfg.relayPin;
 local ledPin = espConfig.node.appCfg.ledPin;
+local useLedForState = espConfig.node.appCfg.useLedForState; -- on S20 there are two leds and the blue is switched with relay
 local buttonPin = espConfig.node.appCfg.buttonPin;
 
 local flashHighPulseLength = espConfig.node.appCfg.flashHighPulseLength * 1000; -- us
 local flashLowPulseLength = espConfig.node.appCfg.flashLowPulseLength * 1000; -- us
+
+print ( "useLedForState=", useLedForState );
 
 ----------------------------------------------------------------------------------------
 -- private
 
 local function changeState ( client, topic, payload )
 
-    gpio.write ( ledPin, payload == "ON" and gpio.LOW or gpio.HIGH );
+    if ( useLedForState == nil or useLedForState ) then gpio.write ( ledPin, payload == "ON" and gpio.LOW or gpio.HIGH ); end
     gpio.write ( relayPin, payload == "ON" and gpio.HIGH or gpio.LOW );
     print ( "[APP] publish state=" .. payload .. " to " .. topic );
     client:publish ( topic .. "/value/state", payload, 0, retain, function () end ); -- qos, retain
@@ -56,7 +59,7 @@ function M.connect ( client, topic )
 
     print ( "[APP] connected with topic=" .. topic );
     
---    flashLed ( 2 );
+    flashLed ( 2 );
     
     -- activate button only if pin is defined
     if ( buttonPin ) then
@@ -105,7 +108,6 @@ end
 print ( "[MODULE] loaded: " .. moduleName )
 
 gpio.mode ( ledPin, gpio.OUTPUT );
---flashLed ( 3 );
 
 gpio.mode ( relayPin, gpio.OUTPUT );
 gpio.write ( relayPin, gpio.LOW );
