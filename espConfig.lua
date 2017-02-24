@@ -49,28 +49,6 @@ local NODE_CONFIG_TAB = {
                     },
                 },
 
-    [1495931] = { -- obsolete
-                    app = "tempNode",
-                    class = "sensor", type = "DHT11", location = "lounge",  
-                    wifi = { ip = "192.168.2.21", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        useOfflineCallback = false,
-                        dhtPin = 4,
-                        timeBetweenSensorReadings = 15 * 60 * 1000, -- ms
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000,
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
-                        periodic = 2,
-                        periodicPeriod = 15 * 60 * 1000,
-                        deepSleep = 3,
-                        deepSleepDelay = 60 * 1000, -- ms, only if not useOfflineCallback
-                    },
-                },
-
     [1829768] = { 
                     app = "tempNode",
                     class = "sensor", type = "DHT11", location = "roof",  
@@ -142,6 +120,7 @@ local NODE_CONFIG_TAB = {
                     },
                 },
 
+    -- sonoff basic
     [485535] = {
                     app = "sonoffNode",
                     class = "switch", type = "sonoff", location = "utilityroom",  
@@ -168,6 +147,7 @@ local NODE_CONFIG_TAB = {
                     },
                 },
                 
+    -- sonoff basic
     [518010] = {
                     app = "sonoffNode",
                     class = "switch", type = "sonoff", location = "garage",  
@@ -177,32 +157,6 @@ local NODE_CONFIG_TAB = {
                         ledPin = 7,
                         buttonPin = 3,
                         extraPin = 5,
-                        flashHighPulseLength = 50 * 1000,   -- ms
-                        flashLowPulseLength = 200 * 1000,   -- ms
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000,
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
-                        periodic = 2,
-                        periodicPeriod = 15 * 60 * 1000,
-                        debounce = 3,
-                        debounceDelay = 500,
-                    },
-                },
-                
-    [982283] = {
-                    app = "relayNode", -- no 1
-                    class = "switch", type = "relay", location = "terrace",  
-                    wifi = { ip = "192.168.2.28", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        buttonPin = 1,
-                        ledPin = 2,
-                        relayPin1 = 6,
-                        relayPin2 = 7,
-                        relayPulseLength = 30 * 1000,       -- ms
                         flashHighPulseLength = 50 * 1000,   -- ms
                         flashLowPulseLength = 200 * 1000,   -- ms
                     },
@@ -380,6 +334,7 @@ local NODE_CONFIG_TAB = {
                     },
                 },
                 
+    -- sonoff s20
     [13423304] = {
                     app = "sonoffNode",
                     class = "switch", type = "sonoff", location = "location1",
@@ -406,12 +361,40 @@ local NODE_CONFIG_TAB = {
                     },
                 },
                 
+    -- sonoff s20
     [13423040] = {
                     app = "sonoffNode",
                     class = "switch", type = "sonoff", location = "location2",
                     wifi = { ip = "192.168.2.37", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
                     appCfg = {
                         device = "socket",
+                        relayPin = 6, -- inclusive blue led
+                        ledPin = 7, -- green led
+                        useLedForState = false,
+                        buttonPin = 3,
+                        flashHighPulseLength = 50 * 1000,   -- ms
+                        flashLowPulseLength = 200 * 1000,   -- ms
+                    },
+                    timer = {
+                        startup = 0,
+                        startupDelay1 = 2 * 1000,
+                        startupDelay2 = 5 * 1000,
+                        wifiLoop = 1,
+                        wifiLoopPeriod = 1 * 1000,
+                        periodic = 2,
+                        periodicPeriod = 15 * 60 * 1000,
+                        debounce = 3,
+                        debounceDelay = 500,
+                    },
+                },
+                
+    -- sonoff touch
+    [8578563] = {
+                    app = "sonoffNode",
+                    class = "switch", type = "sonoff", location = "terrace",
+                    wifi = { ip = "192.168.2.38", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
+                    appCfg = {
+                        device = "lamp",
                         relayPin = 6, -- inclusive blue led
                         ledPin = 7, -- green led
                         useLedForState = false,
