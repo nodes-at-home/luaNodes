@@ -9,7 +9,7 @@
         "relayPin2": 7
     },
     "app": "relayNode",
-    "type": "relay2",
+    "type": "relay1",
     "timer": {
         "startupDelay1": 2000,
         "startup": 0,
@@ -26,7 +26,7 @@
     "wifi": {
         "gateway": "192.168.2.1",
         "netmask": "255.255.255.0",
-        "ip": "192.168.2.30"
+        "ip": "192.168.2.28"
     },
-    "chipid": 8734823
+    "chipid": 982283
 }
