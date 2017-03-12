@@ -18,14 +18,7 @@ require ( "cjson" );
 -------------------------------------------------------------------------------
 --  Settings
 
-local retain = espConfig.node.retain;
-
-local nodeDevice = espConfig.node.appCfg.device or "lamp";
-
-local arduinoResetPin = espConfig.node.appCfg.arduinoResetPin;
-
-local uartAlternatePins = espConfig.node.appCfg.uartAlternatePins;
-local useRGB = espConfig.node.appCfg.useRGB;
+local nodeDevice = nodeConfig.appCfg.device or "lamp";
 
 local state = "ON";
 local red = 140;
@@ -142,7 +135,7 @@ local function changeState ( client, topic, payload )
         if ( state == "ON" ) then
             if ( json.color ) then
                 print ( "[APP] red=" .. red .. " ,green=" .. green .. " ,blue=" .. blue );
-                if ( useRGB ) then -- use rgb
+                if ( nodeConfig.appCfg.useRGB ) then -- use rgb
                     arduino = arduino .. "M6";
                     arduino = arduino .. "R" .. red;
                     arduino = arduino .. "G" .. green;
@@ -159,7 +152,7 @@ local function changeState ( client, topic, payload )
         arduino = arduino .. "\n";
         
         -- send messages        
-        client:publish ( topic .. "/value/state", jsonState, 0, retain, -- qos, retain 
+        client:publish ( topic .. "/value/state", jsonState, 0, nodeConfig.retain, -- qos, retain 
             function () 
                 uart.write ( 0, arduino );
             end
@@ -179,11 +172,11 @@ function M.connect ( client, topic )
     print ( "[APP] connected with topic=" .. topic );
     
     -- initialize uart
---    uart.alt ( uartAlternatePins );
+--    uart.alt ( nodeConfig.appCfg.uartAlternatePins );
     uart.setup ( 0, 115200, 8, uart.PARITY_NONE, uart.STOPBITS_1, 0 ); -- last param is echo
     uart.on ( "data", "\n", function ( data ) end, 0 ); -- dont use interpreter!!!
     -- release arduino
-    gpio.write ( arduinoResetPin, gpio.HIGH );
+    gpio.write ( nodeConfig.appCfg.arduinoResetPin, gpio.HIGH );
     
 end
 
@@ -213,8 +206,8 @@ end
 
 print ( "[MODULE] loaded: " .. moduleName )
 
-gpio.mode ( arduinoResetPin, gpio.OUTPUT );
-gpio.write ( arduinoResetPin, gpio.LOW ); -- hold the arduino in reset mode
+gpio.mode ( nodeConfig.appCfg.arduinoResetPin, gpio.OUTPUT );
+gpio.write ( nodeConfig.appCfg.arduinoResetPin, gpio.LOW ); -- hold the arduino in reset mode
 
 return M;
 

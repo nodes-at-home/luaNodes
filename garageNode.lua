@@ -16,26 +16,8 @@ require ( "util" );
 -------------------------------------------------------------------------------
 --  Settings
 
-local retain = espConfig.node.retain;
-
-local triggerTimer = espConfig.node.timer.trigger;
-local triggerDelay = espConfig.node.timer.triggerDelay;
-
-local debounceTimer = espConfig.node.timer.debounce;
-local debounceDelay = espConfig.node.timer.debounceDelay;
-
-local stateTimer = espConfig.node.timer.state;
-local statePeriod = espConfig.node.timer.statePeriod;
-
 local position = 0; -- 0: closed, 1: in move up, 2: in move down, 3: stopped from move up, 4: stopped from move down, 5: fully open
 local action;
-
-local baseTopic = espConfig.node.topic;
-
-local relayPin = espConfig.node.appCfg.relayPin;
-local openPositionPin = espConfig.node.appCfg.openPositionPin;
-local closedPositionPin = espConfig.node.appCfg.closedPositionPin;
-local dhtPin = espConfig.node.appCfg.dhtPin;
 
 ----------------------------------------------------------------------------------------
 -- private
@@ -44,18 +26,18 @@ local function triggerCover ( count )
 
     print ( "[APP] trigger serout count=" .. count );
     
-    local delay = triggerDelay * 1000;
+    local delay = nodeConfig.timer.triggerDelay * 1000;
 
     local delays = {
         [1] = { delay, delay },
         [2] = { delay, delay, delay, delay },
     };
 
-    gpio.serout ( relayPin, 1, delays [count], 1, function () end ); 
+    gpio.serout ( nodeConfig.appCfg.relayPin, 1, delays [count], 1, function () end ); 
 
 end
 
-local function publishState ( client, baseTopic, state )
+local function publishState ( client, topic, state )
 
     -- 0: closed, 1: in move up, 2: in move down, 3: stopped from move up, 4: stopped from move down, 5: fully open
     local s = state;
@@ -66,7 +48,7 @@ local function publishState ( client, baseTopic, state )
 --    s = (state == 3 or state == 4) and "stopped" or s;
     s = state == 5 and "open" or s;
     print ( "[APP] publish state=" .. s );
-    client:publish ( baseTopic .. "/value/position", s, 0, retain, function () end ); -- qos, retain
+    client:publish ( topic .. "/value/position", s, 0, nodeConfig.retain, function () end ); -- qos, retain
 
 end
 
@@ -77,12 +59,12 @@ function M.connect ( client, topic )
 
     print ( "[APP] connected with topic=" .. topic );
     
-    -- register timer function when dorr is moving
+    -- register timer function when door is moving
     -- 0: closed, 1: in move up, 2: in move down, 3: stopped from move up, 4: stopped from move down, 5: fully open
-    tmr.register ( stateTimer, statePeriod, tmr.ALARM_AUTO,  -- timer_id, interval_ms, mode
+    tmr.register ( nodeConfig.timer.state, nodeConfig.timer.statePeriod, tmr.ALARM_AUTO,  -- timer_id, interval_ms, mode
         function ()
-            local openSwitch = gpio.read ( openPositionPin );
-            local closeSwitch = gpio.read ( closedPositionPin );
+            local openSwitch = gpio.read ( nodeConfig.appCfg.openPositionPin );
+            local closeSwitch = gpio.read ( nodeConfig.appCfg.closedPositionPin );
             print ( "[APP] positions: open=" .. openSwitch .. " ,closeSwitch=" .. closeSwitch );
             if ( openSwitch == 1 and closeSwitch == 1 ) then
                 if ( position == 0 or position == 4 ) then -- just in move
@@ -94,14 +76,14 @@ function M.connect ( client, topic )
                 end
             elseif ( position == 2 and openSwitch == 1 and closeSwitch == 0 ) then -- just closed
                 position = 0;
-                tmr.stop ( stateTimer );
+                tmr.stop ( nodeConfig.timer.state );
                 print ( "[APP] new position=0 (closed)" );
             elseif ( position == 1 and openSwitch == 0 and closeSwitch == 1 ) then -- just opened
                 position = 5;
-                tmr.stop ( stateTimer );
+                tmr.stop ( nodeConfig.timer.state );
                 print ( "[APP] new position=5 (opened)" );
             end
-            publishState ( client, baseTopic, position );
+            publishState ( client, nodeConfig.topic, position );
         end
     );
     
@@ -109,8 +91,8 @@ function M.connect ( client, topic )
     M.periodic ( client, topic );
     
     -- initial door position
-    local openSwitch = gpio.read ( openPositionPin );
-    local closeSwitch = gpio.read ( closedPositionPin );
+    local openSwitch = gpio.read ( nodeConfig.appCfg.openPositionPin );
+    local closeSwitch = gpio.read ( nodeConfig.appCfg.closedPositionPin );
     if ( openSwitch == 1 and closeSwitch == 0 ) then
         position = 0;
     elseif ( openSwitch == 0 and closeSwitch == 1 ) then
@@ -118,7 +100,7 @@ function M.connect ( client, topic )
     else
         position = 0; -- default is closed
     end    
-    publishState ( client, baseTopic, position );
+    publishState ( client, nodeConfig.topic, position );
     
 end
 
@@ -140,11 +122,11 @@ function M.message ( client, topic, payload )
                 triggerCover ( 2 );
                 position = 1; -- move up
                 print ( "[APP] new position=1 (move up)" );
-                publishState ( client, baseTopic, position );
+                publishState ( client, nodeConfig.topic, position );
             elseif ( position == 0 or position == 4 ) then -- closed or stopped from move down
                 print ( "move door action=" .. action .. " ,position=" .. position );
                 triggerCover ( 1 );
-                tmr.start ( stateTimer );
+                tmr.start ( nodeConfig.timer.state );
             else
                 print ( "[APP] forbidden action=" .. action .. " ,position=" .. position );
             end
@@ -152,17 +134,17 @@ function M.message ( client, topic, payload )
             if ( position == 1 ) then -- move up
                 print ( "stop door action=" .. action .. " ,position=" .. position );
                 triggerCover ( 1 );
-                tmr.stop ( stateTimer );
+                tmr.stop ( nodeConfig.timer.state );
                 position = 3; -- stopped from move up
                 print ( "[APP] new position=3 (stopped from move up)" );
-                publishState ( client, baseTopic, position );
+                publishState ( client, nodeConfig.topic, position );
             elseif ( position == 2 ) then -- move down
                 print ( "stop door action=" .. action .. " ,position=" .. position );
                 triggerCover ( 1 );
-                tmr.stop ( stateTimer );
+                tmr.stop ( nodeConfig.timer.state );
                 position = 4; -- stopped from move down
                 print ( "[APP] new position=4 (stopped from move down)" );
-                publishState ( client, baseTopic, position );
+                publishState ( client, nodeConfig.topic, position );
             else
                 print ( "[APP] forbidden action=" .. action .. " ,position=" .. position );
             end
@@ -172,11 +154,11 @@ function M.message ( client, topic, payload )
                 triggerCover ( 2 );
                 position = 2; -- move down
                 print ( "[APP] new position=2 (move down)" );
-                publishState ( client, baseTopic, position );
+                publishState ( client, nodeConfig.topic, position );
             elseif ( position == 5 or position == 3 ) then -- open or stopped from move up
                 print ( "move door action=" .. action .. " ,position=" .. position );
                 triggerCover ( 1 );
-                tmr.start ( stateTimer );
+                tmr.start ( nodeConfig.timer.state );
             else
                 print ( "[APP] forbidden action=" .. action .. " ,position=" .. position );
             end
@@ -195,18 +177,18 @@ function M.offline ( client )
     
 end
 
-function M.periodic ( client, baseTopic )
+function M.periodic ( client, topic )
 
-    print ( "[APP] periodic call topic=" .. baseTopic );
+    print ( "[APP] periodic call topic=" .. topic );
     
-    local success, t, h = util.getSensorData ( espConfig.node.appCfg.dhtPin );
+    local success, t, h = util.getSensorData ( nodeConfig.appCfg.dhtPin );
     
     if ( success ) then
         print ( "[APP] publish temperature t=" .. t );
-        client:publish ( baseTopic .. "/value/temperature", util.createJsonValueMessage ( t, "C" ), 0, retain, -- qos, retain
+        client:publish ( topic .. "/value/temperature", util.createJsonValueMessage ( t, "C" ), 0, nodeConfig.retain, -- qos, retain
             function ( client )
                 print ( "[APP] publish humidity h=" .. h );
-                client:publish ( baseTopic .. "/value/humidity", util.createJsonValueMessage ( h, "%" ), 0, retain, function () end ); -- qos, retain
+                client:publish ( topic .. "/value/humidity", util.createJsonValueMessage ( h, "%" ), 0, nodeConfig.retain, function () end ); -- qos, retain
             end
         );
     end
@@ -218,11 +200,11 @@ end
 
 print ( "[MODULE] loaded: " .. moduleName )
 
-gpio.mode ( relayPin, gpio.OUTPUT );
-gpio.write ( relayPin, gpio.LOW );
+gpio.mode ( nodeConfig.appCfg.relayPin, gpio.OUTPUT );
+gpio.write ( nodeConfig.appCfg.relayPin, gpio.LOW );
 
-gpio.mode ( openPositionPin, gpio.INPUT, gpio.PULLUP );
-gpio.mode ( closedPositionPin, gpio.INPUT, gpio.PULLUP );
+gpio.mode ( nodeConfig.appCfg.openPositionPin, gpio.INPUT, gpio.PULLUP );
+gpio.mode ( nodeConfig.appCfg.closedPositionPin, gpio.INPUT, gpio.PULLUP );
 
 return M;
 

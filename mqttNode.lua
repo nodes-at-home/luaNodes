@@ -16,20 +16,10 @@ require ( "util" );
 -------------------------------------------------------------------------------
 --  Settings
 
-M.appNode = nil;    -- application callbacks
-M.client = nil;     -- mqtt client
+appNode = nil;    -- application callbacks
+mqttClient = nil;     -- mqtt client
 
-local retain = espConfig.node.retain;
-
-local wifiLoopTimer = espConfig.node.timer.wifiLoop;
-local wifiLoopPeriod = espConfig.node.timer.wifiLoopPeriod;
-
-local periodicTimmer = espConfig.node.timer.periodic;
-local periodicPeriod = espConfig.node.timer.periodicPeriod;
-
-local traceSocket = nil;
-local traceServerIp = espConfig.node.trace.ip;
-local traceServerPort = espConfig.node.trace.port;
+traceSocket = nil;
 
 ----------------------------------------------------------------------------------------
 -- private
@@ -53,27 +43,27 @@ local function wifiLoop ()
         print ( "[WIFI] mac=" .. wifi.sta.getmac () );
     
         -- Setup MQTT client and events
-        if ( M.client == nil ) then
-            local mqttClientName = wifi.sta.gethostname () .. "-" .. espConfig.node.class .. "-" .. espConfig.node.type .. "-" .. espConfig.node.location;
-            M.client = mqtt.Client ( mqttClientName, 120, "", "" ); -- ..., keep_alive_time, username, password
+        if ( mqttClient == nil ) then
+            local mqttClientName = wifi.sta.gethostname () .. "-" .. nodeConfig.class .. "-" .. nodeConfig.type .. "-" .. nodeConfig.location;
+            mqttClient = mqtt.Client ( mqttClientName, nodeConfig.keepAliveTime, "", "" ); -- ..., keep_alive_time, username, password
         end
 
-        print ( "[MQTT] connecting to " .. espConfig.node.mqttBroker );
+        print ( "[MQTT] connecting to " .. nodeConfig.mqttBroker );
 
         -- this is never called, because the last registration wins
-        -- M.client:on ( "connect", 
+        -- mqttClient:on ( "connect", 
             -- function ( client )
                 -- print ( "[MQTT] CONNECTED" );
-                -- M.appNode.connect ();
+                -- appNode.connect ();
             -- end
         -- );
             
-        M.client:on ( "message", 
+        mqttClient:on ( "message", 
             function ( client, topic, payload )
                 print ( "[MQTT] message received topic=" .. topic .." payload=" .. (payload == nil and "***nothing***" or payload) );
                 if ( payload ) then
                     -- check for update
-                    if ( topic == espConfig.node.topic .. "/service/update" ) then 
+                    if ( topic == nodeConfig.topic .. "/service/update" ) then 
                         -- and there was no update with this url before
                         local forceUpdate = true;
                         if ( file.exists ( "old_update.url" ) ) then
@@ -99,13 +89,13 @@ local function wifiLoop ()
                                 end
                             end
                         end
-                    elseif ( topic == espConfig.node.topic .. "/service/trace" ) then
+                    elseif ( topic == nodeConfig.topic .. "/service/trace" ) then
                         if ( payload == "ON" ) then
                             if ( traceSocket == nil ) then
                                 print ( traceSocket );
                                 traceSocket = net.createConnection ( net.TCP, 0 ); -- no secure
-                                print ( "[TRACE] connecting to " .. traceServerIp .. ":" .. traceServerPort );
-                                traceSocket:connect ( traceServerPort, traceServerIp );
+                                print ( "[TRACE] connecting to " .. nodeConfig.trace.ip .. ":" .. nodeConfig.trace.port );
+                                traceSocket:connect ( nodeConfig.trace.port, nodeConfig.trace.ip );
                                 traceSocket:on ( "connection", 
                                     function ( socket, errorCode )
                                         socket:send ( node.chipid () .. "#***" .. node.chipid () .. " is tracing ***\n"  );
@@ -131,56 +121,81 @@ local function wifiLoop ()
                                 traceSocket:close ();
                                 traceSocket = nil;
                             end
-                        end 
+                        end
+                    elseif ( topic == nodeConfig.topic .. "/service/config" ) then
+                        print ( "[CONFIG] topic=" .. topic .. " payload=" .. payload );
+                        local topic = "nodes@home/config/" .. node.chipid ();
+                        print ( "[CONFIG] subscribe to topic=" .. topic );
+                        client:subscribe ( topic, 0, -- ..., qos
+                            function ( client )
+                                -- reset topic
+                                local topic = nodeConfig.topic .. "/service/config"
+                                print ( "[CONFIG] unsubscribe to topic=" .. topic );
+                                client:publish ( topic, "", 0, 1, -- ..., qos, retain
+                                    function ( client )
+                                    end
+                                );
+                            end
+                        );
+                    elseif ( topic == "nodes@home/config/" .. node.chipid () ) then
+                        print ( "[CONFIG] topic=" .. topic .. " payload=" .. payload );
+                        local json = cjson.decode ( payload );
+                        if ( json.chipid == node.chipid () ) then
+                            print ( "[CONFIG] found same chipid " .. node.chipid () );
+                            if ( file.open ( "espConfig_local.json", "w" ) ) then
+                                file.write ( payload );
+                                print ( "[CONFIG] restarting after config save")
+                                node.restart ();
+                            end
+                        end
                     else
-                        M.appNode.message ( client, topic, payload );
+                        appNode.message ( client, topic, payload );
                     end
                 end
             end
         );
             
-        M.client:on ( "offline", 
+        mqttClient:on ( "offline", 
             function ( client )
                 print ( "[MQTT] offline" );
-                local restartMqtt = M.appNode.offline ( client );
+                local restartMqtt = appNode.offline ( client );
                 if ( restartMqtt ) then
                     print ( "[MQTT] restart connection" );
-                    tmr.alarm ( wifiLoopTimer, wifiLoopPeriod, tmr.ALARM_AUTO, function () wifiLoop() end ) -- timer_id, interval_ms, mode
+                    tmr.alarm ( nodeConfig.timer.wifiLoop, nodeConfig.timer.wifiLoopPeriod, tmr.ALARM_AUTO, function () wifiLoop() end ) -- timer_id, interval_ms, mode
                 end
             end
         );
         
-        local result = M.client:connect( espConfig.node.mqttBroker , 1883, 0, 0, -- broker, port, secure, autoreconnect
+        local result = mqttClient:connect( nodeConfig.mqttBroker , 1883, 0, 0, -- broker, port, secure, autoreconnect
         
             function ( client )
             
                 -- Stop the loop only if connected
-                tmr.stop ( wifiLoopTimer );
+                tmr.stop ( nodeConfig.timer.wifiLoop );
 
                 print ( "[MQTT] connected to MQTT Broker" )
-                print ( "[MQTT] node=" .. espConfig.node.topic );
+                print ( "[MQTT] node=" .. nodeConfig.topic );
                 
---                -- subscribe to update topic
---                local topic = espConfig.node.topic .. "/service/update";
---                print ( "[MQTT] subscribe to topic=" .. topic );
---                client:subscribe ( topic, 2, -- ..., qos: receive update only once
---                    function ( client )
-                        local version = espConfig.node.version;
-                        print ( "[MQTT] send <" .. version .. "> to topic=" .. espConfig.node.topic );
-                        client:publish ( espConfig.node.topic, version, 0, retain, -- ..., qos, retain
+                local version = nodeConfig.version;
+                print ( "[MQTT] send <" .. version .. "> to topic=" .. nodeConfig.topic );
+                client:publish ( nodeConfig.topic, version, 0, nodeConfig.retain, -- ..., qos, retain
+                    function ( client )
+                        print ( "[MQTT] send voltage" );
+                        client:publish ( nodeConfig.topic .. "/value/voltage", util.createJsonValueMessage ( adc.readvdd33 (), "mV" ), 0, nodeConfig.retain, -- qos, retain
                             function ( client )
-                                print ( "[MQTT] send voltage" );
-                                client:publish ( espConfig.node.topic .. "/value/voltage", util.createJsonValueMessage ( adc.readvdd33 (), "mV" ), 0, retain, -- qos, retain
+                                appNode.connect ( client, nodeConfig.topic );
+                                -- subscribe to all topics based on base topic of the node
+                                local topic = nodeConfig.topic .. "/+";
+                                print ( "[MQTT] subscribe to topic=" .. topic );
+                                client:subscribe ( topic, 0, -- ..., qos
                                     function ( client )
-                                        M.appNode.connect ( client, espConfig.node.topic );
-                                        -- subscribe to all topics based on base topic of the node
-                                        local topic = espConfig.node.topic .. "/+";
+                                        local topic = nodeConfig.topic .. "/service/+";
                                         print ( "[MQTT] subscribe to topic=" .. topic );
                                         client:subscribe ( topic, 0, -- ..., qos
                                             function ( client )
-                                                local topic = espConfig.node.topic .. "/service/+";
-                                                print ( "[MQTT] subscribe to topic=" .. topic );
-                                                client:subscribe ( topic, 0, -- ..., qos
+                                                local str = cjson.encode ( nodeConfig );
+                                                local topic = "nodes@home/config/" .. node.chipid () .. "/state";
+                                                client:publish ( topic, str, 0, 1, -- ..., qos, retain
                                                     function ( client )
                                                     end
                                                 );
@@ -190,8 +205,8 @@ local function wifiLoop ()
                                 );
                             end
                         );
---                    end
---                );
+                    end
+                );
                 
             end,
 
@@ -217,7 +232,7 @@ local function initAppNode ( app )
     if ( app.message == nil ) then app.message = noop; end
     if ( app.periodic == nil ) then app.periodic = noop; end
     
-    M.appNode = app;
+    appNode = app;
     
 end
 
@@ -234,19 +249,21 @@ function M.start ( app )
     end
     
     -- loop to wait up to connected to wifi
-    tmr.alarm ( wifiLoopTimer, wifiLoopPeriod, tmr.ALARM_AUTO, function () wifiLoop() end ); -- timer_id, interval_ms, mode
-    if ( periodicTimmer ) then
-        tmr.alarm ( periodicTimmer, periodicPeriod, tmr.ALARM_AUTO, -- timer_id, interval_ms, mode
+    tmr.alarm ( nodeConfig.timer.wifiLoop, nodeConfig.timer.wifiLoopPeriod, tmr.ALARM_AUTO, function () wifiLoop() end ); -- timer_id, interval_ms, mode
+    if ( nodeConfig.timer.periodic ) then
+        tmr.alarm ( nodeConfig.timer.periodic, nodeConfig.timer.periodicPeriod, tmr.ALARM_AUTO, -- timer_id, interval_ms, mode
             function () 
                 print ( "[MQTT] send voltage" );
-                M.client:publish ( espConfig.node.topic .. "/value/voltage", util.createJsonValueMessage ( adc.readvdd33 (), "mV" ), 0, retain,  -- qos, retain
+                mqttClient:publish ( nodeConfig.topic .. "/value/voltage", util.createJsonValueMessage ( adc.readvdd33 (), "mV" ), 0, nodeConfig.retain,  -- qos, retain
                     function ( client )
-                        M.appNode.periodic ( M.client, espConfig.node.topic );
+                        appNode.periodic ( mqttClient, nodeConfig.topic );
                     end
                 );
             end 
         );
     end
+    
+    package.loaded [moduleName] = nil;
 
 end
   

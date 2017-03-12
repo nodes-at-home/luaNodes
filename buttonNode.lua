@@ -14,13 +14,6 @@ _G [moduleName] = M;
 -------------------------------------------------------------------------------
 --  Settings
 
-local retain = espConfig.node.retain;
-
-local deepSleepTimer = espConfig.node.timer.deepSleep;
-local deepSleepDelay = espConfig.node.timer.deepSleepDelay;
-
-local timeBetweenSensorReadings = espConfig.node.appCfg.timeBetweenSensorReadings;
-
 ----------------------------------------------------------------------------------------
 -- private
 
@@ -31,9 +24,9 @@ local timeBetweenSensorReadings = espConfig.node.appCfg.timeBetweenSensorReading
 local function goDeepSleep ( client, baseTopic )
 
     if ( not useOfflineCallback ) then
-        print ( "[APP] initiate alarm for closing connection in " ..  deepSleepDelay/1000 .. " seconds" );
+        print ( "[APP] initiate alarm for closing connection in " ..  timer.deepSleepDelay/1000 .. " seconds" );
         -- wait a minute with closing connection
-        tmr.alarm ( deepSleepTimer, deepSleepDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
+        tmr.alarm ( nodeConfig.timer.deepSleep, timer.deepSleepDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
             function () 
                 -- publishing OFF is not harmful
                 print ( "[APP] publish button press OFF" );
@@ -41,8 +34,8 @@ local function goDeepSleep ( client, baseTopic )
                     function ( client )
                         print ( "[APP] closing connection" );
                         client:close ();
-                        print ( "[APP] Going to deep sleep for ".. deepSleepDelay/1000 .." seconds" );
-                        node.dsleep ( deepSleepDelay * 1000 ); -- us
+                        print ( "[APP] Going to deep sleep for ".. timer.deepSleepDelay/1000 .." seconds" );
+                        node.dsleep ( timer.deepSleepDelay * 1000 ); -- us
                         -- node.dsleep ( (90 - 60) * 1000 * 1000 );
                     end
                 );
@@ -78,8 +71,8 @@ local function offline ( client )
 
     print ( "[APP] offline" );
 
-    print ( "[APP] initiate alarm for closing connection in " ..  deepSleepDelay/1000 .. " seconds" );
-    node.dsleep ( deepSleepDelay * 1000 ); -- us, we are go sleeping "foreever"
+    print ( "[APP] initiate alarm for closing connection in " ..  timer.deepSleepDelay/1000 .. " seconds" );
+    node.dsleep ( timer.deepSleepDelay * 1000 ); -- us, we are go sleeping "foreever"
     
     return false; -- dont restart mqtt connection
     
@@ -96,7 +89,7 @@ end
 
 print ( "[MODULE] loaded: " .. moduleName )
 
-if ( espConfig.node.appCfg.useOfflineCallback ) then
+if ( nodeConfig.appCfg.useOfflineCallback ) then
     M.offline = offline;
 end
 

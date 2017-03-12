@@ -25,4 +25,7 @@ if ( bootreason == 1 or bootreason == 2 or bootreason == 3 ) then
     return;
 end
 
-require ( "startup" );
+require ( "startup" ).init ();
+startup = nil;
+collectgarbage ();
+

@@ -16,18 +16,7 @@ require  ( "util" );
 -------------------------------------------------------------------------------
 --  Settings
 
-local retain = espConfig.node.retain;
-local useOfflineCallback = espConfig.node.appCfg.useOfflineCallback;
 
-local dhtPin = espConfig.node.appCfg.dhtPin;
-
-local bme280SdaPin = espConfig.node.appCfg.bme280SdaPin;
-local bme280SclPin = espConfig.node.appCfg.bme280SclPin;
-
-local deepSleepTimer = espConfig.node.timer.deepSleep;
-local deepSleepDelay = espConfig.node.timer.deepSleepDelay;
-
-local timeBetweenSensorReadings = espConfig.node.appCfg.timeBetweenSensorReadings;
 
 ----------------------------------------------------------------------------------------
 -- private
@@ -38,13 +27,15 @@ local timeBetweenSensorReadings = espConfig.node.appCfg.timeBetweenSensorReading
 
 local function goDeepSleep ( client )
 
-    if ( not useOfflineCallback ) then
+    if ( not nodeConfig.appCfg.useOfflineCallback ) then
+        local deepSleepDelay = nodeConfig.timer.deepSleepDelay;
         print ( "[APP] initiate alarm for closing connection in " ..  deepSleepDelay/1000 .. " seconds" );
         -- wait a minute with closing connection
-        tmr.alarm ( deepSleepTimer, deepSleepDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
+        tmr.alarm ( nodeConfig.timer.deepSleep, deepSleepDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
             function () 
                 print ( "[APP] closing connection" );
                 client:close ();
+                local timeBetweenSensorReadings = nodeConfig.appCfg.timeBetweenSensorReadings;
                 print ( "[APP] Going to deep sleep for ".. timeBetweenSensorReadings/1000 .." seconds" );
                 node.dsleep ( (timeBetweenSensorReadings - deepSleepDelay) * 1000 ); -- us
                 -- node.dsleep ( (90 - 60) * 1000 * 1000 );
@@ -62,13 +53,13 @@ local function publishValues ( client, baseTopic, temperature, humidity, pressur
     -- all Values
     if ( temperature and humidity and pressure ) then
         print ( "[APP] publish temperature t=" .. temperature );
-        client:publish ( baseTopic .. "/value/temperature", util.createJsonValueMessage ( temperature, "C" ), 0, retain, -- qos, retain
+        client:publish ( baseTopic .. "/value/temperature", util.createJsonValueMessage ( temperature, "C" ), 0, nodeConfig.retain, -- qos, retain
             function ( client )
                 print ( "[APP] publish humidity h=" .. humidity );
-                client:publish ( baseTopic .. "/value/humidity", util.createJsonValueMessage ( humidity, "%" ), 0, retain, -- qos, retain
+                client:publish ( baseTopic .. "/value/humidity", util.createJsonValueMessage ( humidity, "%" ), 0, nodeConfig.retain, -- qos, retain
                     function ( client )
                         print ( "[APP] publish pressure p=" .. pressure );
-                        client:publish ( baseTopic .. "/value/pressure", util.createJsonValueMessage ( pressure, "hPa" ), 0, retain, -- qos, retain
+                        client:publish ( baseTopic .. "/value/pressure", util.createJsonValueMessage ( pressure, "hPa" ), 0, nodeConfig.retain, -- qos, retain
                             function ( client )
                                 goDeepSleep ( client );
                             end
@@ -80,10 +71,10 @@ local function publishValues ( client, baseTopic, temperature, humidity, pressur
     -- only temperature and humidity
     elseif ( temperature and humidity ) then
         print ( "[APP] publish temperature t=" .. temperature );
-        client:publish ( baseTopic .. "/value/temperature", util.createJsonValueMessage ( temperature, "C" ), 0, retain, -- qos, retain
+        client:publish ( baseTopic .. "/value/temperature", util.createJsonValueMessage ( temperature, "C" ), 0, nodeConfig.retain, -- qos, retain
             function ( client )
                 print ( "[APP] publish humidity h=" .. humidity );
-                client:publish ( baseTopic .. "/value/humidity", util.createJsonValueMessage ( humidity, "%" ), 0, retain, -- qos, retain
+                client:publish ( baseTopic .. "/value/humidity", util.createJsonValueMessage ( humidity, "%" ), 0, nodeConfig.retain, -- qos, retain
                     function ( client )
                         goDeepSleep ( client );
                     end
@@ -93,10 +84,10 @@ local function publishValues ( client, baseTopic, temperature, humidity, pressur
     -- only pressure and temperature
     elseif ( pressure and temperature ) then
         print ( "[APP] publish pressure p=" .. pressure );
-        client:publish ( baseTopic .. "/value/pressure", util.createJsonValueMessage ( pressure, "hPa" ), 0, retain, -- qos, retain
+        client:publish ( baseTopic .. "/value/pressure", util.createJsonValueMessage ( pressure, "hPa" ), 0, nodeConfig.retain, -- qos, retain
             function ( client )
                 print ( "[APP] publish temperature t=" .. temperature );
-                client:publish ( baseTopic .. "/value/temperature", util.createJsonValueMessage ( temperature, "C" ), 0, retain, -- qos, retain
+                client:publish ( baseTopic .. "/value/temperature", util.createJsonValueMessage ( temperature, "C" ), 0, nodeConfig.retain, -- qos, retain
                     function ( client )
                         goDeepSleep ( client );
                     end
@@ -114,6 +105,10 @@ function M.connect ( client, baseTopic )
 
     print ( "[APP] connect" );
     
+    local dhtPin = nodeConfig.appCfg.dhtPin;
+    local bme280SdaPin = nodeConfig.appCfg.bme280SdaPin;
+    local bme280SclPin = nodeConfig.appCfg.bme280SclPin;
+
     local temperature, humidity = 0;
 
     if ( dhtPin ) then
@@ -164,7 +159,8 @@ local function offline ( client )
 
     print ( "[APP] offline" );
 
-    print ( "[APP] initiate alarm for closing connection in " ..  deepSleepDelay/1000 .. " seconds" );
+    local timeBetweenSensorReadings = nodeConfig.appCfg.timeBetweenSensorReadings;
+    print ( "[APP] Going to deep sleep for ".. timeBetweenSensorReadings/1000 .." seconds" );
     node.dsleep ( timeBetweenSensorReadings * 1000 ); -- us
     
     return false; -- dont restart mqtt connection
@@ -182,7 +178,7 @@ end
 
 print ( "[MODULE] loaded: " .. moduleName )
 
-if ( espConfig.node.appCfg.useOfflineCallback ) then
+if ( nodeConfig.appCfg.useOfflineCallback ) then
     M.offline = offline;
 end
 

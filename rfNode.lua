@@ -86,7 +86,7 @@ local function dequeueCommand ()
         isSending = true;
         local code = table.remove ( M.queue, 1 );
         print ( "[RF] loop: code=" .. code );
-        sendCode ( code, espConfig.node.appCfg.rfpin, espConfig.node.appCfg.rfrepeats, espConfig.node.appCfg.rfperiod );
+        sendCode ( code, nodeConfig.appCfg.rfpin, nodeConfig.appCfg.rfrepeats, nodeConfig.appCfg.rfperiod );
     end
 
 end
@@ -126,7 +126,7 @@ local function queueCommand ( device, state )
     local deviceCodes = codes [device];
     if ( deviceCodes and (state == "ON" or state == "OFF" ) ) then
         local code = deviceCodes [state];
-        gpio.write ( espConfig.node.appCfg.ledpin, state == "ON" and gpio.HIGH or gpio.LOW );
+        gpio.write ( nodeConfig.appCfg.ledpin, state == "ON" and gpio.HIGH or gpio.LOW );
         print ( "[RF] send: code=" .. code );
         -- sendCode ( code );
         table.insert ( M.queue, code );
@@ -160,14 +160,14 @@ end
 
 print ( "[MODULE] loaded: " .. moduleName )
 
-gpio.mode ( espConfig.node.appCfg.rfpin, gpio.OUTPUT );
-gpio.write ( espConfig.node.appCfg.rfpin, gpio.LOW );
+gpio.mode ( nodeConfig.appCfg.rfpin, gpio.OUTPUT );
+gpio.write ( nodeConfig.appCfg.rfpin, gpio.LOW );
 
-gpio.mode ( espConfig.node.appCfg.ledpin, gpio.OUTPUT );
-gpio.write ( espConfig.node.appCfg.ledpin, gpio.LOW );
+gpio.mode ( nodeConfig.appCfg.ledpin, gpio.OUTPUT );
+gpio.write ( nodeConfig.appCfg.ledpin, gpio.LOW );
 
 M.queue = {};
-tmr.alarm ( espConfig.node.timer.queue, espConfig.node.timer.queuePeriod, tmr.ALARM_AUTO, function () dequeueCommand () end ) -- timer_id, interval_ms, mode, callback
+tmr.alarm ( nodeConfig.timer.queue, nodeConfig.timer.queuePeriod, tmr.ALARM_AUTO, function () dequeueCommand () end ) -- timer_id, interval_ms, mode, callback
 
 return M;
 

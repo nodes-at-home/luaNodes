@@ -16,38 +16,26 @@ require ( "util" );
 -------------------------------------------------------------------------------
 --  Settings
 
-local retain = espConfig.node.retain;
-
-local debounceTimer = espConfig.node.timer.debounce;
-local debounceDelay = espConfig.node.timer.debounceDelay;
-
-local nodeDevice = espConfig.node.appCfg.device or "lamp";
-
-local relayPin = espConfig.node.appCfg.relayPin;
-local ledPin = espConfig.node.appCfg.ledPin;
-local useLedForState = espConfig.node.appCfg.useLedForState; -- on S20 there are two leds and the blue is switched with relay
-local buttonPin = espConfig.node.appCfg.buttonPin;
-
-local flashHighPulseLength = espConfig.node.appCfg.flashHighPulseLength * 1000; -- us
-local flashLowPulseLength = espConfig.node.appCfg.flashLowPulseLength * 1000; -- us
-
-print ( "useLedForState=", useLedForState );
+local nodeDevice = nodeConfig.appCfg.device or "lamp";
 
 ----------------------------------------------------------------------------------------
 -- private
 
 local function changeState ( client, topic, payload )
 
-    if ( useLedForState == nil or useLedForState ) then gpio.write ( ledPin, payload == "ON" and gpio.LOW or gpio.HIGH ); end
-    gpio.write ( relayPin, payload == "ON" and gpio.HIGH or gpio.LOW );
+    local useLedForState = nodeConfig.appCfg.useLedForState; -- on S20 there are two leds and the blue is switched with relay
+    if ( useLedForState == nil or useLedForState ) then gpio.write ( nodeConfig.appCfg.ledPin, payload == "ON" and gpio.LOW or gpio.HIGH ); end
+
+    gpio.write ( nodeConfig.appCfg.relayPin, payload == "ON" and gpio.HIGH or gpio.LOW );
+
     print ( "[APP] publish state=" .. payload .. " to " .. topic );
-    client:publish ( topic .. "/value/state", payload, 0, retain, function () end ); -- qos, retain
+    client:publish ( topic .. "/value/state", payload, 0, nodeConfig.retain, function () end ); -- qos, retain
 
 end
 
 local function flashLed ( times )
 
-    gpio.serout ( ledPin, 0, { flashLowPulseLength, flashHighPulseLength }, times, function () end ); -- async
+    gpio.serout ( nodeConfig.appCfg.ledPin, 0, { nodeConfig.appCfg.flashLowPulseLength * 1000, nodeConfig.appCfg.flashHighPulseLength * 1000 }, times, function () end ); -- async
  
 end
 
@@ -62,13 +50,13 @@ function M.connect ( client, topic )
     flashLed ( 2 );
     
     -- activate button only if pin is defined
-    if ( buttonPin ) then
+    if ( nodeConfig.appCfg.buttonPin ) then
 
-        gpio.trig ( buttonPin, "up",
+        gpio.trig ( nodeConfig.appCfg.buttonPin, "up",
             function ( level )
-                tmr.alarm ( debounceTimer, debounceDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
+                tmr.alarm ( nodeConfig.timer.debounce, nodeConfig.timer.debounceDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
                     function ()
-                        local state = gpio.read ( relayPin );
+                        local state = gpio.read ( nodeConfig.appCfg.relayPin );
                         changeState ( client, topic .. "/" .. nodeDevice, state == 0 and "ON" or "OFF" );
                     end
                 );
@@ -107,14 +95,14 @@ end
 
 print ( "[MODULE] loaded: " .. moduleName )
 
-gpio.mode ( ledPin, gpio.OUTPUT );
+gpio.mode ( nodeConfig.appCfg.ledPin, gpio.OUTPUT );
 
-gpio.mode ( relayPin, gpio.OUTPUT );
-gpio.write ( relayPin, gpio.LOW );
+gpio.mode ( nodeConfig.appCfg.relayPin, gpio.OUTPUT );
+gpio.write ( nodeConfig.appCfg.relayPin, gpio.LOW );
 
 -- activate button only if pin is defined
-if ( buttonPin ) then 
-    gpio.mode ( buttonPin, gpio.INT, gpio.PULLUP );
+if ( nodeConfig.appCfg.buttonPin ) then 
+    gpio.mode ( nodeConfig.appCfg.buttonPin, gpio.INT, gpio.PULLUP );
 end    
 
 return M;

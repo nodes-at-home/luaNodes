@@ -14,7 +14,7 @@ _G [moduleName] = M;
 --------------------------------------------------------------------
 -- vars
 
-local VERSION = "V0.27"
+local VERSION = "V0.30"
 
 local PROD_GATEWAY = "192.168.2.1";
 local PROD_NETMASK = "255.255.255.0";
@@ -22,453 +22,84 @@ local PROD_MQTT_BROKER = "192.168.2.117";
 local PROD_TRACE_SERVER_IP = "192.168.2.117";
 local PROD_TRACE_SERVER_PORT = "10001";
 
--- key is node.chipid ()
-local NODE_CONFIG_TAB = {
-
-    [1461824] = { 
-                    app = "rfNode",
-                    class = "switch", type = "rfhub", location = "first",  
-                    wifi = { ip = "192.168.2.20", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        rfpin = 7,
-                        rfrepeats = 16,
-                        rfperiod = 320, -- us
-                        ledpin = 4,
-                        dhtPin = 6,
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000,
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
-                        periodic = 2,
-                        periodicPeriod = 15 * 60 * 1000,
-                        queue = 3,
-                        queuePeriod = 500,
-                    },
-                },
-
-    [1829768] = { 
-                    app = "tempNode",
-                    class = "sensor", type = "DHT11", location = "roof",  
-                    wifi = { ip = "192.168.2.22", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        useOfflineCallback = false,
-                        dhtPin = 4,
-                        timeBetweenSensorReadings = 15 * 60 * 1000, -- ms
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000,
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
-                        periodic = 2,
-                        periodicPeriod = 15 * 60 * 1000,
-                        deepSleep = 3,
-                        deepSleepDelay = 60 * 1000, -- ms, only if not useOfflineCallback
-                    },
-                },
-
-    [2030164] = { 
-                    app = "tempNode",
-                    class = "sensor", type = "DHT11", location = "terrace",  
-                    wifi = { ip = "192.168.2.23", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        useOfflineCallback = false,
-                        dhtPin = 4,
-                        timeBetweenSensorReadings = 15 * 60 * 1000, -- ms
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000,
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
-                        periodic = 2,
-                        periodicPeriod = 15 * 60 * 1000,
-                        deepSleep = 3,
-                        deepSleepDelay = 60 * 1000, -- ms, only if not useOfflineCallback
-                    },
-                },
-                
-    [8391351] = {
-                    app = "garageNode",
-                    class = "cover", type = "relay", location = "garage",  
-                    wifi = { ip = "192.168.2.25", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        relayPin = 1,
-                        openPositionPin = 5,
-                        closedPositionPin = 6,
-                        dhtPin = 4,
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000,
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
-                        periodic = 2,
-                        periodicPeriod = 15 * 60 * 1000,
-                        debounce = 3,
-                        debounceDelay = 200,
-                        trigger = 4,
-                        triggerDelay = 300,
-                        state = 5,
-                        statePeriod = 1000,
-                    },
-                },
-
-    -- sonoff basic
-    [485535] = {
-                    app = "sonoffNode",
-                    class = "switch", type = "sonoff", location = "utilityroom",  
-                    wifi = { ip = "192.168.2.26", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        device = "pump",
-                        relayPin = 6,
-                        ledPin = 7,
---                        buttonPin = 3,    -- switch event indusing button events
-                        extraPin = 5,
-                        flashHighPulseLength = 50 * 1000,   -- ms
-                        flashLowPulseLength = 200 * 1000,   -- ms
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000,
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
-                        periodic = 2,
-                        periodicPeriod = 15 * 60 * 1000,
-                        debounce = 3,
-                        debounceDelay = 500,
-                    },
-                },
-                
-    -- sonoff basic
-    [518010] = {
-                    app = "sonoffNode",
-                    class = "switch", type = "sonoff", location = "garage",  
-                    wifi = { ip = "192.168.2.27", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        relayPin = 6,
-                        ledPin = 7,
-                        buttonPin = 3,
-                        extraPin = 5,
-                        flashHighPulseLength = 50 * 1000,   -- ms
-                        flashLowPulseLength = 200 * 1000,   -- ms
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000,
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
-                        periodic = 2,
-                        periodicPeriod = 15 * 60 * 1000,
-                        debounce = 3,
-                        debounceDelay = 500,
-                    },
-                },
-                
-    [1689710] = {
-                    app = "relayNode", -- no 3
-                    class = "switch", type = "relay", location = "backyard",  
-                    wifi = { ip = "192.168.2.29", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        buttonPin = 1,
-                        ledPin = 2,
-                        relayPin1 = 6,
-                        relayPin2 = 7,
-                        relayPulseLength = 30 * 1000,       -- ms
-                        flashHighPulseLength = 50 * 1000,   -- ms
-                        flashLowPulseLength = 200 * 1000,   -- ms
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000,
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
-                        periodic = 2,
-                        periodicPeriod = 15 * 60 * 1000,
-                        debounce = 3,
-                        debounceDelay = 500,
-                    },
-                },
-                
-    [8734823] = {
-                    app = "relayNode", -- no 2
-                    class = "switch", type = "relay", location = "carport",  
-                    wifi = { ip = "192.168.2.30", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        buttonPin = 1,
-                        ledPin = 2,
-                        relayPin1 = 6,
-                        relayPin2 = 7,
-                        relayPulseLength = 30 * 1000,       -- ms
-                        flashHighPulseLength = 50 * 1000,   -- ms
-                        flashLowPulseLength = 200 * 1000,   -- ms
---                        device = "plug"
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000,
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
-                        periodic = 2,
-                        periodicPeriod = 15 * 60 * 1000,
-                        debounce = 3,
-                        debounceDelay = 500,
-                    },
-                },
-                
-    [2677473] = {
-                    app = "xmasNode",
-                    class = "light", type = "xmastree", location = "dining",  
-                    wifi = { ip = "192.168.2.31", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        device = "leds",
-                        arduinoResetPin = 6,    -- for future use, resetting the arduino
-                        disablePrint = true,
-                        useRGB = false,
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000,
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
-                        periodic = 2,
-                        periodicPeriod = 15 * 60 * 1000,
-                    },
-                },
-                
-    [15892791] = { 
-                    app = "buttonNode", -- no 1
-                    class = "sensor", type = "button", location = "no1",  
-                    wifi = { ip = "192.168.2.32", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        useOfflineCallback = false,
-                        useQuickStartupAfterDeepSleep = true;
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000, -- us
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
---                        periodic = 2,
---                        periodicPeriod = 15 * 60 * 1000,
-                        deepSleep = 3,
-                        deepSleepDelay = 1* 1000, -- ms, only if not useOfflineCallback
-                    },
-                },
-
-    [16061971] = { 
-                    app = "buttonNode", -- no 2
-                    class = "sensor", type = "button", location = "garage",  
-                    wifi = { ip = "192.168.2.33", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        useOfflineCallback = false,
-                        useQuickStartupAfterDeepSleep = true;
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000, -- us
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
---                        periodic = 2,
---                        periodicPeriod = 15 * 60 * 1000,
-                        deepSleep = 3,
-                        deepSleepDelay = 1* 1000, -- ms, only if not useOfflineCallback
-                    },
-                },
-
-    [35778] = { 
-                    app = "buttonNode", -- no 3
-                    class = "sensor", type = "button", location = "no3",  
-                    wifi = { ip = "192.168.2.34", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        useOfflineCallback = false,
-                        useQuickStartupAfterDeepSleep = true;
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000, -- us
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
---                        periodic = 2,
---                        periodicPeriod = 15 * 60 * 1000,
-                        deepSleep = 3,
-                        deepSleepDelay = 1* 1000, -- ms, only if not useOfflineCallback
-                    },
-                },
-
-    [2028701] = { 
-                    app = "tempNode",
-                    class = "sensor", type = "DHT11", location = "lounge",  
-                     wifi = { ip = "192.168.2.35", gateway = PROD_GATEWAY, netmask = PROD_NETMASK },
-                    appCfg = {
-                        useOfflineCallback = false,
-                        dhtPin = 4,
-                        bme280SdaPin = 2,         -- green
-                        bme280SclPin = 1,         -- yellow
-                        timeBetweenSensorReadings = 15 * 60 * 1000, -- ms
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000,
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
-                        periodic = 2,
-                        periodicPeriod = 15 * 60 * 1000,
-                        deepSleep = 3,
-                        deepSleepDelay = 60 * 1000, -- ms, only if not useOfflineCallback
-                    },
-                },
-                
-    -- sonoff s20
-    [13423304] = {
-                    app = "sonoffNode",
-                    class = "switch", type = "sonoff", location = "location1",
-                    wifi = { ip = "192.168.2.36", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        device = "socket",
-                        relayPin = 6, -- inclusive blue led
-                        ledPin = 7, -- green led
-                        useLedForState = false,
-                        buttonPin = 3,
-                        flashHighPulseLength = 50 * 1000,   -- ms
-                        flashLowPulseLength = 200 * 1000,   -- ms
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000,
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
-                        periodic = 2,
-                        periodicPeriod = 15 * 60 * 1000,
-                        debounce = 3,
-                        debounceDelay = 500,
-                    },
-                },
-                
-    -- sonoff s20
-    [13423040] = {
-                    app = "sonoffNode",
-                    class = "switch", type = "sonoff", location = "location2",
-                    wifi = { ip = "192.168.2.37", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        device = "socket",
-                        relayPin = 6, -- inclusive blue led
-                        ledPin = 7, -- green led
-                        useLedForState = false,
-                        buttonPin = 3,
-                        flashHighPulseLength = 50 * 1000,   -- ms
-                        flashLowPulseLength = 200 * 1000,   -- ms
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000,
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
-                        periodic = 2,
-                        periodicPeriod = 15 * 60 * 1000,
-                        debounce = 3,
-                        debounceDelay = 500,
-                    },
-                },
-                
-    -- sonoff touch
-    [8578563] = {
-                    app = "sonoffNode",
-                    class = "switch", type = "sonoff", location = "terrace",
-                    wifi = { ip = "192.168.2.38", gateway = PROD_GATEWAY, netmask = PROD_NETMASK }, 
-                    appCfg = {
-                        device = "lamp",
-                        relayPin = 6, -- inclusive blue led
-                        ledPin = 7, -- green led
-                        useLedForState = false,
-                        buttonPin = 3,
-                        flashHighPulseLength = 50 * 1000,   -- ms
-                        flashLowPulseLength = 200 * 1000,   -- ms
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000,
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
-                        periodic = 2,
-                        periodicPeriod = 15 * 60 * 1000,
-                        debounce = 3,
-                        debounceDelay = 500,
-                    },
-                },
-                
-    [2677460] = {
-                    app = "noNode",
-                    class = "nonode", type = "test", location = "anywhere",  
-                     wifi = { ip = "192.168.2.90", gateway = PROD_GATEWAY, netmask = PROD_NETMASK },
---                    mqttBroker = "192.168.137.1",
---                    mode = "surface",
-                    appCfg = {
-                        useOfflineCallback = false,
-                        timeBetweenSensorReadings = 15 * 60 * 1000, -- ms
-                        timeBetweenSensorReadings = 1 * 60 * 1000, -- ms
-                    },
-                    timer = {
-                        startup = 0,
-                        startupDelay1 = 2 * 1000,
-                        startupDelay2 = 5 * 1000,
-                        wifiLoop = 1,
-                        wifiLoopPeriod = 1 * 1000,
-                        periodic = 2,
-                        periodicPeriod = 15 * 60 * 1000,
-                        deepSleep = 3,
-                        deepSleepDelay = 60 * 1000, -- ms, only if not useOfflineCallback
-                    },
-                },
-
-};
-
 --------------------------------------------------------------------
 -- private
 
+local DEFAULT_CONFIG = {
+    app = "noNode",
+    class = "nonode", type = "<chipid>", location = "anywhere",  
+    wifi = { ip = "192.168.2.90", gateway = PROD_GATEWAY, netmask = PROD_NETMASK },
+--    mqttBroker = "192.168.137.1",
+--    mode = "surface",
+    appCfg = {
+        useOfflineCallback = false,
+        timeBetweenSensorReadings = 15 * 60 * 1000, -- ms
+        timeBetweenSensorReadings = 1 * 60 * 1000, -- ms
+    },
+    timer = {
+        startup = 0,
+        startupDelay1 = 2 * 1000,
+        startupDelay2 = 5 * 1000,
+        wifiLoop = 1,
+        wifiLoopPeriod = 1 * 1000,
+        periodic = 2,
+        periodicPeriod = 15 * 60 * 1000,
+        deepSleep = 3,
+        deepSleepDelay = 60 * 1000, -- ms, only if not useOfflineCallback
+    },
+};
+
 --------------------------------------------------------------------
 -- public
+
+function M.init ()
+
+    local result = DEFAULT_CONFIG;
+
+    local fileName = "espConfig_local.json";
+    if ( not file.exists ( fileName ) ) then
+        fileName = "espConfig_" .. node.chipid () .. ".json";
+        if ( not file.exists ( fileName ) ) then
+            fileName = "espConfig_default.json";
+        end
+    end
+        
+    if ( file.open ( fileName, "r" ) ) then
+        print ( "[CONFIG] open config file: " .. fileName );
+        local jsonStr = file.read ();
+        result = cjson.decode ( jsonStr );
+    end
+    
+    -- inject chipid
+    if ( result.type == "<chipid>" ) then result.type = node.chipid (); end
+    
+    -- node base topic
+    result.topic = "nodes@home/" .. result.class .. "/" .. result.type .. "/" .. result.location;
+    result.version = VERSION .. " (" .. result.app .. ")";
+    result.retain = 1; -- 0: no retain
+    result.keepAliveTime = 5 * 60;
+    
+    -- wifi
+    if ( not result.mode ) then result.mode = "prod"; end
+    
+    -- mqtt broker
+    if ( not result.mqttBroker ) then result.mqttBroker = PROD_MQTT_BROKER; end
+    
+    -- tcp trace
+    if ( not result.trace ) then result.trace = {}; end
+    if ( not result.trace.ip ) then result.trace.ip = PROD_TRACE_SERVER_IP; end
+    if ( not result.trace.port ) then result.trace.port = PROD_TRACE_SERVER_PORT; end
+    
+    package.loaded [moduleName] = nil;
+    
+    return result;
+    
+end
 
 --------------------------------------------------------------------
 -- main
 
 print ( "[MODULE] loaded: " .. moduleName )
-
-M.node = NODE_CONFIG_TAB [node.chipid ()];
-
--- node base topic
-M.node.topic = "nodes@home/" .. M.node.class .. "/" .. M.node.type .. "/" .. M.node.location;
-M.node.version = VERSION .. " (" .. M.node.app .. ")";
-M.node.retain = 1; -- 0: no retain
-
--- wifi
-if ( not M.node.mode ) then M.node.mode = "prod"; end
-
--- mqtt broker
-if ( not M.node.mqttBroker ) then M.node.mqttBroker = PROD_MQTT_BROKER; end
-
--- tcp trace
-if ( not M.node.trace ) then M.node.trace = {}; end
-if ( not M.node.trace.ip ) then M.node.trace.ip = PROD_TRACE_SERVER_IP; end
-if ( not M.node.trace.port ) then M.node.trace.port = PROD_TRACE_SERVER_PORT; end
 
 return M;
 
