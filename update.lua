@@ -128,12 +128,19 @@ end
 function updateFile ()
 
     local fileName = updateList [updateListIndex];
-    local fileUrl = path .. "/" .. fileName .. LUA_POSTFIX;
+    local pos = fileName:find ( "%." ); -- we mean the char '.'
+    local otaFileName = OTA_PREFIX .. fileName;
+    if ( not pos ) then 
+        fileName = fileName .. LUA_POSTFIX;
+        otaFileName = otaFileName .. LUA_POSTFIX;
+    end
+    local fileUrl = path .. "/" .. fileName;
+    
     print ( "[UPDATE] i=" .. updateListIndex .. " ,fileName=" .. fileName .. " ,url=" .. fileUrl );
 
     require ( "httpDL" );
         
-    httpDL.download ( host, port, fileUrl, OTA_PREFIX .. fileName .. LUA_POSTFIX,
+    httpDL.download ( host, port, fileUrl, otaFileName,
         function ( rc )
             if ( rc == "ok" ) then
                 if ( updateListIndex < #updateList ) then
@@ -177,27 +184,44 @@ function compileAndRename ()
 
         print ( "[UPDATE] rename " .. fileName );
         
-        local luaFileName = fileName .. LUA_POSTFIX;
-        local oldLuaFileName = OLD_PREFIX .. luaFileName;
-        local otaLuaFileName = OTA_PREFIX .. luaFileName;
-        local lcFileName = fileName .. LC_POSTFIX;
-        local oldLcFileName = OLD_PREFIX .. lcFileName;
-        local otaLcFileName = OTA_PREFIX .. lcFileName;
+        local pos = fileName:find ( "%." );
+        local suffix = pos and fileName:sub ( pos + 1 ) or nil;
+        
+        print ( "[UPDATE] pos=" .. pos .. " suffix=" .. suffix );
+        
+        local updateFileName = fileName;
+        local lcFileName = nil;
+
+        if ( not suffix ) then
+            updateFileName = updateFileName .. LUA_POSTFIX;
+            lcFileName = fileName .. LC_POSTFIX;
+        elseif ( suffix == "lua" ) then
+            lcFileName = fileName .. LC_POSTFIX;
+        end
+        
+        local oldUpdateFileName = OLD_PREFIX .. updateFileName;
+        local otaUpdateFileName = OTA_PREFIX .. updateFileName;
+
+        local oldLcFileName;
+        local otaLcFileName;
+        if ( lcFileName ) then
+            oldLcFileName = OLD_PREFIX .. lcFileName;
+            otaLcFileName = OTA_PREFIX .. lcFileName;
+        end
 
         -- TODO robuster machen!!!
                 
-        file.remove ( oldLuaFileName );
-        file.remove ( oldLcFileName );
-        file.remove ( luaFileName );
-        file.remove ( lcFileName );
+        file.remove ( updateFileName );
+        file.remove ( oldUpdateFileName );
+
+        if ( lcFileName ) then file.remove ( lcFileName ); end
+        if ( oldLcFileName ) then file.remove ( oldLcFileName ); end
         
-        if ( not file.rename ( otaLuaFileName, luaFileName  ) ) then
-            print ( "[UPDATE] ERROR renaming" .. otaLuaFileName );
-            return; 
+        if ( not file.rename ( otaUpdateFileName, updateFileName  ) ) then
+            print ( "[UPDATE] ERROR renaming" .. otaUpdateFileName );
         end
-        if ( file.exists ( otaLcFileName ) and not file.rename ( otaLcFileName, lcFileName  ) ) then
+        if ( otaLcFileName and file.exists ( otaLcFileName ) and not file.rename ( otaLcFileName, lcFileName  ) ) then
             print ( "[UPDATE] ERROR renaming" .. otaLcFileName );
-            return; 
         end
         
     end
@@ -209,11 +233,9 @@ function compileAndRename ()
 
     if ( not file.rename ( updateUrlFile, OLD_PREFIX .. updateUrlFile  ) ) then
         print ( "[UPDATE] ERROR renaming" .. updateUrlFile );
-        return; 
     end
     if ( not file.rename ( updateListFile, OLD_PREFIX .. updateListFile  ) ) then
         print ( "[UPDATE] ERROR renaming" .. updateListFile );
-        return; 
     end
     
 end

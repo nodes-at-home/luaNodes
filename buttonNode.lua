@@ -24,9 +24,9 @@ _G [moduleName] = M;
 local function goDeepSleep ( client, baseTopic )
 
     if ( not useOfflineCallback ) then
-        print ( "[APP] initiate alarm for closing connection in " ..  timer.deepSleepDelay/1000 .. " seconds" );
+        print ( "[APP] initiate alarm for closing connection in " ..  nodeConfig.timer.deepSleepDelay/1000 .. " seconds" );
         -- wait a minute with closing connection
-        tmr.alarm ( nodeConfig.timer.deepSleep, timer.deepSleepDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
+        tmr.alarm ( nodeConfig.timer.deepSleep, nodeConfig.timer.deepSleepDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
             function () 
                 -- publishing OFF is not harmful
                 print ( "[APP] publish button press OFF" );
@@ -34,8 +34,8 @@ local function goDeepSleep ( client, baseTopic )
                     function ( client )
                         print ( "[APP] closing connection" );
                         client:close ();
-                        print ( "[APP] Going to deep sleep for ".. timer.deepSleepDelay/1000 .." seconds" );
-                        node.dsleep ( timer.deepSleepDelay * 1000 ); -- us
+                        print ( "[APP] Going to deep sleep for ".. nodeConfig.timer.deepSleepDelay/1000 .." seconds" );
+                        node.dsleep ( nodeConfig.timer.deepSleepDelay * 1000 ); -- us
                         -- node.dsleep ( (90 - 60) * 1000 * 1000 );
                     end
                 );

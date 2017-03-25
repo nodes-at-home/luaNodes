@@ -2,3 +2,4 @@
 /.project
 
 credential.lua
+*.lc

@@ -120,7 +120,7 @@ function M.init ()
     if ( nodeConfig.appCfg.useQuickStartupAfterDeepSleep and bootreason == 5 ) then
         print ( "[STARTUP] quick start" );
 --        startApp ();
-        tmr.alarm ( nodeConfig.timer.startup, 10, tmr.ALARM_SINGLE, startApp () )
+        tmr.alarm ( nodeConfig.timer.startup, 10, tmr.ALARM_SINGLE, startApp )
     else 
         print ( "[STARTUP] classic start" );
         tmr.alarm ( nodeConfig.timer.startup, nodeConfig.timer.startupDelay1, tmr.ALARM_SINGLE, startup )

@@ -28,7 +28,7 @@ local PROD_TRACE_SERVER_PORT = "10001";
 local DEFAULT_CONFIG = {
     app = "noNode",
     class = "nonode", type = "<chipid>", location = "anywhere",  
-    wifi = { ip = "192.168.2.90", gateway = PROD_GATEWAY, netmask = PROD_NETMASK },
+--    wifi = { ip = "192.168.2.90", gateway = PROD_GATEWAY, netmask = PROD_NETMASK },
 --    mqttBroker = "192.168.137.1",
 --    mode = "surface",
     appCfg = {
