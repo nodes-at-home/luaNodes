@@ -1,0 +1,1 @@
+nodemcu-tool.cmd upload mqttNode.lc
