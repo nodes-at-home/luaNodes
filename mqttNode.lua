@@ -183,7 +183,7 @@ local function wifiLoop ()
                         print ( "[MQTT] send voltage" );
                         client:publish ( nodeConfig.topic .. "/value/voltage", util.createJsonValueMessage ( adc.readvdd33 (), "mV" ), 0, nodeConfig.retain, -- qos, retain
                             function ( client )
-                                appNode.connect ( client, nodeConfig.topic );
+                                -- appNode.connect ( client, nodeConfig.topic );
                                 -- subscribe to all topics based on base topic of the node
                                 local topic = nodeConfig.topic .. "/+";
                                 print ( "[MQTT] subscribe to topic=" .. topic );
@@ -197,6 +197,7 @@ local function wifiLoop ()
                                                 local topic = "nodes@home/config/" .. node.chipid () .. "/state";
                                                 client:publish ( topic, str, 0, 1, -- ..., qos, retain
                                                     function ( client )
+                                                        appNode.connect ( client, nodeConfig.topic );
                                                     end
                                                 );
                                             end
