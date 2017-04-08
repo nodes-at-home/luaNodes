@@ -171,7 +171,11 @@ local function offline ( client )
     
 end
 
-local function message ( client, topic, payload )
+function M.offline ( client )
+    -- noop
+end
+
+function M.message ( client, topic, payload )
 
     print ( "[APP] message: topic=" .. topic .. " ,payload=", payload );
 
