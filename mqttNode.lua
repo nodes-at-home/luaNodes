@@ -183,21 +183,31 @@ local function wifiLoop ()
                         print ( "[MQTT] send voltage" );
                         client:publish ( nodeConfig.topic .. "/value/voltage", util.createJsonValueMessage ( adc.readvdd33 (), "mV" ), 0, nodeConfig.retain, -- qos, retain
                             function ( client )
-                                -- appNode.connect ( client, nodeConfig.topic );
-                                -- subscribe to all topics based on base topic of the node
-                                local topic = nodeConfig.topic .. "/+";
-                                print ( "[MQTT] subscribe to topic=" .. topic );
-                                client:subscribe ( topic, 0, -- ..., qos
+                                local topic = "nodes@home/config/" .. node.chipid ();
+                                print ( "[MQTT] send config app " ..  nodeConfig.app .. " to " .. topic );
+                                client:publish ( topic, nodeConfig.app, 0, 1, -- ..., qos, retain
                                     function ( client )
-                                        local topic = nodeConfig.topic .. "/service/+";
-                                        print ( "[MQTT] subscribe to topic=" .. topic );
-                                        client:subscribe ( topic, 0, -- ..., qos
+                                        local str = cjson.encode ( nodeConfig );
+                                        local topic = "nodes@home/config/" .. node.chipid () .. "/state";
+                                        print ( "[MQTT] send config to " .. topic .. str );
+                                        client:publish ( topic, str, 0, 1, -- ..., qos, retain
                                             function ( client )
-                                                local str = cjson.encode ( nodeConfig );
-                                                local topic = "nodes@home/config/" .. node.chipid () .. "/state";
-                                                client:publish ( topic, str, 0, 1, -- ..., qos, retain
+                                                if ( appNode.start ) then 
+                                                    appNode.start ( client, nodeConfig.topic ); 
+                                                end
+                                                -- subscribe to service topics
+                                                local topic = nodeConfig.topic .. "/service/+";
+                                                print ( "[MQTT] subscribe to topic=" .. topic );
+                                                client:subscribe ( topic, 0, -- ..., qos
                                                     function ( client )
-                                                        appNode.connect ( client, nodeConfig.topic );
+                                                        -- subscribe to all topics based on base topic of the node
+                                                        local topic = nodeConfig.topic .. "/+";
+                                                        print ( "[MQTT] subscribe to topic=" .. topic );
+                                                        client:subscribe ( topic, 0, -- ..., qos
+                                                            function ( client )
+                                                                appNode.connect ( client, nodeConfig.topic );
+                                                            end
+                                                        );
                                                     end
                                                 );
                                             end
@@ -228,6 +238,7 @@ local function noop () return false; end
 local function initAppNode ( app )
 
     if ( app.version == nil ) then app.version = "undefined"; end
+    if ( app.start == nil ) then app.start = noop; end
     if ( app.connect == nil ) then app.connect = noop; end
     if ( app.offline == nil ) then app.offline = noop; end
     if ( app.message == nil ) then app.message = noop; end
