@@ -77,7 +77,7 @@ function M.init ()
     result.topic = "nodes@home/" .. result.class .. "/" .. result.type .. "/" .. result.location;
     result.version = VERSION .. " (" .. result.app .. ")";
     result.retain = 1; -- 0: no retain
-    result.keepAliveTime = 5 * 60;
+    result.keepAliveTime = 5 * 60; -- in seconds
     
     -- wifi
     if ( not result.mode ) then result.mode = "prod"; end
