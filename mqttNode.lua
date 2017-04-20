@@ -39,9 +39,9 @@ local function wifiLoop ()
         -- tmr.stop ( TIMER_WIFI_LOOP );
 
         print ( "[WIFI] dnsname=" .. wifi.sta.gethostname () );
-        print ( "[WIFI] network=" .. wifi.sta.getip () );
+        print ( "[WIFI] network=" .. (wifi.sta.getip () and wifi.sta.getip () or "NO_IP") );
         print ( "[WIFI] mac=" .. wifi.sta.getmac () );
-    
+        
         -- Setup MQTT client and events
         if ( mqttClient == nil ) then
             local mqttClientName = wifi.sta.gethostname () .. "-" .. nodeConfig.class .. "-" .. nodeConfig.type .. "-" .. nodeConfig.location;
@@ -137,7 +137,7 @@ local function wifiLoop ()
                                 );
                             end
                         );
-                    elseif ( topic == "nodes@home/config/" .. node.chipid () ) then
+                    elseif ( topic == "nodes@home/config/" .. node.chipid () .. "/json" ) then
                         print ( "[CONFIG] topic=" .. topic .. " payload=" .. payload );
                         local json = cjson.decode ( payload );
                         if ( json.chipid == node.chipid () ) then
@@ -185,7 +185,7 @@ local function wifiLoop ()
                             function ( client )
                                 local topic = "nodes@home/config/" .. node.chipid ();
                                 print ( "[MQTT] send config app " ..  nodeConfig.app .. " to " .. topic );
-                                client:publish ( topic, nodeConfig.app, 0, 1, -- ..., qos, retain
+                                client:publish ( topic, nodeConfig.app .. "@" .. nodeConfig.location, 0, 1, -- ..., qos, retain
                                     function ( client )
                                         local str = cjson.encode ( nodeConfig );
                                         local topic = "nodes@home/config/" .. node.chipid () .. "/state";
