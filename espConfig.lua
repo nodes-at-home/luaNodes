@@ -67,7 +67,10 @@ function M.init ()
     if ( file.open ( fileName, "r" ) ) then
         print ( "[CONFIG] open config file: " .. fileName );
         local jsonStr = file.read ();
-        result = cjson.decode ( jsonStr );
+        if ( jsonStr ) then
+            result = cjson.decode ( jsonStr );
+        end
+        file.close ();
     end
     
     -- inject chipid
