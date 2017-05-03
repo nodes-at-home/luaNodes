@@ -96,7 +96,10 @@ local function publishValues ( client, baseTopic, temperature, humidity, pressur
         );
     else
         print ( "[APP] nothing published" );
-        client:publish ( baseTopic .. "/value/error", "nothing published t=" .. temperature .." h=" .. humidity .." p=" .. pressure, 0, nodeConfig.retain, -- qos, retain
+        local t = temperature and temperature or "--";
+        local h = humidity and humidity or "--";
+        local p = pressure and pressure or "--"
+        client:publish ( baseTopic .. "/value/error", "nothing published t=" .. t .." h=" .. h .." p=" .. p, 0, nodeConfig.retain, -- qos, retain
             function ( client )
                 goDeepSleep ( client );
             end
