@@ -1,12 +1,13 @@
 {
-    "chipid": "2677460",
-    "app": "noNode",
-    "class": "nonode",
-    "type": "test",
-    "location": "anywhere",
+    "chipid": 1495931,
+    "app": "tempNode",
+    "class": "sensor",
+    "type": "DHT11",
+    "location": "test",
     "appCfg": {
         "useOfflineCallback": false,
-        "timeBetweenSensorReadings": 60000
+        "timeBetweenSensorReadings": 900000,
+        "dhtPin": 4
     },
     "timer": {
         "deepSleep": 3,
@@ -22,7 +23,7 @@
     "wifi": {
         "gateway": "192.168.2.1",
         "netmask": "255.255.255.0",
-        "ip": "192.168.2.90"
+        "ip": "192.168.2.23"
     },
     "_mqttBroker": "192.168.137.1",
     "_mode": "surface"
