@@ -37,8 +37,7 @@ local function goDeepSleep ( client )
                 client:close ();
                 local timeBetweenSensorReadings = nodeConfig.appCfg.timeBetweenSensorReadings;
                 print ( "[APP] Going to deep sleep for ".. timeBetweenSensorReadings/1000 .." seconds" );
-                node.dsleep ( (timeBetweenSensorReadings - deepSleepDelay) * 1000 ); -- us
-                -- node.dsleep ( (90 - 60) * 1000 * 1000 );
+                node.dsleep ( (timeBetweenSensorReadings - deepSleepDelay) * 1000, 1 ); -- us, RF_CAL after deep sleep
             end
         );
     else
@@ -168,7 +167,7 @@ local function offline ( client )
 
     local timeBetweenSensorReadings = nodeConfig.appCfg.timeBetweenSensorReadings;
     print ( "[APP] Going to deep sleep for ".. timeBetweenSensorReadings/1000 .." seconds" );
-    node.dsleep ( timeBetweenSensorReadings * 1000 ); -- us
+    node.dsleep ( timeBetweenSensorReadings * 1000, 1 ); -- us, RF_CAL after deep sleep
     
     return false; -- dont restart mqtt connection
     

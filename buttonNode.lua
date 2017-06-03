@@ -34,9 +34,8 @@ local function goDeepSleep ( client, baseTopic )
                     function ( client )
                         print ( "[APP] closing connection" );
                         client:close ();
-                        print ( "[APP] Going to deep sleep for ".. nodeConfig.timer.deepSleepDelay/1000 .." seconds" );
-                        node.dsleep ( nodeConfig.timer.deepSleepDelay * 1000 ); -- us
-                        -- node.dsleep ( (90 - 60) * 1000 * 1000 );
+                        print ( "[APP] Going to deep sleep forever" );
+                        node.dsleep ( 0, 2 ); -- sleep forever, no RF_CAL
                     end
                 );
             end
@@ -71,8 +70,8 @@ local function offline ( client )
 
     print ( "[APP] offline" );
 
-    print ( "[APP] initiate alarm for closing connection in " ..  timer.deepSleepDelay/1000 .. " seconds" );
-    node.dsleep ( timer.deepSleepDelay * 1000 ); -- us, we are go sleeping "foreever"
+    print ( "[APP] Going to deep sleep forever" );
+    node.dsleep ( 0, 2 ); -- sleep forever, no RF_CAL
     
     return false; -- dont restart mqtt connection
     
