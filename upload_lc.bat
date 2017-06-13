@@ -1,1 +1,1 @@
-nodemcu-tool.cmd upload mqttNode.lc
+nodemcu-tool.cmd upload mqttNode.lc ds18b20.lc

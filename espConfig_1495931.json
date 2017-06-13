@@ -1,24 +1,24 @@
 {
     "chipid": 1495931,
-    "app": "tempNode",
+    "app": "poolNode",
     "class": "sensor",
-    "type": "DHT11",
-    "location": "test",
+    "type": "ds18b20",
+    "location": "pool",
     "appCfg": {
         "useOfflineCallback": false,
         "timeBetweenSensorReadings": 900000,
-        "dhtPin": 4
+        "dsPin": 3
     },
     "timer": {
-        "deepSleep": 3,
-        "startupDelay1": 2000,
         "startup": 0,
+        "startupDelay1": 2000,
+        "startupDelay2": 5000,
+        "wifiLoop": 1,
         "wifiLoopPeriod": 1000,
         "periodic": 2,
-        "startupDelay2": 5000,
-        "deepSleepDelay": 60000,
         "periodicPeriod": 900000,
-        "wifiLoop": 1
+        "deepSleep": 3,
+        "deepSleepDelay": 60000
     },
     "wifi": {
         "gateway": "192.168.2.1",
