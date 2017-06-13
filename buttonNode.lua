@@ -35,7 +35,7 @@ local function goDeepSleep ( client, baseTopic )
                         print ( "[APP] closing connection" );
                         client:close ();
                         print ( "[APP] Going to deep sleep forever" );
-                        node.dsleep ( 0, 2 ); -- sleep forever, no RF_CAL
+                        node.dsleep ( 0, 1 ); -- sleep forever, with RF_CAL
                     end
                 );
             end
