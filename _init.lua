@@ -20,9 +20,20 @@
 local rawcode, bootreason = node.bootreason ();
 print ( "[INIT] boot: rawcode=" .. rawcode .. " ,reason=" .. bootreason );
 
+local NO_BOOT_FILE = "no_boot";
+
 if ( bootreason == 1 or bootreason == 2 or bootreason == 3 ) then
-    print ( "[INIT] booting after error; NO STARTUP" );
-    return;
+    if ( file.exists ( NO_BOOT_FILE ) ) then
+        print ( "[INIT] booting after error; NO STARTUP" );
+        return;
+    else
+        file.open ( NO_BOOT_FILE, "w" );
+        file.close ();
+    end
+else
+    if ( file.exists ( NO_BOOT_FILE ) ) then 
+        file.remove ( NO_BOOT_FILE ); 
+    end
 end
 
 require ( "startup" ).init ();
