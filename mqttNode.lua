@@ -161,7 +161,7 @@ local function wifiLoop ()
                 local restartMqtt = appNode.offline ( client );
                 if ( restartMqtt ) then
                     print ( "[MQTT] restart connection" );
-                    tmr.alarm ( nodeConfig.timer.wifiLoop, nodeConfig.timer.wifiLoopPeriod, tmr.ALARM_AUTO, function () wifiLoop() end ) -- timer_id, interval_ms, mode
+                    tmr.alarm ( nodeConfig.timer.wifiLoop, nodeConfig.timer.wifiLoopPeriod, tmr.ALARM_AUTO, wifiLoop ) -- timer_id, interval_ms, mode
                 end
             end
         );
@@ -261,7 +261,7 @@ function M.start ( app )
     end
     
     -- loop to wait up to connected to wifi
-    tmr.alarm ( nodeConfig.timer.wifiLoop, nodeConfig.timer.wifiLoopPeriod, tmr.ALARM_AUTO, function () wifiLoop() end ); -- timer_id, interval_ms, mode
+    tmr.alarm ( nodeConfig.timer.wifiLoop, nodeConfig.timer.wifiLoopPeriod, tmr.ALARM_AUTO, wifiLoop ); -- timer_id, interval_ms, mode
     if ( nodeConfig.timer.periodic ) then
         tmr.alarm ( nodeConfig.timer.periodic, nodeConfig.timer.periodicPeriod, tmr.ALARM_AUTO, -- timer_id, interval_ms, mode
             function () 
