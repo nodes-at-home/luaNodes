@@ -8,6 +8,7 @@ httpDL.lua ^
 ledNode.lua ^
 mqttNode.lua ^
 noNode.lua ^
+oledNode.lua ^
 poolNode.lua ^
 relayNode.lua ^
 rfNode.lua ^
