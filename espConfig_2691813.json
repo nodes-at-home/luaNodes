@@ -6,7 +6,7 @@
     "location": "pool",
     "appCfg": {
         "useOfflineCallback": false,
-        "timeBetweenSensorReadings": 300000,
+        "timeBetweenSensorReadings": 900000,
         "dsPin": 3
     },
     "timer": {
