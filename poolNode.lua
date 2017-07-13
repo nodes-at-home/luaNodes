@@ -16,10 +16,10 @@ require  ( "util" );
 -------------------------------------------------------------------------------
 --  Settings
 
-
-
 ----------------------------------------------------------------------------------------
 -- private
+
+local restartConnection = true;
 
 --------------------------------------------------------------------
 -- public
@@ -28,6 +28,7 @@ require  ( "util" );
 local function goDeepSleep ( client )
 
     if ( not nodeConfig.appCfg.useOfflineCallback ) then
+        restartConnection = false;
         local deepSleepDelay = nodeConfig.timer.deepSleepDelay;
         print ( "[APP] initiate alarm for closing connection in " ..  deepSleepDelay/1000 .. " seconds" );
         -- wait a minute with closing connection
@@ -105,12 +106,16 @@ local function offline ( client )
     print ( "[APP] Going to deep sleep for ".. timeBetweenSensorReadings/1000 .." seconds" );
     node.dsleep ( timeBetweenSensorReadings * 1000, 1 ); -- us, RF_CAL after deep sleep
     
-    return false; -- dont restart mqtt connection
+    return restartConnection; -- restart mqtt connection
     
 end
 
 function M.offline ( client )
-    -- noop
+
+    print ( "[APP] offline (local)" );
+
+    return restartConnection; 
+
 end
 
 function M.message ( client, topic, payload )

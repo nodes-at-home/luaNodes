@@ -17,6 +17,8 @@ _G [moduleName] = M;
 ----------------------------------------------------------------------------------------
 -- private
 
+local restartConnection = true;
+
 --------------------------------------------------------------------
 -- public
 -- mqtt callbacks
@@ -24,6 +26,7 @@ _G [moduleName] = M;
 local function goDeepSleep ( client, baseTopic )
 
     if ( not useOfflineCallback ) then
+        restartConnection = false;
         print ( "[APP] initiate alarm for closing connection in " ..  nodeConfig.timer.deepSleepDelay/1000 .. " seconds" );
         -- wait a minute with closing connection
         tmr.alarm ( nodeConfig.timer.deepSleep, nodeConfig.timer.deepSleepDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
@@ -71,10 +74,18 @@ local function offline ( client )
     print ( "[APP] offline" );
 
     print ( "[APP] Going to deep sleep forever" );
-    node.dsleep ( 0, 2 ); -- sleep forever, no RF_CAL
+    node.dsleep ( 0, 1 ); -- sleep forever, with RF_CAL
     
-    return false; -- dont restart mqtt connection
+    return restartConnection; -- dont restart mqtt connection
     
+end
+
+function M.offline ( client )
+
+    print ( "[APP] offline (local)" );
+
+    return restartConnection; 
+
 end
 
 local function message ( client, topic, payload )
