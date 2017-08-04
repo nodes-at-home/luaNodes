@@ -92,6 +92,7 @@ function M.init ()
     if ( not result.trace ) then result.trace = {}; end
     if ( not result.trace.ip ) then result.trace.ip = PROD_TRACE_SERVER_IP; end
     if ( not result.trace.port ) then result.trace.port = PROD_TRACE_SERVER_PORT; end
+    if ( not result.trace.onUpdate ) then result.trace.onUpdate = true; end
     
     package.loaded [moduleName] = nil;
     

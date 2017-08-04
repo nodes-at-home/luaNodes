@@ -75,6 +75,11 @@ local function wifiLoop ()
 
         -- Stop the loop
         tmr.stop ( TIMER_WIFI_LOOP );
+        
+        -- trace on
+        if ( nodeConfig.trace.onUpdate ) then
+            require ( "trace" ).on ();
+        end
 
         if ( file.open ( updateUrlFile ) ) then
         
@@ -86,7 +91,7 @@ local function wifiLoop ()
             require ( "httpDL" );
             
             httpDL.download ( host, port, path .. "/" .. updateListFile, updateListFile,
-                function ()
+                function ( response ) -- "ok" or http response code
                     if ( file.open ( updateListFile ) ) then
                         print ( "[UPDATE] open file " .. updateListFile );
                         local line = file.readline ();
@@ -110,7 +115,11 @@ local function wifiLoop ()
                         node.task.post ( 
                             function () 
                                 compileAndRename (); 
-                                node.restart (); 
+                                if ( trace ) then 
+                                    trace.off ( node.restart ); 
+                                else
+                                    node.restart ();
+                                end
                             end 
                         );
                     end
@@ -155,7 +164,11 @@ function updateFile ()
                     node.task.post ( 
                         function () 
                             compileAndRename (); 
-                            node.restart (); 
+                            if ( trace ) then 
+                                trace.off ( node.restart ); 
+                            else
+                                node.restart ();
+                            end
                         end 
                     );
                  end

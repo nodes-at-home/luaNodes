@@ -19,8 +19,6 @@ require ( "util" );
 appNode = nil;    -- application callbacks
 mqttClient = nil;     -- mqtt client
 
-traceSocket = nil;
-
 ----------------------------------------------------------------------------------------
 -- private
 
@@ -85,42 +83,21 @@ local function wifiLoop ()
                                 file.close ();
                                 if ( success ) then
                                     print ( "[UPDATE] restart for second step" );
-                                    node.restart ();
+                                    if ( trace ) then 
+                                        print ( "[UPDATE] ... wait ..." );
+                                        trace.off ( node.restart ); 
+                                    else
+                                        node.restart ();
+                                    end
                                 end
                             end
                         end
                     elseif ( topic == nodeConfig.topic .. "/service/trace" ) then
-                        if ( payload == "ON" ) then
-                            if ( traceSocket == nil ) then
-                                print ( traceSocket );
-                                traceSocket = net.createConnection ( net.TCP, 0 ); -- no secure
-                                print ( "[TRACE] connecting to " .. nodeConfig.trace.ip .. ":" .. nodeConfig.trace.port );
-                                traceSocket:connect ( nodeConfig.trace.port, nodeConfig.trace.ip );
-                                traceSocket:on ( "connection", 
-                                    function ( socket, errorCode )
-                                        socket:send ( node.chipid () .. "#***" .. node.chipid () .. " is tracing ***\n"  );
-                                        -- redirect
-                                        node.output ( 
-                                            function ( s )
-                                                socket:send ( node.chipid () .. "#" .. s .. "\n" );
-                                            end,
-                                            1               -- additional serial out  
-                                        ); 
-                                    end 
-                                );
-                                traceSocket:on ( "disconnection",
-                                    function ( socket, errCode )
-                                        traceSocket = nil;
-                                        node.output ( nil );
-                                    end
-                                );
-                            end  
-                        else
-                            if ( traceSocket ) then
-                                traceSocket:send ( node.chipid () .. "#***" .. node.chipid () .. "tracing ENDS ***\n"  );
-                                traceSocket:close ();
-                                traceSocket = nil;
-                            end
+                        require ( "trace" );
+                        if ( payload == "ON" ) then 
+                            trace.on ();
+                        else 
+                            trace.off ();
                         end
                     elseif ( topic == nodeConfig.topic .. "/service/config" ) then
                         print ( "[CONFIG] topic=" .. topic .. " payload=" .. payload );
@@ -145,7 +122,11 @@ local function wifiLoop ()
                             if ( file.open ( "espConfig_local.json", "w" ) ) then
                                 file.write ( payload );
                                 print ( "[CONFIG] restarting after config save")
-                                node.restart ();
+                                if ( trace ) then 
+                                    trace.off ( node.restart ); 
+                                else
+                                    node.restart ();
+                                end
                             end
                         end
                     else
@@ -262,6 +243,7 @@ function M.start ( app )
     
     -- loop to wait up to connected to wifi
     tmr.alarm ( nodeConfig.timer.wifiLoop, nodeConfig.timer.wifiLoopPeriod, tmr.ALARM_AUTO, wifiLoop ); -- timer_id, interval_ms, mode
+    
     if ( nodeConfig.timer.periodic ) then
         tmr.alarm ( nodeConfig.timer.periodic, nodeConfig.timer.periodicPeriod, tmr.ALARM_AUTO, -- timer_id, interval_ms, mode
             function () 
