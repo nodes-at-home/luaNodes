@@ -21,7 +21,7 @@ require ( "wifi" );
 -- wifi.PHYMODE_B 802.11b, More range, Low Transfer rate, More current draw
 -- wifi.PHYMODE_G 802.11g, Medium range, Medium transfer rate, Medium current draw
 -- wifi.PHYMODE_N 802.11n, Least range, Fast transfer rate, Least current draw 
-local WIFI_SIGNAL_MODE = wifi.PHYMODE_N;
+WIFI_SIGNAL_MODE = wifi.PHYMODE_N;
 
 --------------------------------------------------------------------
 -- private
