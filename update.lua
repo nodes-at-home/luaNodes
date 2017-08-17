@@ -1,25 +1,22 @@
 --------------------------------------------------------------------
 --
--- nodes@home/luaNodes/update
+-- nodes@home/luaNodes/update2
 -- author: andreas at jungierek dot de
 -- LICENSE http://opensource.org/licenses/MIT
 --
 --------------------------------------------------------------------
--- junand 19.10.2016
+-- junand 12.08.2017
 
 ----
 -- (1) write marker file that we are in update proress, the content is the url
 -- (2) restart
 ---
 -- (3) read marker file
--- (4) get list of files
+-- (4) get list of files (json)
 -- (5) get each new file with prefixed name "ota_"
--- (6) compile each file
--- (6a) break the update process, when compile failed
--- (7) remove all ".lc" files
--- (8) rename all old ".lua" files with prefix "old_"
--- (9) rename all new ".lua" and ".lc" files by remmoving prefix
--- (10) remove marker file
+-- (8) rename all old files (*.lua and *.lc) with prefix "old_"
+-- (9) rename all new files by remmoving prefix "ota_"
+-- (10) rename marker file as old
 -- (11) restart
 ---
 
@@ -30,14 +27,18 @@ _G [moduleName] = M;
 -------------------------------------------------------------------------------
 --  Settings
 
-local updateUrlFile = "update.url";
-local updateListFile = "update.list";
-local updateList = {};
-local updateListIndex = 1;
+local updateUrlFilename = "update.url";
+local updateJsonFilename = "update_files.json"
+local updateFilesList;
+local updateFilesListIndex = 1;
+local updateTag = "unknown";
+
 local url;
 local host;
 local port;
 local path;
+
+local wifiLoopTimer;
 
 local TIMER_WIFI_LOOP = 1;
 local TIMER_WIFI_PERIOD = 1; -- sec
@@ -46,27 +47,51 @@ local OLD_PREFIX = "old_";
 local OTA_PREFIX = "ota_";
 local LUA_POSTFIX = ".lua";
 local LC_POSTFIX = ".lc";
+local JSON_POSTFIX = ".json";
 
 ----------------------------------------------------------------------------------------
 -- private
 
 local function splitUrl ( url )
 
-    -- http://<host>:<port>/<path>
-    local urlSchemaStart = url:find ( "http://" );
-    local urlHostStart = urlSchemaStart and 8 or 1;
-    local urlPathStart = url:find ( "/", urlHostStart );
-    local urlPortStart = url:sub ( urlHostStart, urlPathStart - 1 ):find ( ":" );
-    if ( urlPortStart ) then
-        urlPortStart = urlPortStart + urlHostStart;
-    end 
+    if ( url ) then
+
+        -- http://<host>:<port>/<path>
+        local urlSchemaStart = url:find ( "http://" );
+        
+        local urlHostStart = urlSchemaStart and 8 or 1;
+        local urlPathStart = url:find ( "/", urlHostStart );
+        if ( urlPathStart ) then
+        
+            local urlPortStart = url:sub ( urlHostStart, urlPathStart - 1 ):find ( ":" );
+            if ( urlPortStart ) then
+                urlPortStart = urlPortStart + urlHostStart;
+            end 
+            
+            local urlPort = urlPortStart and url:sub ( urlPortStart, urlPathStart - 1 ) or 80;
+            local urlHost = url:sub ( urlHostStart, urlPortStart and urlPortStart - 2 or urlPathStart - 1 );
+            local urlPath = url:sub ( urlPathStart );
+            
+            if ( #urlHost > 0 ) then
+                return urlHost, urlPort, urlPath;
+            end
+            
+        end
+        
+    end
     
-    local urlPort = urlPortStart and url:sub ( urlPortStart, urlPathStart - 1 ) or 80;
-    local urlHost = url:sub ( urlHostStart, urlPortStart and urlPortStart - 2 or urlPathStart - 1 );
-    local urlPath = url:sub ( urlPathStart );
-    
-    return urlHost, urlPort, urlPath;
-    
+    return nil;
+        
+end
+
+local function restart ()
+
+    if ( trace ) then 
+        trace.off ( node.restart ); 
+    else
+        node.restart ();
+    end
+
 end
 
 local function wifiLoop ()
@@ -74,59 +99,76 @@ local function wifiLoop ()
     if ( wifi.sta.status () == wifi.STA_GOTIP ) then
 
         -- Stop the loop
-        tmr.stop ( TIMER_WIFI_LOOP );
+        wifiLoopTimer:stop ();
         
         -- trace on
         if ( nodeConfig.trace.onUpdate ) then
             require ( "trace" ).on ();
         end
 
-        if ( file.open ( updateUrlFile ) ) then
+        if ( file.open ( updateUrlFilename ) ) then
         
             url = file.readline ();
             file.close ();
             host, port, path = splitUrl ( url );
             print ( "[UPDATE] url=" .. url .. " ,host=" .. host .. " ,port=" .. port .. " ,path=" .. path );
             
-            require ( "httpDL" );
+            if ( host and port and path ) then
             
-            httpDL.download ( host, port, path .. "/" .. updateListFile, updateListFile,
-                function ( response ) -- "ok" or http response code
-                    if ( file.open ( updateListFile ) ) then
-                        print ( "[UPDATE] open file " .. updateListFile );
-                        local line = file.readline ();
-                        while ( line ) do
-                            line = line:gsub ( "[\n\r]+", "" );
-                            if ( line ~= "" ) then
-                                table.insert ( updateList, line );
-                            end
-                            line = file.readline ();
-                        end
-                    end
-                    file.close ();
-                    -- start task for update
-                    if ( #updateList > 0 ) then -- update
-                        updateListIndex = 1;
-                        collectgarbage ();
-                        print ( "[UPDATE] start update task chain" );
-                        node.task.post ( function () updateFile () end ); -- updates only the next file
-                    else -- close update
-                        print ( "[UPDATE] NO update files -> FINISH" );
-                        node.task.post ( 
-                            function () 
-                                compileAndRename (); 
-                                if ( trace ) then 
-                                    trace.off ( node.restart ); 
-                                else
-                                    node.restart ();
+                print ( "[UPDATE] downloading file list" );
+            
+                require ( "httpDL" );
+                httpDL.download ( host, port, path .. "/" .. updateJsonFilename, updateJsonFilename,
+                
+                    function ( response ) -- "ok" or http response code
+                    
+                        if ( file.open ( updateJsonFilename ) ) then
+                        
+                            print ( "[UPDATE] open file " .. updateJsonFilename );
+                            local payload = file.read ();
+                            local json;
+                            if ( pcall ( function () json = cjson.decode ( payload ) end  ) ) then
+
+                                updateFilesList = json.files;
+                                updateTag = json.tag;
+                                print ( "[UPDATE] json.files=" .. tostring ( json.files ) .." json.tag=" .. tostring ( json.tag ) );
+
+                                -- start task for update
+                                if ( updateFilesList and #updateFilesList > 0 ) then -- update
+                                    updateFilesListIndex = 1;
+                                    collectgarbage ();
+                                    print ( "[UPDATE] start update task chain" );
+                                    node.task.post ( updateFile ); -- updates only the next file
+                                else -- close update
+                                    print ( "[UPDATE] NO update files -> FINISH" );
+                                    finishUpdate ();
+                                    node.task.post ( restart ); 
                                 end
-                            end 
-                        );
+                            else
+                                updateFailure ( "json decode failed" );
+                                node.task.post ( restart ); 
+                            end
+                            
+                        else
+                        
+                            updateFailure ( "file " .. updateJsonFilename .. " not opened" );
+                            node.task.post ( restart ); 
+                            
+                        end
+                        file.close ();
+                        
                     end
-                end
-            );
+                    
+                );
+                return; -- control flow is in callback of httpDL
+                
+            end
             
         end
+
+        print ( "[UPDATE] nothing happens, restart")        
+        finishUpdate ();
+        node.task.post ( restart ); 
 
     else
         print ( "[WIFI] Connecting..." );
@@ -136,7 +178,7 @@ end
 
 function updateFile ()
 
-    local fileName = updateList [updateListIndex];
+    local fileName = updateFilesList [updateFilesListIndex].name;
     local pos = fileName:find ( "%." ); -- we mean the char '.'
     local otaFileName = OTA_PREFIX .. fileName;
     if ( not pos ) then 
@@ -145,56 +187,63 @@ function updateFile ()
     end
     local fileUrl = path .. "/" .. fileName;
     
-    print ( "[UPDATE] i=" .. updateListIndex .. " ,fileName=" .. fileName .. " ,url=" .. fileUrl );
+    print ( "[UPDATE] i=" .. updateFilesListIndex .. " ,fileName=" .. fileName .. " ,url=" .. fileUrl );
 
     require ( "httpDL" );
-        
     httpDL.download ( host, port, fileUrl, otaFileName,
         function ( rc )
             if ( rc == "ok" ) then
-                if ( updateListIndex < #updateList ) then
-                    updateListIndex = updateListIndex + 1;
-                    print ( "[UPDATE] updating no=" .. updateListIndex );
-                    node.task.post ( 
-                        function () 
-                            updateFile (); -- updates only the next file
-                        end 
-                    );
-                 else
-                    node.task.post ( 
-                        function () 
-                            compileAndRename (); 
-                            if ( trace ) then 
-                                trace.off ( node.restart ); 
-                            else
-                                node.restart ();
-                            end
-                        end 
-                    );
-                 end
+                -- TODO  check for file size
+                local fileAttributes = file.stat ( otaFileName );
+                if ( fileAttributes ) then
+                    -- check file size
+                    if ( updateFilesList [updateFilesListIndex].size == fileAttributes.size ) then
+                        -- all fine
+                        if ( updateFilesListIndex < #updateFilesList ) then
+                            updateFilesListIndex = updateFilesListIndex + 1;
+                            print ( "[UPDATE] updating index=" .. updateFilesListIndex );
+                            node.task.post ( updateFile ); -- updates only the next file
+                            return; -- don't restart
+                        else
+                            finishUpdate ();
+                            -- restart
+                        end
+                    else
+                        updateFailure ( "size is different requested=" .. updateFilesList [updateFilesListIndex].size .. " got=" .. fileAttributes.size );
+                        -- restart
+                    end
+                else
+                    updateFailure ( "no file attributes for " .. otaFileName );
+                    -- restart
+                end
+            else
+                updateFailure ( "http return code " .. rc .. " is not ok" );
+                -- restart
             end
+            node.task.post ( restart ); 
         end
     );
     
 end
 
-function compileAndRename ()
+function updateFailure ( message )
 
-    print ( "[UPDATE] compileAndRename: heap=" .. node.heap () );
+    print ( "[UPDATE] updateFailure: msg=" .. message .. " heap=" .. node.heap () );
     
-    -- TODO activate compile
-
---    collectgarbage ();
---
---    for i, fileName in ipairs ( updateList ) do
---        print ( "[UPDATE] compile", fileName, "heap=", node.heap () );
---        node.compile ( OTA_PREFIX .. fileName .. LUA_POSTFIX );
---        print ( "[UPDATE] after compile heap=", node.heap () );
---        collectgarbage ();
---    end
+    file.remove ( updateUrlFilename );
+    file.remove ( updateJsonFilename );
     
-    for i, fileName in ipairs ( updateList ) do
+    -- TODO remove all ota_ files
 
+end
+
+function finishUpdate ()
+
+    print ( "[UPDATE] finishUpdate: heap=" .. node.heap () );
+    
+    for i, updateFile in ipairs ( updateFilesList ) do
+    
+        local fileName = updateFile.name;
         print ( "[UPDATE] rename " .. fileName );
         
         local pos = fileName:find ( "%." );
@@ -232,23 +281,27 @@ function compileAndRename ()
         
         if ( not file.rename ( otaUpdateFileName, updateFileName  ) ) then
             print ( "[UPDATE] ERROR renaming" .. otaUpdateFileName );
+            -- TODO
         end
         if ( otaLcFileName and file.exists ( otaLcFileName ) and not file.rename ( otaLcFileName, lcFileName  ) ) then
             print ( "[UPDATE] ERROR renaming" .. otaLcFileName );
+            -- TODO
         end
         
     end
     
-    print ( "[UPDATE] restarting" );
-    
-    file.remove ( OLD_PREFIX .. updateUrlFile );
-    file.remove ( OLD_PREFIX .. updateListFile );
-
-    if ( not file.rename ( updateUrlFile, OLD_PREFIX .. updateUrlFile  ) ) then
-        print ( "[UPDATE] ERROR renaming" .. updateUrlFile );
+    print ( "[UPDATE] renaming " .. updateUrlFilename );
+    file.remove ( OLD_PREFIX .. updateUrlFilename );
+    if ( not file.rename ( updateUrlFilename, OLD_PREFIX .. updateUrlFilename  ) ) then
+        print ( "[UPDATE] ERROR renaming" .. updateUrlFilename );
+        -- TODO
     end
-    if ( not file.rename ( updateListFile, OLD_PREFIX .. updateListFile  ) ) then
-        print ( "[UPDATE] ERROR renaming" .. updateListFile );
+
+    print ( "[UPDATE] renaming " .. updateJsonFilename );
+    file.remove ( OLD_PREFIX .. updateJsonFilename );
+    if ( not file.rename ( updateJsonFilename, OLD_PREFIX .. updateJsonFilename  ) ) then
+        print ( "[UPDATE] ERROR renaming" .. updateJsonFilename );
+        -- TODO
     end
     
 end
@@ -260,7 +313,8 @@ function M.update ()
 
     print ( "[UPDATE] second stage of update" );
     
-    tmr.alarm ( TIMER_WIFI_LOOP, TIMER_WIFI_PERIOD * 1000, tmr.ALARM_AUTO, function () wifiLoop() end ); -- timer_id, interval_ms, mode
+    wifiLoopTimer = tmr.create ();
+    wifiLoopTimer:alarm ( TIMER_WIFI_PERIOD * 1000, tmr.ALARM_AUTO, wifiLoop ); -- timer_id, interval_ms, mode
     
 end
 

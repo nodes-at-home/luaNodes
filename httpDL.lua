@@ -25,7 +25,8 @@ function M.download ( host, port, url, path, callback )
     
 	local conn = net.createConnection ( net.TCP, 0 );
 	
-    conn:on ( "connection", 
+    conn:on ( "connection",
+        -- request remote file 
         function ( conn )
             conn:send (
                 table.concat ( { 
@@ -42,11 +43,13 @@ function M.download ( host, port, url, path, callback )
     );
 
 	conn:on ( "receive", 
+        -- received one piece
         function ( conn, payload )
             if ( continueWrite ) then
                 file.write ( payload );
                 file.flush ();
             else
+                -- initially write file with the first piece
                 local line1 = payload:sub ( 1, payload:find ( "\r\n" ) - 1 );
                 local code = line1:match ( "(%d%d%d)" );
                 if ( code == "200" ) then
@@ -66,7 +69,8 @@ function M.download ( host, port, url, path, callback )
         end
     );
 
-	conn:on ( "disconnection", 
+	conn:on ( "disconnection",
+        -- callback function called at closing 
         function ( conn ) 
             conn = nil;
             file.close ()
