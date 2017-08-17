@@ -7,6 +7,9 @@ garageNode.lua ^
 httpDL.lua ^
 ledNode.lua ^
 mqttNode.lua ^
+mqttNodeConfig.lua ^
+mqttNodeConnect.lua ^
+mqttNodeUpdate.lua ^
 noNode.lua ^
 oledNode.lua ^
 poolNode.lua ^
@@ -15,6 +18,7 @@ rfNode.lua ^
 sonoffNode.lua ^
 startup.lua ^
 tempNode.lua ^
+trace.lua ^
 update.lua ^
 util.lua ^
 xmasNode.lua ^

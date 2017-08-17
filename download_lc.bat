@@ -1,4 +1,4 @@
-nodemcu-tool.cmd upload ^
+nodemcu-tool.cmd download ^
 buttonNode.lc ^
 credential.lc ^
 ds18b20.lc ^
