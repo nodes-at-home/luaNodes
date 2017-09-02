@@ -20,5 +20,10 @@ startup.lc ^
 tempNode.lc ^
 trace.lc ^
 update.lc ^
+updateCompletion.lc ^
+updateFailure.lc ^
+updateFiles.lc ^
+updateMqttState.lc ^
+updateWifi.lc ^
 util.lc ^
 xmasNode.lc

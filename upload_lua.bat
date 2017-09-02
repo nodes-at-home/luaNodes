@@ -20,6 +20,11 @@ startup.lua ^
 tempNode.lua ^
 trace.lua ^
 update.lua ^
+updateCompletion.lua ^
+updateFailure.lua ^
+updateFiles.lua ^
+updateMqttState.lua ^
+updateWifi.lua ^
 util.lua ^
 xmasNode.lua ^
 _init.lua

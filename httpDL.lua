@@ -45,6 +45,8 @@ function M.download ( host, port, url, path, callback )
 	conn:on ( "receive", 
         -- received one piece
         function ( conn, payload )
+            -- print ( "[HTTP] heap=" .. node.heap () );        
+            -- print ( "[HTTP] payload=" .. payload );        
             if ( continueWrite ) then
                 file.write ( payload );
                 file.flush ();
@@ -71,10 +73,14 @@ function M.download ( host, port, url, path, callback )
 
 	conn:on ( "disconnection",
         -- callback function called at closing 
-        function ( conn ) 
+        function ( conn )
+            local response = isHttpReponseOk and "ok" or httpResponseCode;
+            print ( "[HTTP] disconnection with response=" .. response );        
             conn = nil;
             file.close ()
-            callback ( isHttpReponseOk and "ok" or httpResponseCode );
+            collectgarbage ();
+            
+            callback ( response );
         end
     );
 

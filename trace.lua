@@ -34,13 +34,13 @@ function M.on ()
         
         traceSocket:on ( "connection", 
             function ( socket, errorCode )
-                socket:send ( node.chipid () .. "#***" .. node.chipid () .. " is tracing ***\n"  );
+                socket:send ( node.chipid () .. "#***" .. node.chipid () .. " is tracing ***###"  );
                 -- redirect
                 node.output ( 
                     function ( s )
                         if ( s and s ~= "\n" ) then
                             if ( socket ) then
-                                socket:send ( node.chipid () .. "#" .. s .. "\n" );
+                                socket:send ( node.chipid () .. "#" .. s .. "###" );
                             end
                         end
                     end,
@@ -51,7 +51,7 @@ function M.on ()
         
         traceSocket:on ( "disconnection",
             function ( socket, errorCode )
-                print ( "[TRACE] disconnection errorCode= " .. errorCode );
+                print ( "[TRACE] disconnection errorCode= " .. tostring ( errorCode ) );
                 traceSocket = nil;
                 node.output ( nil );
                 -- TODO reconnect here?
@@ -67,7 +67,7 @@ function M.off ( delayedCallback )
     print ( "[TRACE] off with callback " .. tostring ( delayedCallback ) );
     
     if ( traceSocket ) then
-        traceSocket:send ( node.chipid () .. "#***" .. node.chipid () .. " tracing ENDS ***\n"  );
+        traceSocket:send ( node.chipid () .. "#***" .. node.chipid () .. " tracing ENDS ***###"  );
         traceSocket:close ();
         traceSocket = nil;
         node.output ( nil );
