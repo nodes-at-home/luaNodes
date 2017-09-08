@@ -77,8 +77,16 @@ function M.init ()
     if ( result.type == "<chipid>" ) then result.type = node.chipid (); end
     
     -- node base topic
-    result.topic = "nodes@home/" .. result.class .. "/" .. result.type .. "/" .. result.location;
-    result.version = VERSION .. " (" .. result.app .. ")";
+    result.topic = table.concat ( { "nodes@home/", result.class, "/", result.type, "/", result.location } );
+    
+    -- result.version = VERSION .. " (" .. result.app .. ")";
+    local major, minor, patch = node.info ();
+    local sdk = table.concat ( { major, ".", minor, ".", patch } );
+    local app = result.app;
+    local pos = app:find ( "Node" );
+    local nodeName = pos and app:sub ( 1, pos - 1 ) or app;
+    result.version = table.concat ( { sdk, "-", nodeName, "-", VERSION } );
+
     result.retain = 1; -- 0: no retain
     result.keepAliveTime = 5 * 60; -- in seconds
     
