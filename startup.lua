@@ -99,9 +99,18 @@ function M.init ()
     credential = nil;
     collectgarbage ();
 
-    if ( adc.force_init_mode ( adc.INIT_VDD33 ) ) then
-      node.restart ();
-      return; -- don't bother continuing, the restart is scheduled
+    if ( nodeConfig.appCfg.useAdc ) then
+        if ( adc.force_init_mode ( adc.INIT_ADC ) ) then
+            print ( "[STARTUP] force_init_adc" );
+            node.restart ();
+            return; -- don't bother continuing, the restart is scheduled
+        end        
+    else
+        if ( adc.force_init_mode ( adc.INIT_VDD33 ) ) then
+            print ( "[STARTUP] force_init_vdd33" );
+            node.restart ();
+            return; -- don't bother continuing, the restart is scheduled
+        end
     end
     
     print ( "[STARTUP] version=" .. nodeConfig.version );

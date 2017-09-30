@@ -32,9 +32,14 @@ function M.connect ( client )
     print ( "[MQTT] send <" .. version .. "> to topic=" .. nodeConfig.topic );
     client:publish ( nodeConfig.topic, version, 0, nodeConfig.retain, -- ..., qos, retain
         function ( client )
-            print ( "[MQTT] send voltage" );
---                                client:publish ( nodeConfig.topic .. "/value/voltage", util.createJsonValueMessage ( adc.readvdd33 (), "mV" ), 0, nodeConfig.retain, -- qos, retain
-            client:publish ( nodeConfig.topic .. "/value/voltage", [[{"value":]] .. adc.readvdd33 () .. [[, "unit":"mV"}]], 0, nodeConfig.retain, -- qos, retain                                    
+            local voltage = -1;
+            if ( nodeConfig.appCfg.useAdc ) then
+                    voltage = adc.read ( 0 ) / 1023 * 4200; -- mV
+            else
+                voltage = adc.readvdd33 ();
+            end
+            print ( "[MQTT] send voltage=" .. voltage );
+            client:publish ( nodeConfig.topic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], 0, nodeConfig.retain, -- qos, retain                                    
             function ( client )
                     local topic = "nodes@home/config/" .. node.chipid ();
                     print ( "[MQTT] send config app " ..  nodeConfig.app .. " to " .. topic );
