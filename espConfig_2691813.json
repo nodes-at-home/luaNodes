@@ -5,6 +5,7 @@
     "type": "ds18b20",
     "location": "pool",
     "appCfg": {
+        "useAdc": true,
         "useOfflineCallback": false,
         "timeBetweenSensorReadings": 900000,
         "dsPin": 3
