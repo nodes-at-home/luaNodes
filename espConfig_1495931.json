@@ -1,13 +1,14 @@
 {
     "chipid": 1495931,
-    "app": "poolNode",
+    "app": "brewNode",
     "class": "sensor",
     "type": "ds18b20",
-    "location": "pool",
+    "location": "brewery",
     "appCfg": {
-        "useOfflineCallback": false,
-        "timeBetweenSensorReadings": 300000,
-        "dsPin": 3
+        "useAdc": true,
+        "dsPin": 3,
+        "dhtDataPin": 7,
+        "dhtPowerPin": 8
     },
     "timer": {
         "startup": 0,
@@ -16,15 +17,18 @@
         "wifiLoop": 1,
         "wifiLoopPeriod": 1000,
         "periodic": 2,
-        "periodicPeriod": 900000,
-        "deepSleep": 3,
-        "deepSleepDelay": 60000
+        "periodicPeriod": 10000
     },
     "wifi": {
         "gateway": "192.168.2.1",
         "netmask": "255.255.255.0",
         "ip": "192.168.2.23"
     },
-    "_mqttBroker": "192.168.137.1",
-    "_mode": "surface"
+    "mqttBroker": "192.168.2.117",
+    "trace": {
+        "#ip": "192.168.137.1",
+        "ip": "192.168.2.117",
+        "_ip": "192.168.2.100",
+        "port": 10001
+    }
 }

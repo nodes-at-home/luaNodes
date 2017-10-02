@@ -1,4 +1,5 @@
 nodemcu-tool.cmd upload ^
+brewNode.lua ^
 buttonNode.lua ^
 credential.lua ^
 ds18b20.lua ^
