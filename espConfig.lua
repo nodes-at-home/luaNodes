@@ -14,7 +14,7 @@ _G [moduleName] = M;
 --------------------------------------------------------------------
 -- vars
 
-local VERSION = "V0.43"
+local VERSION = "V0.44"
 
 local PROD_GATEWAY = "192.168.2.1";
 local PROD_NETMASK = "255.255.255.0";
