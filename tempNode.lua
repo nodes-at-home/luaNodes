@@ -11,19 +11,18 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
-require  ( "util" );
-
 -------------------------------------------------------------------------------
 --  Settings
 
-----------------------------------------------------------------------------------------
--- private
-
 local restartConnection = true;
 
---------------------------------------------------------------------
--- public
--- mqtt callbacks
+local dhtPin = nodeConfig.appCfg.dhtPin;
+
+local bme280SdaPin = nodeConfig.appCfg.bme280SdaPin;
+local bme280SclPin = nodeConfig.appCfg.bme280SclPin;
+
+----------------------------------------------------------------------------------------
+-- private
 
 local function goDeepSleep ( client )
 
@@ -48,18 +47,49 @@ local function goDeepSleep ( client )
 
 end
 
+local function getSensorData ( pin )
+
+    print ( "[DHT] pin=" .. pin );
+
+    local status, temperature, humidity, temp_decimial, humi_decimial = dht.read ( pin );
+    
+    if( status == dht.OK ) then
+
+        print ( "[DHT] Temperature: " .. temperature .. " C" );
+        print ( "[DHT] Humidity: " .. humidity .. "%" );
+        
+    elseif( status == dht.ERROR_CHECKSUM ) then
+    
+        print ( "[DHT] Checksum error" );
+        temperature = nil;
+        humidity = nil;
+        
+    elseif( status == dht.ERROR_TIMEOUT ) then
+    
+        print ( "[DHT] Time out" );
+        temperature = nil;
+        humidity = nil;
+        
+    end
+    
+    local result = status == dht.OK; 
+    
+    return result, temperature, humidity;
+    
+end
+
 local function publishValues ( client, baseTopic, temperature, humidity, pressure )
 
     -- all Values
     if ( temperature and humidity and pressure ) then
         print ( "[APP] publish temperature t=" .. temperature );
-        client:publish ( baseTopic .. "/value/temperature", util.createJsonValueMessage ( temperature, "C" ), 0, nodeConfig.retain, -- qos, retain
+        client:publish ( baseTopic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"°C"}]], 0, nodeConfig.retain, -- qos, retain
             function ( client )
                 print ( "[APP] publish humidity h=" .. humidity );
-                client:publish ( baseTopic .. "/value/humidity", util.createJsonValueMessage ( humidity, "%" ), 0, nodeConfig.retain, -- qos, retain
+                client:publish ( baseTopic .. "/value/humidity", [[{"value":]] .. humidity .. [[,"unit":"%"}]], 0, nodeConfig.retain, -- qos, retain
                     function ( client )
                         print ( "[APP] publish pressure p=" .. pressure );
-                        client:publish ( baseTopic .. "/value/pressure", util.createJsonValueMessage ( pressure, "hPa" ), 0, nodeConfig.retain, -- qos, retain
+                        client:publish ( baseTopic .. "/value/pressure", [[{"value":]] .. pressure .. [[, "unit":"hPa"}]], 0, nodeConfig.retain, -- qos, retain
                             function ( client )
                                 goDeepSleep ( client );
                             end
@@ -71,10 +101,10 @@ local function publishValues ( client, baseTopic, temperature, humidity, pressur
     -- only temperature and humidity
     elseif ( temperature and humidity ) then
         print ( "[APP] publish temperature t=" .. temperature );
-        client:publish ( baseTopic .. "/value/temperature", util.createJsonValueMessage ( temperature, "C" ), 0, nodeConfig.retain, -- qos, retain
+        client:publish ( baseTopic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"°C"}]], 0, nodeConfig.retain, -- qos, retain
             function ( client )
                 print ( "[APP] publish humidity h=" .. humidity );
-                client:publish ( baseTopic .. "/value/humidity", util.createJsonValueMessage ( humidity, "%" ), 0, nodeConfig.retain, -- qos, retain
+                client:publish ( baseTopic .. "/value/humidity", [[{"value":]] .. humidity .. [[,"unit":"%"}]], 0, nodeConfig.retain, -- qos, retain
                     function ( client )
                         goDeepSleep ( client );
                     end
@@ -84,10 +114,10 @@ local function publishValues ( client, baseTopic, temperature, humidity, pressur
     -- only pressure and temperature
     elseif ( pressure and temperature ) then
         print ( "[APP] publish pressure p=" .. pressure );
-        client:publish ( baseTopic .. "/value/pressure", util.createJsonValueMessage ( pressure, "hPa" ), 0, nodeConfig.retain, -- qos, retain
+        client:publish ( baseTopic .. "/value/pressure", [[{"value":]] .. pressure .. [[, "unit":"hPa"}]], 0, nodeConfig.retain, -- qos, retain
             function ( client )
                 print ( "[APP] publish temperature t=" .. temperature );
-                client:publish ( baseTopic .. "/value/temperature", util.createJsonValueMessage ( temperature, "C" ), 0, nodeConfig.retain, -- qos, retain
+                client:publish ( baseTopic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"°C"}]], 0, nodeConfig.retain, -- qos, retain
                     function ( client )
                         goDeepSleep ( client );
                     end
@@ -108,21 +138,21 @@ local function publishValues ( client, baseTopic, temperature, humidity, pressur
 
 end
 
+--------------------------------------------------------------------
+-- public
+-- mqtt callbacks
+
 function M.connect ( client, baseTopic )
 
     print ( "[APP] connect" );
     
-    local dhtPin = nodeConfig.appCfg.dhtPin;
-    local bme280SdaPin = nodeConfig.appCfg.bme280SdaPin;
-    local bme280SclPin = nodeConfig.appCfg.bme280SclPin;
-
     local temperature, humidity = 0;
 
     if ( dhtPin ) then
         local success;
-        success, temperature, humidity = util.getSensorData ( dhtPin );
+        success, temperature, humidity = getSensorData ( dhtPin );
         if ( not success ) then -- first retry
-            success, temperature, humidity = util.getSensorData ( dhtPin );
+            success, temperature, humidity = getSensorData ( dhtPin );
         end
         if ( success ) then
             print ( "[APP] t=" .. temperature .. " ,h=" .. humidity );
@@ -159,7 +189,6 @@ function M.connect ( client, baseTopic )
         publishValues ( client, baseTopic, temperature, humidity, nil );
     end
     
-
 end
 
 local function offline ( client )
