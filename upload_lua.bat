@@ -1,10 +1,13 @@
 nodemcu-tool.cmd upload ^
+apds9960.lua ^
+apds9960debug.lua ^
 brewNode.lua ^
 buttonNode.lua ^
 credential.lua ^
 ds18b20.lua ^
 espConfig.lua ^
 garageNode.lua ^
+gestureNode ^
 httpDL.lua ^
 ledNode.lua ^
 mqttNode.lua ^

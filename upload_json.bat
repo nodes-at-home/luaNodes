@@ -3,6 +3,7 @@ espConfig_default.json ^
 espConfig_35778.json ^
 espConfig_485535.json ^
 espConfig_518010.json ^
+espConfig_552978.json ^
 espConfig_982283.json ^
 espConfig_1461824.json ^
 espConfig_1495931.json ^

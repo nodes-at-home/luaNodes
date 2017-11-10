@@ -1,11 +1,14 @@
 
 FOR %%F IN (
+apds9960.lc
+apds9960debug.lc
 brewNode.lc
 buttonNode.lc
 credential.lc
 ds18b20.lc
 espConfig.lc
 garageNode.lc
+gestureNode.lc
 httpDL.lc
 ledNode.lc
 mqttNode.lc

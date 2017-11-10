@@ -1,0 +1,29 @@
+{
+    "chipid": "552978",
+    "app": "gestureNode",
+    "class": "sensor",
+    "type": "gesture",
+    "location": "kitchen",
+    "appCfg": {
+        "sdaPin": 1,
+        "sclPin": 2,
+        "triggerPin": 3,
+        "proximityOffLimit": 20
+    },
+    "timer": {
+        "startup": 0,
+        "startupDelay1": 2000,
+        "startupDelay2": 5000,
+        "wifiLoop": 1,
+        "wifiLoopPeriod": 1000,
+        "periodic": 2,
+        "_periodicPeriod": 900000,
+        "periodicPeriod": 300000,
+        "offDelay": 2000
+    },
+    "wifi": {
+        "gateway": "192.168.2.1",
+        "netmask": "255.255.255.0",
+        "ip": "192.168.2.45"
+    }
+}
