@@ -28,6 +28,8 @@ local isBit = apds9960.isBit;
 local set16BitThreshold = apds9960.set16BitThreshold;
 
 local offDelay = nodeConfig.timer.offDelay or 2000;
+local proximityPeristence = nodeConfig.appCfg.proximityPersistence or 4;
+local proximityThreshold = nodeConfig.appCfg.proximityThreshold or 20;
 
 ----------------------------------------------------------------------------------------
 -- private
@@ -120,9 +122,9 @@ function M.start ( client, topic )
         end
     );
 
---    setBits ( apds9960.REG.CONTROL, 3, 2, 3 );                              -- ENABLE<3:2> proximity gain, 3 -> apds9960.PGAIN_8X
---    writeByte ( apds9960.REG.PIHT, 20 );                                    -- proximity interrupt high threshold
---    writeByte ( apds9960.REG.PERS, 0x81 );                                  -- PERS<7:4> proximity interrupt persistence, 0 means every cycle; PERS<3:0> ALS interrupt persistence
+--    setBits ( apds9960.REG.CONTROL, 3, 2, 3 );                            -- ENABLE<3:2> proximity gain, 3 -> apds9960.PGAIN_8X
+    writeByte ( apds9960.REG.PIHT, proximityThreshold );                                    -- proximity interrupt high threshold
+    setBits ( apds9960.REG.PERS, 7, 4, proximityPeristence );               -- PERS<7:4> proximity interrupt persistence, 0 means every cycle, 1 .. 15
 
 end
 

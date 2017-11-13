@@ -8,7 +8,8 @@
         "sdaPin": 1,
         "sclPin": 2,
         "triggerPin": 3,
-        "proximityOffLimit": 20
+        "proximityPersistence": 4,
+        "proximityThreshhold": 20
     },
     "timer": {
         "startup": 0,
