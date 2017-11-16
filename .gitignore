@@ -2,5 +2,5 @@
 /.project
 
 credential.lua
-*.lc
-update_files.json
+//*.lc
+//update_files.json
