@@ -16,26 +16,12 @@ _G [moduleName] = M;
 
 local VERSION = "V0.45"
 
-local PROD_GATEWAY = "192.168.2.1";
-local PROD_NETMASK = "255.255.255.0";
-local PROD_MQTT_BROKER = "192.168.2.117";
-local PROD_TRACE_SERVER_IP = "192.168.2.117";
-local PROD_TRACE_SERVER_PORT = "10001";
-
---------------------------------------------------------------------
--- private
-
 local DEFAULT_CONFIG = {
     app = "noNode",
-    class = "nonode", type = "<chipid>", location = "anywhere",  
---    wifi = { ip = "192.168.2.90", gateway = PROD_GATEWAY, netmask = PROD_NETMASK },
---    mqttBroker = "192.168.137.1",
---    mode = "surface",
-    appCfg = {
-        useOfflineCallback = false,
-        timeBetweenSensorReadings = 15 * 60 * 1000, -- ms
-        timeBetweenSensorReadings = 1 * 60 * 1000, -- ms
-    },
+    class = "nonode", 
+    type = "<chipid>", 
+    location = "anywhere",  
+    mode = "prod",
     timer = {
         startup = 0,
         startupDelay1 = 2 * 1000,
@@ -44,35 +30,120 @@ local DEFAULT_CONFIG = {
         wifiLoopPeriod = 1 * 1000,
         periodic = 2,
         periodicPeriod = 15 * 60 * 1000,
-        deepSleep = 3,
-        deepSleepDelay = 60 * 1000, -- ms, only if not useOfflineCallback
+    },
+    wifi = {
+        gateway = "192.168.2.1",
+        netmask = "255.255.255.0",
+        ip = "192.168.2.90",
+    },
+    mqtt = {
+        broker = "192.168.2.117",
+        retain = 1,
+        keepAliveTime = 5 * 60, -- in seconds
+    },
+    trace = {
+        ip = "192.168.2.117",
+        port = 10001,
+        onUpdate = true
     },
 };
 
 --------------------------------------------------------------------
+-- private
+
+local function tableMerge ( t1, t2 )
+
+    for k, v in pairs ( t2 ) do
+        if type ( v ) == "table" then
+            if type (t1 [k] or false) == "table" then
+                tableMerge ( t1 [k] or {}, t2 [k] or {})
+            else
+                t1 [k] = v
+            end
+        else
+            t1 [k] = v
+        end
+    end
+
+    return t1
+
+end
+
+local function printTable ( t, indent )
+
+    if ( type ( t ) ~= "table" ) then return; end
+
+    local _indent = indent or 0;
+    local indentStr = string.rep ( " ", indent or 0 );
+
+    for k, v in pairs ( t ) do
+        if ( type ( v ) == "table" ) then
+            print ( indentStr .. k .. "={" ); 
+            printTable ( v, _indent + 1 );
+            print ( indentStr .. "}," ); 
+        else
+            print ( indentStr .. k .. "=" .. tostring( v ) .. "," );
+        end
+    end
+    
+end
+
+local function replaceNil ( t )
+
+    if ( type ( t ) ~= "table" ) then return; end
+    
+    for k, v in pairs ( t ) do
+        if ( type ( v ) == "table" ) then
+            replaceNil ( v );
+        else
+            if ( v and type ( v ) == "string" and v == "nil" ) then
+                t [k] = nil;
+            end
+        end
+    end
+
+end
+
+--------------------------------------------------------------------
 -- public
+
+-- loading config
+-- order: 
+--  1) inline default
+--  2) file default
+--  3) chipid file
+--  5) local file 
+
 
 function M.init ()
 
     local result = DEFAULT_CONFIG;
+--    print ( "[CONFIG] default config" );
+--    printTable ( result );
 
-    local fileName = "espConfig_local.json";
-    if ( not file.exists ( fileName ) ) then
-        fileName = "espConfig_" .. node.chipid () .. ".json";
-        if ( not file.exists ( fileName ) ) then
-            fileName = "espConfig_default.json";
-        end
-    end
-        
-    if ( file.open ( fileName, "r" ) ) then
-        print ( "[CONFIG] open config file: " .. fileName );
-        local jsonStr = file.read ();
-        if ( jsonStr ) then
-            result = cjson.decode ( jsonStr );
-        end
-        file.close ();
-    end
+    local files = { "default", tostring ( node.chipid () ), "local" };
     
+    for _, f in ipairs ( files ) do
+        local loadFile = "espConfig_" .. f .. ".json";
+        print ( "[CONFIG] try to load config: " .. loadFile );
+        if ( file.exists ( loadFile ) ) then
+            if ( file.open ( loadFile, "r" ) ) then
+                print ( "[CONFIG] open config file: " .. loadFile );
+                local jsonStr = file.read ();
+                if ( jsonStr ) then
+                    --local json = cjson.decode ( jsonStr );
+                    local ok, json = pcall ( function () return cjson.decode ( jsonStr ) end );
+                    if ( ok ) then
+                        print ( "[CONFIG] config loaded")
+                        tableMerge ( result, json );
+                        --printTable ( result );
+                    end
+                end
+                file.close ();
+            end
+        end
+    end
+
     -- inject chipid
     if ( result.type == "<chipid>" ) then result.type = node.chipid (); end
     
@@ -86,24 +157,17 @@ function M.init ()
     local pos = app:find ( "Node" );
     local nodeName = pos and app:sub ( 1, pos - 1 ) or app;
     result.version = table.concat ( { sdk, "-", nodeName, "-", VERSION } );
+    
+    -- TODO eliminate this three deprecated fields
+    result.mqttBroker = result.mqtt.broker;
+    result.retain = result.mqtt.retain;
+    result.keepAliveTime = result.mqtt.keepAliveTime;
+    
+    replaceNil ( result );
+    
+--    print ( "[CONFIG] final config" );
+--    printTable ( result );
 
-    result.retain = 1; -- 0: no retain
-    result.keepAliveTime = 5 * 60; -- in seconds
-    
-    -- wifi
-    if ( not result.mode ) then result.mode = "prod"; end
-    
-    -- mqtt broker
-    if ( not result.mqttBroker ) then result.mqttBroker = PROD_MQTT_BROKER; end
-    
-    -- tcp trace
-    if ( not result.trace ) then result.trace = {}; end
-    if ( not result.trace.ip ) then result.trace.ip = PROD_TRACE_SERVER_IP; end
-    if ( not result.trace.port ) then result.trace.port = PROD_TRACE_SERVER_PORT; end
-    if ( result.trace.onUpdate == nil ) then result.trace.onUpdate = true; end
-    
-    package.loaded [moduleName] = nil;
-    
     return result;
     
 end

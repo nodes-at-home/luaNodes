@@ -107,6 +107,13 @@ function M.init ()
     unrequire ( "espConfig" );
     collectgarbage ();
     
+    if ( nodeConfig == nil ) then
+        print ( "[STARTUP] #########" );
+        print ( "[STARTUP] NO CONFIG" );
+        print ( "[STARTUP] #########" );
+        return;
+    end
+    
     require ( "credential" );
     wifiCredential = credential.init ( nodeConfig.mode );
     unrequire ( "credential" );
