@@ -1,9 +1,9 @@
 {
-    "chipid": "552978",
+    "chipid": "581906",
     "app": "gestureNode",
     "class": "sensor",
     "type": "gesture",
-    "location": "kitchen",
+    "location": "test",
     "appCfg": {
         "sdaPin": 1,
         "sclPin": 2,
@@ -15,6 +15,6 @@
         "offDelay": 2000
     },
     "wifi": {
-        "ip": "192.168.2.45"
+        "ip": "192.168.2.43"
     }
 }

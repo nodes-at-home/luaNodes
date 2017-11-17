@@ -1,1 +1,24 @@
-{"appCfg":{"relayPin":1,"openPositionPin":5,"dhtPin":4,"closedPositionPin":6},"app":"garageNode","type":"relay","timer":{"startupDelay1":2000,"startup":0,"debounce":3,"trigger":4,"wifiLoopPeriod":1000,"periodic":2,"state":5,"startupDelay2":5000,"debounceDelay":200,"statePeriod":1000,"triggerDelay":300,"periodicPeriod":900000,"wifiLoop":1},"location":"garage","class":"cover","wifi":{"gateway":"192.168.2.1","netmask":"255.255.255.0","ip":"192.168.2.25"},"chipid":8391351}
+{
+    "chipid": 8391351,
+    "app": "garageNode",
+    "class": "cover",
+    "type": "relay",
+    "location": "garage",
+    "appCfg": {
+        "relayPin": 1,
+        "openPositionPin": 5,
+        "dhtPin": 4,
+        "closedPositionPin": 6
+    },
+    "timer": {
+        "debounce": 3,
+        "debounceDelay": 200,
+        "trigger": 4,
+        "triggerDelay": 300,
+        "state": 5,
+        "statePeriod": 1000
+    },
+    "wifi": {
+        "ip": "192.168.2.25"
+    }
+}

@@ -1,1 +1,23 @@
-{"appCfg":{"buttonPin":1,"relayPin1":6,"flashHighPulseLength":50000,"ledPin":2,"relayPulseLength":30000,"flashLowPulseLength":200000,"relayPin2":7},"app":"relayNode","type":"relay","timer":{"startupDelay1":2000,"startup":0,"debounce":3,"wifiLoopPeriod":1000,"periodic":2,"startupDelay2":5000,"debounceDelay":500,"periodicPeriod":900000,"wifiLoop":1},"location":"backyard","class":"switch","wifi":{"gateway":"192.168.2.1","netmask":"255.255.255.0","ip":"192.168.2.29"},"chipid":1689710}
+{
+    "chipid": 1689710,
+    "app": "relayNode",
+    "class": "switch",
+    "type": "relay",
+    "location": "backyard",
+    "appCfg": {
+        "buttonPin": 1,
+        "ledPin": 2,
+        "relayPin1": 6,
+        "relayPin2": 7,
+        "relayPulseLength": 30000,
+        "flashHighPulseLength": 50000,
+        "flashLowPulseLength": 200000
+    },
+    "timer": {
+        "debounce": 3,
+        "debounceDelay": 500
+    },
+    "wifi": {
+        "ip": "192.168.2.29"
+    }
+}

@@ -1,32 +1,23 @@
 {
+    "chipid": 982283,
+    "app": "relayNode",
+    "class": "switch",
+    "type": "relay1",
+    "location": "dining",
     "appCfg": {
         "buttonPin": 1,
-        "relayPin1": 6,
-        "flashHighPulseLength": 50000,
         "ledPin": 2,
+        "relayPin1": 6,
+        "relayPin2": 7,
         "relayPulseLength": 30000,
-        "flashLowPulseLength": 200000,
-        "relayPin2": 7
+        "flashHighPulseLength": 50000,
+        "flashLowPulseLength": 200000
     },
-    "app": "relayNode",
-    "type": "relay1",
     "timer": {
-        "startupDelay1": 2000,
-        "startup": 0,
         "debounce": 3,
-        "wifiLoopPeriod": 1000,
-        "periodic": 2,
-        "startupDelay2": 5000,
-        "debounceDelay": 500,
-        "periodicPeriod": 900000,
-        "wifiLoop": 1
+        "debounceDelay": 500
     },
-    "location": "dining",
-    "class": "switch",
     "wifi": {
-        "gateway": "192.168.2.1",
-        "netmask": "255.255.255.0",
         "ip": "192.168.2.28"
-    },
-    "chipid": 982283
+    }
 }

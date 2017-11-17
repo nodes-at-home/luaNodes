@@ -1,1 +1,19 @@
-{"appCfg":{"useOfflineCallback":false,"timeBetweenSensorReadings":900000,"dhtPin":4},"app":"tempNode","type":"DHT11","timer":{"deepSleep":3,"startupDelay1":2000,"startup":0,"wifiLoopPeriod":1000,"periodic":2,"startupDelay2":5000,"deepSleepDelay":60000,"periodicPeriod":900000,"wifiLoop":1},"location":"roof","class":"sensor","wifi":{"gateway":"192.168.2.1","netmask":"255.255.255.0","ip":"192.168.2.22"},"chipid":1829768}
+{
+    "chipid": 1829768,
+    "app": "tempNode",
+    "class": "sensor",
+    "type": "DHT11",
+    "location": "roof",
+    "appCfg": {
+        "dhtPin": 4,
+        "useOfflineCallback": false,
+        "timeBetweenSensorReadings": 900000
+    },
+    "timer": {
+        "deepSleep": 3,
+        "deepSleepDelay": 60000
+    },
+    "wifi": {
+        "ip": "192.168.2.22"
+    }
+}

@@ -1,1 +1,16 @@
-{"appCfg":{"device":"leds","useRGB":false,"disablePrint":true,"arduinoResetPin":6},"app":"xmasNode","type":"xmastree","timer":{"startupDelay1":2000,"startup":0,"periodicPeriod":900000,"startupDelay2":5000,"wifiLoop":1,"wifiLoopPeriod":1000,"periodic":2},"location":"dining","class":"light","wifi":{"gateway":"192.168.2.1","netmask":"255.255.255.0","ip":"192.168.2.31"},"chipid":2677473}
+{
+    "chipid": 2677473,
+    "app": "xmasNode",
+    "class": "light",
+    "type": "xmastree",
+    "location": "dining",
+    "appCfg": {
+        "device": "leds",
+        "arduinoResetPin": 6,
+        "useRGB": false,
+        "disablePrint": true
+    },
+    "wifi": {
+        "ip": "192.168.2.31"
+    }
+}

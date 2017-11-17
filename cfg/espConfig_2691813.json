@@ -11,19 +11,10 @@
         "dsPin": 3
     },
     "timer": {
-        "startup": 0,
-        "startupDelay1": 2000,
-        "startupDelay2": 5000,
-        "wifiLoop": 1,
-        "wifiLoopPeriod": 1000,
-        "periodic": 2,
-        "periodicPeriod": 900000,
         "deepSleep": 3,
         "deepSleepDelay": 5000
     },
     "wifi": {
-        "gateway": "192.168.2.1",
-        "netmask": "255.255.255.0",
         "ip": "192.168.2.48"
     }
 }

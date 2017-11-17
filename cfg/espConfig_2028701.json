@@ -1,1 +1,21 @@
-{"appCfg":{"useOfflineCallback":false,"bme280SdaPin":2,"bme280SclPin":1,"dhtPin":4,"timeBetweenSensorReadings":900000},"app":"tempNode","type":"DHT11","timer":{"deepSleep":3,"startupDelay1":2000,"startup":0,"wifiLoopPeriod":1000,"periodic":2,"startupDelay2":5000,"deepSleepDelay":60000,"periodicPeriod":900000,"wifiLoop":1},"location":"lounge","class":"sensor","wifi":{"gateway":"192.168.2.1","netmask":"255.255.255.0","ip":"192.168.2.35"},"chipid":2028701}
+{
+    "chipid": 2028701,
+    "app": "tempNode",
+    "class": "sensor",
+    "type": "DHT11",
+    "location": "lounge",
+    "appCfg": {
+        "bme280SclPin": 1,
+        "bme280SdaPin": 2,
+        "dhtPin": 4,
+        "useOfflineCallback": false,
+        "timeBetweenSensorReadings": 900000
+    },
+    "timer": {
+        "deepSleep": 3,
+        "deepSleepDelay": 60000
+    },
+    "wifi": {
+        "ip": "192.168.2.35"
+    }
+}

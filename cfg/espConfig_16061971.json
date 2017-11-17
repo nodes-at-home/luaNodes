@@ -1,1 +1,18 @@
-{"appCfg":{"useOfflineCallback":false,"useQuickStartupAfterDeepSleep":true},"app":"buttonNode","type":"button","timer":{"deepSleep":3,"startupDelay1":2000,"startup":0,"deepSleepDelay":1000,"wifiLoop":1,"wifiLoopPeriod":1000,"startupDelay2":5000},"location":"garage","class":"sensor","wifi":{"gateway":"192.168.2.1","netmask":"255.255.255.0","ip":"192.168.2.33"},"chipid":16061971}
+{
+    "chipid": 16061971,
+    "app": "buttonNode",
+    "class": "sensor",
+    "type": "button",
+    "location": "garage",
+    "appCfg": {
+        "useOfflineCallback": false,
+        "useQuickStartupAfterDeepSleep": true
+    },
+    "timer": {
+        "deepSleep": 3,
+        "deepSleepDelay": 1000
+    },
+    "wifi": {
+        "ip": "192.168.2.33"
+    }
+}

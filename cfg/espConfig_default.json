@@ -1,27 +1,32 @@
 {
-    "appCfg": {
-        "useOfflineCallback": false,
-        "timeBetweenSensorReadings": 60000
-    },
+    "chipid": "default",
     "app": "noNode",
-    "type": "test",
+    "class": "nonode",
+    "type": "<chipid>",
+    "location": "anywhere",
+    "mode": "prod",
     "timer": {
-        "deepSleep": 3,
-        "startupDelay1": 2000,
         "startup": 0,
+        "startupDelay1": 2000,
+        "startupDelay2": 5000,
+        "wifiLoop": 1,
         "wifiLoopPeriod": 1000,
         "periodic": 2,
-        "startupDelay2": 5000,
-        "deepSleepDelay": 60000,
-        "periodicPeriod": 900000,
-        "wifiLoop": 1
+        "periodicPeriod": 900000
     },
-    "location": "anywhere",
-    "class": "nonode",
     "wifi": {
         "gateway": "192.168.2.1",
         "netmask": "255.255.255.0",
         "ip": "192.168.2.90"
     },
-    "chipid": "default"
+    "mqtt": {
+        "broker": "192.168.2.117",
+        "retain": 1,
+        "keepAliveTime": 300
+    },
+    "trace": {
+        "ip": "192.168.2.117",
+        "port": 10001,
+        "onUpdate": true
+    }
 }

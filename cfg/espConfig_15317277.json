@@ -1,31 +1,22 @@
 {
-    "appCfg": {
-        "relayPin": 6,
-        "flashHighPulseLength": 50000,
-        "ledPin": 7,
-        "extraPin": 5,
-        "flashLowPulseLength": 200000,
-        "buttonPin": 3
-    },
+    "chipid": 15317277,
     "app": "sonoffNode",
-    "type": "sonoff",
-    "timer": {
-        "startupDelay1": 2000,
-        "startup": 0,
-        "debounce": 3,
-        "wifiLoopPeriod": 1000,
-        "periodic": 2,
-        "startupDelay2": 5000,
-        "debounceDelay": 500,
-        "periodicPeriod": 900000,
-        "wifiLoop": 1
-    },
-    "location": "location3",
     "class": "switch",
-    "wifi": {
-        "gateway": "192.168.2.1",
-        "netmask": "255.255.255.0",
-        "ip": "192.168.2.40"
+    "type": "sonoff",
+    "location": "location3",
+    "appCfg": {
+        "buttonPin": 3,
+        "extraPin": 5,
+        "relayPin": 6,
+        "ledPin": 7,
+        "flashHighPulseLength": 50000,
+        "flashLowPulseLength": 200000
     },
-    "chipid": 15317277
+    "timer": {
+        "debounce": 3,
+        "debounceDelay": 500
+    },
+    "wifi": {
+        "ip": "192.168.2.40"
+    }
 }
