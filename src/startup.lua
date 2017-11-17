@@ -24,6 +24,19 @@ require ( "wifi" );
 WIFI_SIGNAL_MODE = wifi.PHYMODE_N;
 
 --------------------------------------------------------------------
+-- global
+
+function unrequire ( module )
+
+    local m = package.loaded [module];
+    if ( m and m.subunrequire ) then m.subunrequire (); end 
+
+    package.loaded [module] = nil
+    _G [module] = nil
+    
+end
+
+--------------------------------------------------------------------
 -- private
 
 local function startApp ()
@@ -91,12 +104,12 @@ function M.init ()
 
     require ( "espConfig" );
     nodeConfig = espConfig.init ();
-    espConfig = nil;
+    unrequire ( "espConfig" );
     collectgarbage ();
     
     require ( "credential" );
     wifiCredential = credential.init ( nodeConfig.mode );
-    credential = nil;
+    unrequire ( "credential" );
     collectgarbage ();
 
     if ( nodeConfig.appCfg.useAdc ) then
@@ -134,8 +147,6 @@ function M.init ()
         print ( "[STARTUP] classic start" );
         tmr.alarm ( nodeConfig.timer.startup, nodeConfig.timer.startupDelay1, tmr.ALARM_SINGLE, startup )
     end
-    
-    package.loaded [moduleName] = nil;
     
 end
 

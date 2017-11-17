@@ -37,6 +37,6 @@ else
 end
 
 require ( "startup" ).init ();
-startup = nil;
+unrequire ( "startup" );
 collectgarbage ();
 
