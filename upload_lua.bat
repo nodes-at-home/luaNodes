@@ -7,7 +7,7 @@ src\credential.lua ^
 src\ds18b20.lua ^
 src\espConfig.lua ^
 src\garageNode.lua ^
-src\gestureNode ^
+src\gestureNode.lua ^
 src\httpDL.lua ^
 src\ledNode.lua ^
 src\mqttNode.lua ^

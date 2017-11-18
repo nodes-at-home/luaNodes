@@ -7,7 +7,7 @@ bin\credential.lc ^
 bin\ds18b20.lc ^
 bin\espConfig.lc ^
 bin\garageNode.lc ^
-bin\gestureNode ^
+bin\gestureNode.lc ^
 bin\httpDL.lc ^
 bin\ledNode.lc ^
 bin\mqttNode.lc ^
