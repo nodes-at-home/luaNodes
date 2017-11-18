@@ -22,6 +22,9 @@ local DEFAULT_CONFIG = {
     type = "<chipid>", 
     location = "anywhere",  
     mode = "prod",
+    appCfg = {
+        useAdc = false,
+    },
     timer = {
         startup = 0,
         startupDelay1 = 2 * 1000,
