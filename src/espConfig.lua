@@ -14,7 +14,7 @@ _G [moduleName] = M;
 --------------------------------------------------------------------
 -- vars
 
-local VERSION = "V0.46"
+local VERSION = "V0.47"
 
 local DEFAULT_CONFIG = {
     app = "noNode",
