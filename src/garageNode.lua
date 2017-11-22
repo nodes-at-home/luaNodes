@@ -6,25 +6,82 @@
 --
 --------------------------------------------------------------------
 -- junand 15.10.2016
-
+-- junand 22.11.2017 completely reworked
 local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
-require ( "util" );
-    
 -------------------------------------------------------------------------------
 --  Settings
 
-local position = 0; -- 0: closed, 1: in move up, 2: in move down, 3: stopped from move up, 4: stopped from move down, 5: fully open
-local action;
+-- 0: closed
+-- 1: in move up
+-- 2: in move down
+-- 3: stopped from move up
+-- 4: stopped from move down
+-- 5: fully open
+
+local MOVING_PERSIST = nodeConfig.appCfg.movingPersist or 2;
+
+local POSITION_CLOSED = 0;
+local POSITION_MOVE_UP = 1;
+local POSITION_MOVE_DOWN = 2;
+local POSITION_STOPPED_FROM_MOVE_UP = 3;
+local POSITION_STOPPED_FROM_MOVE_DOWN = 4;
+local POSITION_OPEN = 5;
+local POSITION_MOVING = 6; -- when the cover is triggered and moved from classic remote
+
+local position = POSITION_OPEN; -- default
+
+local POSITION_TEXT = {
+    [POSITION_CLOSED] = "closed",
+    [POSITION_MOVE_UP] = "move up",
+    [POSITION_MOVE_DOWN] = "move down",
+    [POSITION_STOPPED_FROM_MOVE_UP] = "stopped",
+    [POSITION_STOPPED_FROM_MOVE_DOWN] = "stopped",
+    [POSITION_OPEN] = "open",
+    [POSITION_MOVING] = "moving",
+};
+
+local movingCount = 0;
 
 ----------------------------------------------------------------------------------------
 -- private
 
+local function getSensorData ( pin )
+
+    print ( "[DHT] pin=" .. pin );
+
+    local status, temperature, humidity, temp_decimial, humi_decimial = dht.read ( pin );
+    
+    if( status == dht.OK ) then
+
+        print ( "[DHT] Temperature: " .. temperature .. " C" );
+        print ( "[DHT] Humidity: " .. humidity .. "%" );
+        
+    elseif( status == dht.ERROR_CHECKSUM ) then
+    
+        print ( "[DHT] Checksum error" );
+        temperature = nil;
+        humidity = nil;
+        
+    elseif( status == dht.ERROR_TIMEOUT ) then
+    
+        print ( "[DHT] Time out" );
+        temperature = nil;
+        humidity = nil;
+        
+    end
+    
+    local result = status == dht.OK; 
+    
+    return result, temperature, humidity;
+    
+end
+
 local function triggerCover ( count )
 
-    print ( "[APP] trigger serout count=" .. count );
+    print ( "[APP] triggerCover: count=" .. count );
     
     local delay = nodeConfig.timer.triggerDelay * 1000;
 
@@ -37,134 +94,159 @@ local function triggerCover ( count )
 
 end
 
-local function publishState ( client, topic, state )
+local function publishState ( client, topic, state, callback )
 
-    -- 0: closed, 1: in move up, 2: in move down, 3: stopped from move up, 4: stopped from move down, 5: fully open
-    local s = state;
-    s = state == -1 and "unknown" or s;
-    s = state == 0 and "closed" or s;
---    s = state == 1 and "move up" or s;
---    s = state == 2 and "move down" or s;
---    s = (state == 3 or state == 4) and "stopped" or s;
-    s = state == 5 and "open" or s;
-    print ( "[APP] publish state=" .. s );
-    client:publish ( topic .. "/value/position", s, 0, nodeConfig.retain, function () end ); -- qos, retain
+    print ( "[APP] publishState: topic=" .. topic .. " state=" .. state );
 
+    local s = POSITION_TEXT [state] or "unknown"; 
+    print ( "[APP] publishState: state=" .. s );
+    client:publish ( topic .. "/value/position", s, 0, nodeConfig.retain, callback ); -- qos, retain
+
+end
+
+local function checkSwitches ( client, topic )
+
+    local openSwitch = gpio.read ( nodeConfig.appCfg.openPositionPin );
+    local closeSwitch = gpio.read ( nodeConfig.appCfg.closedPositionPin );
+    
+--    if ( openSwitch ~= closeSwitch ) then
+--        print ( "[APP] position=" .. position .." openSwitch=" .. openSwitch .. " closeSwitch=" .. closeSwitch );
+--    end
+    
+    local newPosition = nil; 
+    
+    if ( ( position == POSITION_OPEN or position == POSITION_CLOSED ) and openSwitch == 1 and closeSwitch == 1 ) then
+        if ( movingCount > MOVING_PERSIST ) then
+            newPosition = POSITION_MOVING;
+            movingCount = 0;
+        else
+            movingCount = movingCount + 1;
+        end
+    elseif ( position ~= POSITION_CLOSED and openSwitch == 1 and closeSwitch == 0 ) then -- just closed
+        newPosition = POSITION_CLOSED;
+    elseif ( position ~= POSITION_OPEN and openSwitch == 0 and closeSwitch == 1 ) then -- just opened
+        newPosition = POSITION_OPEN;
+    end
+    
+    if ( newPosition ) then
+        print ( "[APP] checkSwitches: position=" .. POSITION_TEXT [position] .. " newPosition=" .. POSITION_TEXT [newPosition] );
+        publishState ( client, topic, newPosition );
+        position = newPosition;
+    end
+    
 end
 
 --------------------------------------------------------------------
 -- public
 
-function M.connect ( client, topic )
+function M.start ( client, topic )
 
-    print ( "[APP] connected with topic=" .. topic );
-    
-    -- register timer function when door is moving
-    -- 0: closed, 1: in move up, 2: in move down, 3: stopped from move up, 4: stopped from move down, 5: fully open
-    tmr.register ( nodeConfig.timer.state, nodeConfig.timer.statePeriod, tmr.ALARM_AUTO,  -- timer_id, interval_ms, mode
-        function ()
-            local openSwitch = gpio.read ( nodeConfig.appCfg.openPositionPin );
-            local closeSwitch = gpio.read ( nodeConfig.appCfg.closedPositionPin );
-            print ( "[APP] positions: open=" .. openSwitch .. " ,closeSwitch=" .. closeSwitch );
-            if ( openSwitch == 1 and closeSwitch == 1 ) then
-                if ( position == 0 or position == 4 ) then -- just in move
-                    position = 1; -- move up
-                    print ( "[APP] new position=1 (move up)" );
-                elseif ( position == 5 or position == 3 ) then -- just in move
-                    position = 2; -- move down
-                    print ( "[APP] new position=1 (move down)" );
-                end
-            elseif ( position == 2 and openSwitch == 1 and closeSwitch == 0 ) then -- just closed
-                position = 0;
-                tmr.stop ( nodeConfig.timer.state );
-                print ( "[APP] new position=0 (closed)" );
-            elseif ( position == 1 and openSwitch == 0 and closeSwitch == 1 ) then -- just opened
-                position = 5;
-                tmr.stop ( nodeConfig.timer.state );
-                print ( "[APP] new position=5 (opened)" );
-            end
-            publishState ( client, nodeConfig.topic, position );
-        end
-    );
-    
-    -- send temperature and humdidity
-    M.periodic ( client, topic );
+    print ( "[APP] start: topic=" .. topic );
     
     -- initial door position
     local openSwitch = gpio.read ( nodeConfig.appCfg.openPositionPin );
     local closeSwitch = gpio.read ( nodeConfig.appCfg.closedPositionPin );
     if ( openSwitch == 1 and closeSwitch == 0 ) then
-        position = 0;
-    elseif ( openSwitch == 0 and closeSwitch == 1 ) then
-        position = 5;
+        position = POSITION_CLOSED;
     else
-        position = 0; -- default is closed
+        position = POSITION_OPEN; -- default
     end    
-    publishState ( client, nodeConfig.topic, position );
+
+    print ( "[APP] start: initial position=" .. POSITION_TEXT [position] );
+
+    -- register timer function when door is moving
+    tmr.register ( nodeConfig.timer.state, nodeConfig.timer.statePeriod, tmr.ALARM_AUTO, 
+        function ()
+            checkSwitches ( client, topic )
+        end 
+    );
+
+end
+
+function M.connect ( client, topic )
+
+    print ( "[APP] connect: topic=" .. topic );
+    
+    publishState ( client, nodeConfig.topic, position,
+        function ()
+            tmr.start ( nodeConfig.timer.state );
+        end
+    );
     
 end
 
 function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=" .. topic .. " ,payload=" .. payload );
+    print ( "[APP] message: topic=" .. topic .. " payload=" .. payload );
     
-    local topicParts = util.splitTopic ( topic );
+    local topicParts = require ( "util" ).splitTopic ( topic );
+    unrequire ( "util" );
     local command = topicParts [#topicParts];
     
-    -- 0: closed, 1: in move up, 2: in move down, 3: stopped from move up, 4: stopped from move down, 5: fully open
     if ( command == "command" ) then
-        -- OPEN only possible if door is in motion down (position == 2, 2x triggerCover) or if closed (position == 0, 1x triggerCover)
-        -- STOP only possibly if door is in motion (position == 1 or 2)
-        -- CLOSE only possible if door is in motion up (position == 1, 2x triggerCover) or if opened (position == 3, 1x triggerCover)
-        action = payload;
-        if ( action == "OPEN" ) then
-            if ( position == 2 ) then -- move down
-                triggerCover ( 2 );
-                position = 1; -- move up
-                print ( "[APP] new position=1 (move up)" );
-                publishState ( client, nodeConfig.topic, position );
-            elseif ( position == 0 or position == 4 ) then -- closed or stopped from move down
-                print ( "move door action=" .. action .. " ,position=" .. position );
-                triggerCover ( 1 );
-                tmr.start ( nodeConfig.timer.state );
+    
+        -- OPEN only possible if door is in motion down (2x triggerCover) or if closed (1x triggerCover)
+        -- STOP only possibly if door is in motion
+        -- CLOSE only possible if door is in motion up (2x triggerCover) or if opened (1x triggerCover)
+        
+        local action = payload;
+        print ( "[APP] message: action=" .. action .. " position=" .. POSITION_TEXT [position] );
+        
+        local newPosition = nil;
+
+        if ( position == POSITION_MOVING ) then
+            -- only trigger cover and wait for a switch is triggering
+            triggerCover ( 1 );
+        else        
+            if ( action == "OPEN" ) then
+                if ( position == POSITION_MOVE_DOWN ) then
+                    newPosition = POSITION_MOVE_UP;
+                    triggerCover ( 2 );
+                elseif ( position == POSITION_CLOSED ) then
+                    newPosition = POSITION_MOVE_UP
+                    triggerCover ( 1 );
+                elseif ( position == POSITION_STOPPED_FROM_MOVE_DOWN ) then
+                    newPosition = POSITION_MOVE_UP
+                    triggerCover ( 1 );
+                else
+                    print ( "[APP] message: forbidden action" );
+                end
+            elseif ( action == "STOP" ) then
+                if ( position == POSITION_MOVE_UP ) then
+                    newPosition = POSITION_STOPPED_FROM_MOVE_UP;
+                    triggerCover ( 1 );
+                elseif ( position == POSITION_MOVE_DOWN ) then
+                    newPosition = POSITION_STOPPED_FROM_MOVE_DOWN;
+                    triggerCover ( 1 );
+                else
+                    print ( "[APP] message: forbidden action" );
+                end
+            elseif ( action == "CLOSE" ) then
+                if ( position == POSITION_MOVE_UP ) then
+                    newPosition = POSITION_MOVE_DOWN;
+                    triggerCover ( 2 );
+                elseif ( position == POSITION_OPEN ) then
+                    newPosition = POSITION_MOVE_DOWN;
+                    triggerCover ( 1 );
+                elseif ( position == POSITION_STOPPED_FROM_MOVE_UP ) then
+                    newPosition = POSITION_MOVE_DOWN;
+                    triggerCover ( 1 );
+                else
+                    print ( "[APP] message: forbidden action" );
+                end
             else
-                print ( "[APP] forbidden action=" .. action .. " ,position=" .. position );
+                print ( "[APP] message: unknown action=" .. action );
             end
-        elseif ( action == "STOP" ) then
-            if ( position == 1 ) then -- move up
-                print ( "stop door action=" .. action .. " ,position=" .. position );
-                triggerCover ( 1 );
-                tmr.stop ( nodeConfig.timer.state );
-                position = 3; -- stopped from move up
-                print ( "[APP] new position=3 (stopped from move up)" );
-                publishState ( client, nodeConfig.topic, position );
-            elseif ( position == 2 ) then -- move down
-                print ( "stop door action=" .. action .. " ,position=" .. position );
-                triggerCover ( 1 );
-                tmr.stop ( nodeConfig.timer.state );
-                position = 4; -- stopped from move down
-                print ( "[APP] new position=4 (stopped from move down)" );
-                publishState ( client, nodeConfig.topic, position );
-            else
-                print ( "[APP] forbidden action=" .. action .. " ,position=" .. position );
-            end
-        elseif ( action == "CLOSE" ) then
-            if ( position == 1 ) then -- move up
-                print ( "move door action=" .. action .. " ,position=" .. position );
-                triggerCover ( 2 );
-                position = 2; -- move down
-                print ( "[APP] new position=2 (move down)" );
-                publishState ( client, nodeConfig.topic, position );
-            elseif ( position == 5 or position == 3 ) then -- open or stopped from move up
-                print ( "move door action=" .. action .. " ,position=" .. position );
-                triggerCover ( 1 );
-                tmr.start ( nodeConfig.timer.state );
-            else
-                print ( "[APP] forbidden action=" .. action .. " ,position=" .. position );
-            end
-        else
-            print ( "[APP] unknown action=" .. action );
         end
+        
+        print ( "[APP] message: action=" .. action .. " position=" .. POSITION_TEXT [position] .. 
+                " newPosition=" .. (newPosition and POSITION_TEXT [newPosition] or "---") );
+        
+        if ( newPosition ) then
+            publishState ( client, nodeConfig.topic, newPosition );
+            position = newPosition;
+        end
+        
     end
 
 end
@@ -173,22 +255,27 @@ function M.offline ( client )
 
     print ( "[APP] offline" );
     
+    tmr.stop ( nodeConfig.timer.state );
+    
     return true; -- restart mqtt connection
     
 end
 
 function M.periodic ( client, topic )
 
-    print ( "[APP] periodic call topic=" .. topic );
+    print ( "[APP] periodic: topic=" .. topic );
     
-    local success, t, h = util.getSensorData ( nodeConfig.appCfg.dhtPin );
+    local success, t, h = getSensorData ( nodeConfig.appCfg.dhtPin );
     
     if ( success ) then
-        print ( "[APP] publish temperature t=" .. t );
-        client:publish ( topic .. "/value/temperature", util.createJsonValueMessage ( t, "C" ), 0, nodeConfig.retain, -- qos, retain
+        print ( "[APP] periodic: temperature t=" .. t );
+        client:publish ( topic .. "/value/temperature", [[{"value":]] .. t .. [[,"unit":"°C"}]], 0, nodeConfig.retain, -- qos, retain
             function ( client )
-                print ( "[APP] publish humidity h=" .. h );
-                client:publish ( topic .. "/value/humidity", util.createJsonValueMessage ( h, "%" ), 0, nodeConfig.retain, function () end ); -- qos, retain
+                print ( "[APP] periodic: humidity h=" .. h );
+                client:publish ( topic .. "/value/humidity", [[{"value":]] .. h .. [[,"unit":"%"}]], 0, nodeConfig.retain, -- qos, retain 
+                function () 
+                end 
+            );
             end
         );
     end

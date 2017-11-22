@@ -1,0 +1,22 @@
+{
+    "chipid": 2868440,
+    "app": "garageNode",
+    "class": "cover",
+    "type": "relay",
+    "location": "garage",
+    "appCfg": {
+        "relayPin": 1,
+        "dhtPin": 4,
+        "openPositionPin": 5,
+        "closedPositionPin": 6,
+        "movingPersist": 2
+    },
+    "timer": {
+        "state": 3,
+        "statePeriod": 1000,
+        "triggerDelay": 300
+    },
+    "wifi": {
+        "ip": "192.168.2.25"
+    }
+}
