@@ -22,6 +22,7 @@ _G [moduleName] = M;
 -- 5: fully open
 
 local MOVING_PERSIST = nodeConfig.appCfg.movingPersist or 2;
+local POSITION_PERSIST = nodeConfig.appCfg.positionPersist or 2;
 
 local POSITION_CLOSED = 0;
 local POSITION_MOVE_UP = 1;
@@ -35,15 +36,16 @@ local position = POSITION_OPEN; -- default
 
 local POSITION_TEXT = {
     [POSITION_CLOSED] = "closed",
-    [POSITION_MOVE_UP] = "move up",
-    [POSITION_MOVE_DOWN] = "move down",
+    [POSITION_MOVE_UP] = "up",
+    [POSITION_MOVE_DOWN] = "down",
     [POSITION_STOPPED_FROM_MOVE_UP] = "stopped",
     [POSITION_STOPPED_FROM_MOVE_DOWN] = "stopped",
     [POSITION_OPEN] = "open",
     [POSITION_MOVING] = "moving",
 };
 
-local movingCount = 0;
+local movingPersistCount = 0;
+local positionPersistCount = 0;
 
 ----------------------------------------------------------------------------------------
 -- private
@@ -115,17 +117,31 @@ local function checkSwitches ( client, topic )
     
     local newPosition = nil; 
     
-    if ( ( position == POSITION_OPEN or position == POSITION_CLOSED ) and openSwitch == 1 and closeSwitch == 1 ) then
-        if ( movingCount > MOVING_PERSIST ) then
-            newPosition = POSITION_MOVING;
-            movingCount = 0;
+    if ( openSwitch == 1 and closeSwitch == 1 ) then
+        if ( position == POSITION_OPEN or position == POSITION_CLOSED ) then
+            if ( movingPersistCount > MOVING_PERSIST ) then
+                newPosition = POSITION_MOVING;
+                movingPersistCount = 0;
+            else
+                movingPersistCount = movingPersistCount + 1;
+            end
         else
-            movingCount = movingCount + 1;
+            positionPersistCount = 0;
         end
-    elseif ( position ~= POSITION_CLOSED and openSwitch == 1 and closeSwitch == 0 ) then -- just closed
-        newPosition = POSITION_CLOSED;
-    elseif ( position ~= POSITION_OPEN and openSwitch == 0 and closeSwitch == 1 ) then -- just opened
-        newPosition = POSITION_OPEN;
+    elseif ( position ~= POSITION_CLOSED and openSwitch == 1 and closeSwitch == 0 ) then
+        if ( positionPersistCount > POSITION_PERSIST ) then
+            newPosition = POSITION_CLOSED;
+            positionPersistCount = 0;
+        else
+            positionPersistCount = positionPersistCount + 1;
+        end
+    elseif ( position ~= POSITION_OPEN and openSwitch == 0 and closeSwitch == 1 ) then
+        if ( positionPersistCount > POSITION_PERSIST ) then
+            newPosition = POSITION_OPEN;
+            positionPersistCount = 0;
+        else
+            positionPersistCount = positionPersistCount + 1;
+        end
     end
     
     if ( newPosition ) then

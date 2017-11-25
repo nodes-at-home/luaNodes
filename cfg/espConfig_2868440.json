@@ -9,7 +9,8 @@
         "dhtPin": 4,
         "openPositionPin": 5,
         "closedPositionPin": 6,
-        "movingPersist": 2
+        "movingPersist": 2,
+        "positionPersist": 2
     },
     "timer": {
         "state": 3,
