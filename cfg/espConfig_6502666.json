@@ -1,9 +1,9 @@
 {
-    "chipid": 2691813,
+    "chipid": 6502666,
     "app": "poolNode",
     "class": "sensor",
     "type": "ds18b20",
-    "location": "pool",
+    "location": "fermenter",
     "appCfg": {
         "useAdc": true,
         "useOfflineCallback": false,
