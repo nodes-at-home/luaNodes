@@ -14,7 +14,7 @@ _G [moduleName] = M;
 --------------------------------------------------------------------
 -- vars
 
-local VERSION = "V0.47"
+local version = "UNKNOWN"
 
 local DEFAULT_CONFIG = {
     app = "noNode",
@@ -120,6 +120,14 @@ end
 
 function M.init ()
 
+    -- read version
+    if ( file.open ( "$version.txt" ) ) then
+print ( "file is open" )    
+        version = file.read ();
+        file.close ();
+    end
+    print ( "[CONFIG] init: version=" .. version );
+
     local result = DEFAULT_CONFIG;
 --    print ( "[CONFIG] default config" );
 --    printTable ( result );
@@ -159,7 +167,7 @@ function M.init ()
     local app = result.app;
     local pos = app:find ( "Node" );
     local nodeName = pos and app:sub ( 1, pos - 1 ) or app;
-    result.version = table.concat ( { sdk, "-", nodeName, "-", VERSION } );
+    result.version = table.concat ( { sdk, "-", nodeName, "-", version } );
     
     -- TODO eliminate this three deprecated fields
     result.mqttBroker = result.mqtt.broker;
