@@ -36,6 +36,12 @@ function unrequire ( module )
     
 end
 
+function tohex ( byte, len )
+
+    return "0x" .. string.format( "%0" .. (len or 2) .. "X", byte );
+    
+end
+
 --------------------------------------------------------------------
 -- private
 
