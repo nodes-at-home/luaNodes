@@ -14,11 +14,13 @@ _G [moduleName] = M;
 --------------------------------------------------------------------
 -- settings
 
-local ID = 0;
 local DEVICE_ADDRESS = 0x39;
 
 --------------------------------------------------------------------
 -- public vars
+
+--M.ENABLE_BITS = {"reserved", "GEN", "PIEN", "AIEN", "WEN", "PEN", "AEN", "PON" };
+--M.STATUS_BITS = { "CPSAT", "PGSAT", "PINT", "AINT", "reserved", "GINT", "PVALID", "AVALID" };
 
 -- APDS-9960 register addresses                                                         reset value
 -- 0x00 .. 0x7F -> RAM                                                                  0x00
@@ -149,100 +151,15 @@ local DEFAULT = {
 };
 
 -------------------------------------------------------------------------------
--- i2c basics
-
-function M.readByte ( register )
-
-    i2c.start ( ID );
-    local ackTransmit = i2c.address ( ID, DEVICE_ADDRESS, i2c.TRANSMITTER );
---    print ( "ack transmit=", ackTransmit );
-    local n = i2c.write ( ID, register );
---    print ( "n=", n );
-    i2c.stop ( ID );
-    
-    i2c.start ( ID );
-    local ackReceive = i2c.address ( ID, DEVICE_ADDRESS, i2c.RECEIVER );
---    print ( "ack receive=", ackReceive );
-    local data = i2c.read ( ID, 1 );
-    i2c.stop ( ID );
-    
-    return string.byte ( data, 1 );
-    
-end
-
-function M.writeByte ( register, byte )
-
-    i2c.start ( ID );
-    local ackTransmit = i2c.address ( ID, DEVICE_ADDRESS, i2c.TRANSMITTER );
---    print ( "ack transmit=", ackTransmit );
-    local n = i2c.write ( ID, register );
---    print ( "n=", n );
-    local n2 = i2c.write ( ID, byte );
---    print ( "n2=", n2 );
-    i2c.stop ( ID );
-    
-end
-
--------------------------------------------------------------------------------
--- apds9960 low level functions
-
-function M.setBit ( reg, pos, value )
-
-    if ( value == nil ) then value = 1; end
-    local handleBit = value and bit.set or bit.clear;
-    M.writeByte ( reg, handleBit ( M.readByte ( reg ), pos ) );
-
-end
-
-function M.setBits ( reg, highest, lowest, value )
-
---    assert ( reg, "reg is undefined" );
---    assert ( value, "value is undefined" );
---    assert ( 8 >= highest and highest >= 0, "highest bit is outside (highest=" .. highest .. ")" );
---    assert ( 8 >= lowest and lowest >= 0, "lowest bit is outside (lowest=" .. lowest .. ")" );
---    assert ( highest >= lowest, "wrong order (highest=" .. highest .. ", lowest=" .. lowest ..")" );
-     
-    local old = M.readByte ( reg );
-
-    local mask = 0;
-    for i = 0, highest - lowest do
-        mask = bit.set ( mask, i );
-    end
-    
-    local new = bit.bor ( bit.band ( old, bit.bxor ( bit.lshift ( mask, lowest ), 0xFF ) ), bit.lshift ( bit.band ( value, mask ), lowest ) );
-    
-    M.writeByte ( reg, new );
-
-end
-
-function M.set16BitThreshold ( highByteReg, lowByteReg, threshold )
-
-    local highValue = bit.rshift ( bit.band ( threshold, 0xFF00 ), 8 );
-    local lowValue = bit.band ( threshold, 0x00FF );
-    
-    M.writeByte ( highByteReg, highValue );
-    M.writeByte ( lowByteReg, lowValue );
-    
-end
-
-function M.isBit ( reg, pos )
-    
-    return bit.isset ( M.readByte ( reg ), pos )
-    
-end
-
--------------------------------------------------------------------------------
 -- public functions
 
-function M.init ( sda, scl )
+function M.init ( sda, scl, verbose )
 
-    local speed = i2c.setup ( ID, sda, scl, i2c.SLOW ); -- 100 kHz
-    print ( "[I2C] speed=" .. speed );
+    if ( verbose ) then print ( "[MPU6050] init: sda=" .. sda .. " scl=" .. scl .. " verbose=" .. tostring ( verbose ) ) end
 
-    for register, value in pairs ( DEFAULT ) do
-        M.writeByte ( register, value );
-    end
-    
+    local speed = i2ctool.init ( DEVICE_ADDRESS, sda, scl, DEFAULT, verbose ); -- 100 kHz
+    print ( "[MPU6050] init: speed=" .. speed );
+
 end
 
 --------------------------------------------------------------------

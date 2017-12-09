@@ -103,10 +103,12 @@ end
 
 function M.readWord ( highByteReg, lowByteReg )
 
-    local highValue = i2ctool.readByte ( highByteReg );
-    local lowValue = i2ctool.readByte ( lowByteReg );
+    --if ( debug ) then print ( "[I2C] setWord: highByteReg=" .. tohex ( highByteReg ) .. " lowByteReg=" .. tohex ( lowByteReg ) .. " threshold=" .. threshold ) end
+
+    local highValue = M.readByte ( highByteReg );
+    local lowValue = M.readByte ( lowByteReg );
     
-    return 256*highByteReg + lowByteReg;
+    return 256 * highValue + lowValue;
     
 end
 

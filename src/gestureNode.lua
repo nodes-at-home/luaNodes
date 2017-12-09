@@ -11,6 +11,7 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+require ( "i2ctool" );
 require ( "apds9960" );
 
 -------------------------------------------------------------------------------
@@ -20,12 +21,13 @@ local sdaPin = nodeConfig.appCfg.sdaPin;
 local sclPin = nodeConfig.appCfg.sclPin;
 local intPin = nodeConfig.appCfg.triggerPin;
 
-local readByte = apds9960.readByte;
-local writeByte = apds9960.writeByte;
-local setBit = apds9960.setBit;
-local setBits = apds9960.setBits;
-local isBit = apds9960.isBit;
-local set16BitThreshold = apds9960.set16BitThreshold;
+local readByte = i2ctool.readByte;
+local writeByte = i2ctool.writeByte;
+local setBit = i2ctool.setBit;
+local setBits = i2ctool.setBits;
+local isBit = i2ctool.isBit;
+local readWord = i2ctool.readWord;
+--local registerBits = i2ctool.registerBits;
 
 local offDelay = nodeConfig.timer.offDelay or 2000;
 local proximityPeristence = nodeConfig.appCfg.proximityPersistence or 4;
@@ -34,22 +36,13 @@ local proximityThreshold = nodeConfig.appCfg.proximityThreshold or 20;
 ----------------------------------------------------------------------------------------
 -- private
 
-----------------------------------------------------------------------------------------
--- helper
-
-local function tohex ( byte, len )
-
-    return "0x" .. string.format( "%0" .. (len or 2) .. "X", byte );
-    
-end
-
 local function publishAmbientJson ( client, topic )
 
     -- sensing ambient light
-    local cdata = readByte ( apds9960.REG.CDATAL ) + 256 * readByte ( apds9960.REG.CDATAH );
-    local rdata = readByte ( apds9960.REG.RDATAL ) + 256 * readByte ( apds9960.REG.RDATAH );
-    local gdata = readByte ( apds9960.REG.GDATAL ) + 256 * readByte ( apds9960.REG.GDATAH );
-    local bdata = readByte ( apds9960.REG.BDATAL ) + 256 * readByte ( apds9960.REG.BDATAH );
+    local cdata = readWord ( apds9960.REG.CDATAH, apds9960.REG.CDATAL );
+    local rdata = readWord ( apds9960.REG.RDATAH, apds9960.REG.RDATAL );
+    local gdata = readWord ( apds9960.REG.GDATAH, apds9960.REG.GDATAL );
+    local bdata = readWord ( apds9960.REG.BDATAH, apds9960.REG.BDATAL );
 
     local json = table.concat (
         {
@@ -85,22 +78,22 @@ function M.start ( client, topic )
     
         function ( level, when ) -- when is in us
     
-            print (
-                table.concat (
-                    { 
-                        "interrupt: level=", level, 
-                        "when=", when,
-                        "proximity=", readByte ( apds9960.REG.PDATA ),
---                        "cdate=", tohex ( readByte ( apds9960.REG.CDATAL ) + 16 * readByte ( apds9960.REG.CDATAH ), 4 ),
---                        "rdate=", tohex ( readByte ( apds9960.REG.RDATAL ) + 16 * readByte ( apds9960.REG.RDATAH ), 4 ),
---                        "gdate=", tohex ( readByte ( apds9960.REG.GDATAL ) + 16 * readByte ( apds9960.REG.GDATAH ), 4 ),
---                        "bdate=", tohex ( readByte ( apds9960.REG.BDATAL ) + 16 * readByte ( apds9960.REG.BDATAH ), 4 ),
---                        "enable=", registerBits ( readByte ( apds9960.REG.ENABLE ), ENABLE_FIELDS );
---                        "status=", registerBits ( readByte ( apds9960.REG.STATUS ), STATUS_FIELDS );
-                    },
-                    " "
-                )
-            );
+--            print (
+--                table.concat (
+--                    { 
+--                        "interrupt: level=", level, 
+--                        "when=", when,
+--                        "proximity=", readByte ( apds9960.REG.PDATA ),
+--                        "cdate=", readWord ( apds9960.REG.CDATAH, apds9960.REG.CDATAL );
+--                        "rdate=", readWord ( apds9960.REG.RDATAH, apds9960.REG.RDATAL );
+--                        "gdate=", readWord ( apds9960.REG.GDATAH, apds9960.REG.GDATAL );
+--                        "bdate=", readWord ( apds9960.REG.BDATAH, apds9960.REG.BDATAL );
+--                        "enable=", registerBits ( readByte ( apds9960.REG.ENABLE ), apds9960.ENABLE_BITS );
+--                        "status=", registerBits ( readByte ( apds9960.REG.STATUS ), apds9960.STATUS_BITS );
+--                    },
+--                    " "
+--                )
+--            );
 
             print ( "[APP] publish button press ON" );
             client:publish ( topic .. "/value/state", "ON", 0, 0,  -- qos, NO retain!!!
@@ -140,7 +133,7 @@ function M.connect ( client, topic )
     setBit ( apds9960.REG.ENABLE, 1 );                                      -- ENABLE<1> ALS enable
 
     -- dont publish ambient light here, all values are 0
-    -- publishAmbientJson ( client, topic );
+    --publishAmbientJson ( client, topic );
 
 end
 
