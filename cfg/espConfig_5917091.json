@@ -1,0 +1,25 @@
+{
+    "chipid": 5917091,
+    "app": "spindleNode",
+    "class": "sensor",
+    "type": "spindle",
+    "location": "fermenter",
+    "appCfg": {
+        "useAdc": true,
+        "useOfflineCallback": false,
+        "useQuickStartupAfterDeepSleep": true,
+        "timeBetweenSensorReadings": 1200000,
+        "sampleNumber": 10,
+        "dsPin": 3,
+        "sdaPin": 5,
+        "sclPin": 6,
+        "intPin": 7
+    },
+    "timer": {
+        "deepSleep": 3,
+        "deepSleepDelay": 5000
+    },
+    "wifi": {
+        "ip": "192.168.2.46"
+    }
+}
