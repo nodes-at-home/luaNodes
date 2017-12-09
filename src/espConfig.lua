@@ -72,24 +72,24 @@ local function tableMerge ( t1, t2 )
 
 end
 
-local function printTable ( t, indent )
-
-    if ( type ( t ) ~= "table" ) then return; end
-
-    local _indent = indent or 0;
-    local indentStr = string.rep ( " ", indent or 0 );
-
-    for k, v in pairs ( t ) do
-        if ( type ( v ) == "table" ) then
-            print ( indentStr .. k .. "={" ); 
-            printTable ( v, _indent + 1 );
-            print ( indentStr .. "}," ); 
-        else
-            print ( indentStr .. k .. "=" .. tostring( v ) .. "," );
-        end
-    end
-    
-end
+--local function printTable ( t, indent )
+--
+--    if ( type ( t ) ~= "table" ) then return; end
+--
+--    local _indent = indent or 0;
+--    local indentStr = string.rep ( " ", indent or 0 );
+--
+--    for k, v in pairs ( t ) do
+--        if ( type ( v ) == "table" ) then
+--            print ( indentStr .. k .. "={" ); 
+--            printTable ( v, _indent + 1 );
+--            print ( indentStr .. "}," ); 
+--        else
+--            print ( indentStr .. k .. "=" .. tostring( v ) .. "," );
+--        end
+--    end
+--    
+--end
 
 local function replaceNil ( t )
 
@@ -122,7 +122,6 @@ function M.init ()
 
     -- read version
     if ( file.open ( "$version.txt" ) ) then
-print ( "file is open" )    
         version = file.read ();
         file.close ();
     end
