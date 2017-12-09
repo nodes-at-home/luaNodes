@@ -1,6 +1,5 @@
 nodemcu-tool.cmd upload ^
 bin\apds9960.lc ^
-bin\apds9960debug.lc ^
 bin\brewNode.lc ^
 bin\buttonNode.lc ^
 bin\credential.lc ^

@@ -1,7 +1,6 @@
 
 FOR %%F IN (
 apds9960.lc
-apds9960debug.lc
 brewNode.lc
 buttonNode.lc
 credential.lc

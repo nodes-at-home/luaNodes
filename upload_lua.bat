@@ -1,6 +1,5 @@
 nodemcu-tool.cmd upload ^
 src\apds9960.lua ^
-src\apds9960debug.lua ^
 src\brewNode.lua ^
 src\buttonNode.lua ^
 src\credential.lua ^
