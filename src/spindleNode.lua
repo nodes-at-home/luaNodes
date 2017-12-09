@@ -94,11 +94,15 @@ local function readAndPublishTemperature ( client, topic )
             dsPin 
         );
         if t.sens then
-          print ( "[APP] readAndPublishTemperature: total number of DS18B20 sensors: " .. table.getn ( t.sens ) );
-          for i, s in ipairs ( t.sens ) do
-            --print(string.format("  sensor #%d address: %s%s", i, s.addr, s.parasite == 1 and " (parasite)" or ""))
-            --print ( string.format ( "[APP] readAndPublishTemperature: sensor #%d address: %s%s", i, encoder.toHex ( s.addr ), s.parasite == 1 and " (parasite)" or "" ) ); -- readable address with base64 encoding is preferred when encoder module is available
-          end
+            local n = table.getn ( t.sens );
+            print ( "[APP] readAndPublishTemperature: total number of DS18B20 sensors: " .. table.getn ( t.sens ) );
+--            for i, s in ipairs ( t.sens ) do
+--                print(string.format("  sensor #%d address: %s%s", i, s.addr, s.parasite == 1 and " (parasite)" or ""))
+--                print ( string.format ( "[APP] readAndPublishTemperature: sensor #%d address: %s%s", i, encoder.toHex ( s.addr ), s.parasite == 1 and " (parasite)" or "" ) ); -- readable address with base64 encoding is preferred when encoder module is available
+--            end
+            if ( n == 0 ) then
+                goDeepSleep ( client );
+            end
         end
     else
         goDeepSleep ( client );
