@@ -9,7 +9,9 @@ bin\espConfig.lc ^
 bin\garageNode.lc ^
 bin\gestureNode.lc ^
 bin\httpDL.lc ^
+bin\i2ctool.lc ^
 bin\ledNode.lc ^
+bin\mpu6050.lc ^
 bin\mqttNode.lc ^
 bin\mqttNodeConfig.lc ^
 bin\mqttNodeConnect.lc ^
@@ -20,6 +22,7 @@ bin\poolNode.lc ^
 bin\relayNode.lc ^
 bin\rfNode.lc ^
 bin\sonoffNode.lc ^
+bin\spindleNode.lc ^
 bin\startup.lc ^
 bin\tempNode.lc ^
 bin\trace.lc ^

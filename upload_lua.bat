@@ -9,7 +9,9 @@ src\espConfig.lua ^
 src\garageNode.lua ^
 src\gestureNode.lua ^
 src\httpDL.lua ^
+src\i2ctool.lua ^
 src\ledNode.lua ^
+src\mpu6050.lua ^
 src\mqttNode.lua ^
 src\mqttNodeConfig.lua ^
 src\mqttNodeConnect.lua ^
@@ -20,6 +22,7 @@ src\poolNode.lua ^
 src\relayNode.lua ^
 src\rfNode.lua ^
 src\sonoffNode.lua ^
+src\spindleNode.lua ^
 src\startup.lua ^
 src\tempNode.lua ^
 src\trace.lua ^

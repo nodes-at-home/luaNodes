@@ -10,7 +10,9 @@ espConfig.lc
 garageNode.lc
 gestureNode.lc
 httpDL.lc
+i2ctool.lc
 ledNode.lc
+mpu6050.lc
 mqttNode.lc
 mqttNodeConfig.lc
 mqttNodeConnect.lc
@@ -21,6 +23,7 @@ poolNode.lc
 relayNode.lc
 rfNode.lc
 sonoffNode.lc
+spindleNode.lc
 startup.lc
 tempNode.lc
 trace.lc
