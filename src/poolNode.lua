@@ -11,8 +11,6 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
-require  ( "util" );
-
 -------------------------------------------------------------------------------
 --  Settings
 
@@ -52,7 +50,7 @@ local function publishValues ( client, baseTopic, temperature )
 
     if ( temperature ) then
         print ( "[APP] publish temperature t=" .. temperature );
-        client:publish ( baseTopic .. "/value/temperature", util.createJsonValueMessage ( temperature, "C" ), 0, nodeConfig.retain, -- qos, retain
+        client:publish ( baseTopic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"°C"}]], 0, nodeConfig.retain, -- qos, retain
             function ( client )
                 goDeepSleep ( client );
             end
