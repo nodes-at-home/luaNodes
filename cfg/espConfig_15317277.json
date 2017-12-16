@@ -3,7 +3,7 @@
     "app": "sonoffNode",
     "class": "switch",
     "type": "sonoff",
-    "location": "location3",
+    "location": "gallery",
     "appCfg": {
         "buttonPin": 3,
         "extraPin": 5,

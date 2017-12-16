@@ -3,7 +3,7 @@
     "app": "rfNode",
     "class": "switch",
     "type": "rfhub",
-    "location": "first",
+    "location": "lounge",
     "appCfg": {
         "ledpin": 4,
         "dhtPin": 6,

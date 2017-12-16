@@ -2,7 +2,7 @@
     "chipid": 2028701,
     "app": "tempNode",
     "class": "sensor",
-    "type": "DHT11",
+    "type": "DHT22",
     "location": "lounge",
     "appCfg": {
         "bme280SclPin": 1,

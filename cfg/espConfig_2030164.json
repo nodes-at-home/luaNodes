@@ -2,7 +2,7 @@
     "chipid": 2030164,
     "app": "tempNode",
     "class": "sensor",
-    "type": "DHT11",
+    "type": "DHT22",
     "location": "terrace",
     "appCfg": {
         "dhtPin": 4,

@@ -2,7 +2,7 @@
     "chipid": 1829768,
     "app": "tempNode",
     "class": "sensor",
-    "type": "DHT11",
+    "type": "DHT22",
     "location": "roof",
     "appCfg": {
         "dhtPin": 4,

@@ -3,7 +3,7 @@
     "class": "switch",
     "app": "sonoffNode",
     "type": "sonoff",
-    "location": "location2",
+    "location": "pool",
     "appCfg": {
         "device": "socket",
         "buttonPin": 3,

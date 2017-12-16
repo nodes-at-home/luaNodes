@@ -2,8 +2,8 @@
     "chipid": 982283,
     "app": "relayNode",
     "class": "switch",
-    "type": "relay1",
-    "location": "dining",
+    "type": "relay",
+    "location": "dining1",
     "appCfg": {
         "buttonPin": 1,
         "ledPin": 2,
