@@ -20,12 +20,6 @@ _G [moduleName] = M;
 --------------------------------------------------------------------
 -- public
 
-function M.createJsonValueMessage ( value, unit )
-
-    return [[{"value":]] .. value .. [[, "unit":"]] .. unit .. [["}]];
-    
-end
-
 -- from: http://lua-users.org/wiki/SplitJoin
 function M.split ( str, pattern )
 
@@ -53,44 +47,6 @@ function M.splitTopic ( str )
 
    return M.split ( str, '[\\/]+' );
    
-end
-
-function M.getSensorData ( pin )
-
-    print ( "[DHT] pin=" .. pin );
-
-    local dht = require ( "dht" );
-    
-    local status, temperature, humidity, temp_decimial, humi_decimial = dht.read ( pin );
-    
-    if( status == dht.OK ) then
-
-        print ( "[DHT] Temperature: " .. temperature .. " C" );
-        print ( "[DHT] Humidity: " .. humidity .. "%" );
-        
-    elseif( status == dht.ERROR_CHECKSUM ) then
-    
-        print ( "[DHT] Checksum error" );
-        temperature = nil;
-        humidity = nil;
-        
-    elseif( status == dht.ERROR_TIMEOUT ) then
-    
-        print ( "[DHT] Time out" );
-        temperature = nil;
-        humidity = nil;
-        
-    end
-    
-    local result = status == dht.OK; 
-    
-    -- Release module
-    dht = nil;
-    package.loaded [ "dht" ] = nil;
-    
---    local success = status == dht.OK;
-    return result, temperature, humidity;
-    
 end
 
 -------------------------------------------------------------------------------
