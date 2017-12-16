@@ -34,7 +34,9 @@ function M.connect ( client )
         function ( client )
             local voltage = -1;
             if ( nodeConfig.appCfg.useAdc ) then
-                    voltage = adc.read ( 0 ) / 1023 * 4200; -- mV
+                    local scale = nodeConfig.appCfg.adcScale or 4200;
+                    print ( "[MQTT] adcScale=" .. scale );           
+                    voltage = adc.read ( 0 ) / 1023 * scale; -- mV
             else
                 voltage = adc.readvdd33 ();
             end

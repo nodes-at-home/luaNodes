@@ -154,19 +154,23 @@ function M.start ( app )
     
     if ( nodeConfig.timer.periodic ) then
         tmr.alarm ( nodeConfig.timer.periodic, nodeConfig.timer.periodicPeriod, tmr.ALARM_AUTO, -- timer_id, interval_ms, mode
-            function () 
-                local voltage = -1;
-                if ( nodeConfig.appCfg.useAdc ) then
-                    voltage = adc.read ( 0 ) / 1023 * 4200; -- mV
-                else
-                    voltage = adc.readvdd33 ();
-                end
-                print ( "[MQTT] send voltage=" .. voltage );
-                mqttClient:publish ( nodeConfig.topic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], 0, nodeConfig.retain, -- qos, retain                                    
-                    function ( client )
-                        appNode.periodic ( mqttClient, nodeConfig.topic );
+            function ()
+                if ( mqttClient ) then 
+                    local voltage = -1;
+                    if ( nodeConfig.appCfg.useAdc ) then
+                        local scale = nodeConfig.appCfg.adcScale or 4200;
+                        print ( "[MQTT] adcScale=" .. scale );           
+                        voltage = adc.read ( 0 ) / 1023 * scale; -- mV
+                    else
+                        voltage = adc.readvdd33 ();
                     end
-                );
+                    print ( "[MQTT] send voltage=" .. voltage );
+                    mqttClient:publish ( nodeConfig.topic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], 0, nodeConfig.retain, -- qos, retain                                    
+                        function ( client )
+                            appNode.periodic ( mqttClient, nodeConfig.topic );
+                        end
+                    );
+                end
             end 
         );
     end
