@@ -49,8 +49,9 @@ function M.receive ( client, payload )
     local json = cjson.decode ( payload );
     if ( json.chipid == node.chipid () ) then
         print ( "[CONFIG] found same chipid " .. node.chipid () );
-        if ( file.open ( "espConfig_local.json", "w" ) ) then
+        if ( file.open ( "espConfig_mqtt.json", "w" ) ) then
             file.write ( payload );
+            file.close ();
             print ( "[CONFIG] restarting after config save")
             if ( trace ) then 
                 trace.off ( node.restart ); 

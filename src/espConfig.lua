@@ -131,7 +131,7 @@ function M.init ()
 --    print ( "[CONFIG] default config" );
 --    printTable ( result );
 
-    local files = { "default", tostring ( node.chipid () ), "local" };
+    local files = { "default", tostring ( node.chipid () ), "mqtt", "local" };
     
     for _, f in ipairs ( files ) do
         local loadFile = "espConfig_" .. f .. ".json";
