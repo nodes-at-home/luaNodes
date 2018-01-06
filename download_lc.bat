@@ -4,7 +4,6 @@ apds9960.lc
 brewNode.lc
 buttonNode.lc
 credential.lc
-ds18b20.lc
 espConfig.lc
 garageNode.lc
 gestureNode.lc

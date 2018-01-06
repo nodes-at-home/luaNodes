@@ -3,7 +3,6 @@ bin\apds9960.lc ^
 bin\brewNode.lc ^
 bin\buttonNode.lc ^
 bin\credential.lc ^
-bin\ds18b20.lc ^
 bin\espConfig.lc ^
 bin\garageNode.lc ^
 bin\gestureNode.lc ^

@@ -18,11 +18,9 @@ local dsPin = nodeConfig.appCfg.dsPin;
 local dhtDataPin = nodeConfig.appCfg.dhtDataPin;
 local dhtPowerPin = nodeConfig.appCfg.dhtPowerPin;
 
-local ds18b20 = require ( "ds18b20" );
-
 local retain = 0;
 -- local retain = nodeConfig.retain;
-    
+
 ----------------------------------------------------------------------------------------
 -- private
 
@@ -75,10 +73,12 @@ local function readAndPublish ( client, topic )
 
     if ( dsPin and dhtDataPin ) then
 
-        ds18b20:readTemp ( 
-            function ( sensors )
-                for addr, brewTemperature in pairs ( sensors ) do
-                    print ( string.format ( "[DS18B20] Sensor %s: %s °C", encoder.toHex ( addr ), brewTemperature ) ); -- readable address with base64 encoding is preferred when encoder module is available
+        ds18b20.read (
+            function ( index, address, resolution, brewTemperature, tempinteger, parasitic )
+                local addr = string.format ( "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X", string.match ( address, "(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+)" ) );
+                print ( "[APP] index=" .. index .. " address=" .. addr .. " resolution=" .. resolution .. " temperature=" .. brewTemperature .. " parasitic=" .. parasitic );
+                -- only first sensor
+                if ( index == 1 ) then
                     local success, outerTemperature = getSensorData ( dhtDataPin );
                     if ( success ) then
                         print ( "[DHT] t=" .. outerTemperature );
@@ -87,12 +87,11 @@ local function readAndPublish ( client, topic )
                         print ( "[DHT] no values" );
                         publishValues ( client, topic, brewTemperature, 0 );
                     end
-                    break; -- only first value of ds18b20 is published
                 end
             end,
-            dsPin 
+            {}
         );
-    
+
     end
 
 end
@@ -108,6 +107,8 @@ function M.start ( client, topic )
     gpio.mode ( dhtPowerPin, gpio.OUTPUT );
     gpio.write ( dhtPowerPin, gpio.HIGH );
     
+    ds18b20.setup ( dsPin );
+
 end
 
 function M.connect ( client, topic )

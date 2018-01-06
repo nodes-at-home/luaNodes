@@ -17,6 +17,7 @@ _G [moduleName] = M;
 ----------------------------------------------------------------------------------------
 -- private
 
+local dsPin = nodeConfig.appCfg.dsPin or 3;
 local restartConnection = true;
 
 --------------------------------------------------------------------
@@ -67,33 +68,30 @@ local function publishValues ( client, baseTopic, temperature )
 
 end
 
-function M.connect ( client, baseTopic )
+function M.start ( client, topic)
+
+    print ( "[APP] start" );
+    
+    ds18b20.setup ( dsPin );
+
+end
+
+function M.connect ( client, topic )
 
     print ( "[APP] connect" );
     
-    local dsPin = nodeConfig.appCfg.dsPin;
-
-    local t = require ( "ds18b20" );
-    
---    t:readTemp ( readout, dsPin );
-    t:readTemp ( 
-        function ( sensors )
-            for addr, temperature in pairs ( sensors ) do
-                print ( string.format ( "[APP] Sensor %s: %s °C", encoder.toHex ( addr ), temperature ) ); -- readable address with base64 encoding is preferred when encoder module is available
-                publishValues ( client, baseTopic, temperature );
-                break; -- only first value is published
+    ds18b20.read (
+        function ( index, address, resolution, temperature, tempinteger, parasitic )
+            -- only first sensor
+            if ( index == 1 ) then
+                local addr = string.format ( "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X", string.match ( address, "(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+)" ) );
+                print ( "[APP] index=" .. index .. " address=" .. addr .. " resolution=" .. resolution .. " temperature=" .. temperature .. " parasitic=" .. parasitic );
+                publishValues ( client, topic, temperature );
             end
         end,
-        dsPin 
+        {}
     );
-    if t.sens then
-      print ( "[APP] Total number of DS18B20 sensors: " .. table.getn ( t.sens ) );
-      for i, s in ipairs ( t.sens ) do
-        -- print(string.format("  sensor #%d address: %s%s", i, s.addr, s.parasite == 1 and " (parasite)" or ""))
-        print ( string.format ( "[APP] sensor #%d address: %s%s", i, encoder.toHex ( s.addr ), s.parasite == 1 and " (parasite)" or "" ) ); -- readable address with base64 encoding is preferred when encoder module is available
-      end
-    end
-
+    
 end
 
 local function offline ( client )
