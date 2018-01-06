@@ -79,8 +79,6 @@ function M.connect ( client )
         end
     );
 
-    package.loaded [ moduleName ] = nil;
-
 end
 
 -------------------------------------------------------------------------------

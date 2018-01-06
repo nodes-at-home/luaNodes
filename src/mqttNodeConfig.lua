@@ -38,8 +38,6 @@ function M.subscribe ( client )
         end
     );
 
-    package.loaded [ moduleName ] = nil;
-
 end
 
 function M.receive ( client, payload )
@@ -60,8 +58,6 @@ function M.receive ( client, payload )
             end
         end
     end
-    
-    package.loaded [ moduleName ] = nil;
 
 end
 

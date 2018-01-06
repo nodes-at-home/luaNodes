@@ -61,7 +61,7 @@ function wifiLoop ()
                     -- check for update
                     if ( topic == nodeConfig.topic .. "/service/update" ) then 
                         require ( "mqttNodeUpdate" ).checkAndStart ( payload );
-                        mqttNodeUpdate = nil;
+                        unrequire ( "mqttNodeUpdate" );
                         collectgarbage ();
                     elseif ( topic == nodeConfig.topic .. "/service/trace" ) then
                         require ( "trace" );
@@ -72,11 +72,11 @@ function wifiLoop ()
                         end
                     elseif ( topic == nodeConfig.topic .. "/service/config" ) then
                         require ( "mqttNodeConfig" ).subscribe ( client );
-                        mqttNodeConfig = nil;
+                        unrequire ( "mqttNodeConfig" );
                         collectgarbage ();
                     elseif ( topic == "nodes@home/config/" .. node.chipid () .. "/json" ) then
                         require ( "mqttNodeConfig" ).receive ( client, payload );
-                        mqttNodeConfig = nil;
+                        unrequire ( "mqttNodeConfig" );
                         collectgarbage ();
                     else
                         appNode.message ( client, topic, payload );
@@ -109,7 +109,7 @@ function wifiLoop ()
         do
             print ( "[MQTT] retry connecting" );
         end
-        mqttNodeConnect = nil;
+        unrequire ( "mqttNodeConnect" );
         collectgarbage ();
 
         print ( "[MQTT] connect result=" .. tostring ( result ) );
@@ -175,8 +175,6 @@ function M.start ( app )
         );
     end
     
-    package.loaded [moduleName] = nil;
-
 end
   
 -------------------------------------------------------------------------------
