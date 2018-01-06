@@ -12,19 +12,11 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
-require ( "wifi" );
-
 --------------------------------------------------------------------
 -- vars
 
---- WIFI ---
--- wifi.PHYMODE_B 802.11b, More range, Low Transfer rate, More current draw
--- wifi.PHYMODE_G 802.11g, Medium range, Medium transfer rate, Medium current draw
--- wifi.PHYMODE_N 802.11n, Least range, Fast transfer rate, Least current draw 
-WIFI_SIGNAL_MODE = wifi.PHYMODE_N;
-
 --------------------------------------------------------------------
--- global
+-- application global
 
 function unrequire ( module )
 
@@ -42,6 +34,10 @@ function tohex ( byte, len )
     
 end
 
+-- workaround for json parser
+--      before 2.1.0 cjson, with 2.1.0 sjson
+cjson = cjson or sjson; 
+
 --------------------------------------------------------------------
 -- private
 
@@ -50,10 +46,19 @@ local function startApp ()
     print ( "[STARTUP] application " .. nodeConfig.app .. " is starting" );
     -- Connect to the wifi network
     print ( "[WIFI] connecting to " .. wifiCredential.ssid );
-    wifi.setmode ( wifi.STATION );
-    wifi.setphymode ( WIFI_SIGNAL_MODE );
-    wifi.sta.config ( wifiCredential.ssid, wifiCredential.password );
-    wifi.sta.connect ();
+    wifi.setmode ( wifi.STATION, true ); -- save to flash
+    wifi.setphymode ( wifi.PHYMODE_N );
+    local configok = wifi.sta.config (
+        { 
+            ssid = wifiCredential.ssid, 
+            pwd = wifiCredential.password,
+            auto = true,
+            save = true 
+        }
+    );
+    print ( "[WIFI] config=" .. tostring ( configok ) );    
+    --wifi.sta.connect ();
+    
     local wificfg = nodeConfig.wifi;
     if ( wificfg ) then
         print ( "[WIFI] fix ip=" .. wificfg.ip );
@@ -73,6 +78,7 @@ local function startApp ()
         local app = require ( nodeConfig.app );
         print ( "[STARTUP] starting mqttNode", node.heap () );
         require ( "mqttNode" ).start ( app );
+        unrequire ( "mqttNode" );
     end
 
 end
