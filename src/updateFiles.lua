@@ -104,7 +104,11 @@ function M.start ()
 
     if ( file.open ( update.UPDATE_JSON_FILENAME ) ) then
         print ( "[UPDATE] open file " .. update.UPDATE_JSON_FILENAME );
-        local payload = file.read ();
+        local payload = "";
+        repeat
+            local content = file.read (); -- is rading max., 1024 bytes
+            if ( content ) then payload = payload .. content end 
+        until not content        
         print ( "[UPDATE] payload=" .. payload );
         local pcallOk, json = pcall ( function () return cjson.decode ( payload ) end );
         print ( "[UPDATE] pcall: pcallOk=" .. tostring ( pcallOk ) .. " result=" .. tostring ( json ) );
