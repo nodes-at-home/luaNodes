@@ -59,7 +59,7 @@ local function publishTemperature ( client, topic, temperature, callback )
 
     if ( temperature ) then
         print ( "[APP] publishTemperature: t=" .. temperature );
-        client:publish ( topic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"°C"}]], 0, nodeConfig.retain, -- qos, retain
+        client:publish ( topic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"C"}]], 0, nodeConfig.retain, -- qos, retain
             function ( client )
                 callback ( client );
             end
@@ -79,31 +79,20 @@ end
 local function readAndPublishTemperature ( client, topic )
 
     print ( "[APP] readAndPublishTemperature: topic=" .. topic );
-
+    
     -- temperature
     if ( dsPin ) then
-        local t = require ( "ds18b20" );
-        t:readTemp ( 
-            function ( sensors )
-                for addr, temperature in pairs ( sensors ) do
-                    --print ( string.format ( "[APP] readAndPublishTemperature: Sensor %s: %s °C", encoder.toHex ( addr ), temperature ) ); -- readable address with base64 encoding is preferred when encoder module is available
+        ds18b20.read (
+            function ( index, address, resolution, temperature, tempinteger, parasitic )
+                -- only first sensor
+                if ( index == 1 ) then
+                    local addr = string.format ( "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X", string.match ( address, "(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+)" ) );
+                    print ( "[APP] index=" .. index .. " address=" .. addr .. " resolution=" .. resolution .. " temperature=" .. temperature .. " parasitic=" .. parasitic );
                     publishTemperature ( client, topic, temperature, goDeepSleep );
-                    break; -- only first value is published
                 end
             end,
-            dsPin 
+            {}
         );
-        if t.sens then
-            local n = table.getn ( t.sens );
-            print ( "[APP] readAndPublishTemperature: total number of DS18B20 sensors: " .. table.getn ( t.sens ) );
---            for i, s in ipairs ( t.sens ) do
---                print(string.format("  sensor #%d address: %s%s", i, s.addr, s.parasite == 1 and " (parasite)" or ""))
---                print ( string.format ( "[APP] readAndPublishTemperature: sensor #%d address: %s%s", i, encoder.toHex ( s.addr ), s.parasite == 1 and " (parasite)" or "" ) ); -- readable address with base64 encoding is preferred when encoder module is available
---            end
-            if ( n == 0 ) then
-                goDeepSleep ( client );
-            end
-        end
     else
         goDeepSleep ( client );
     end
@@ -141,6 +130,8 @@ function M.start ( client, topic )
 
     print ( "[APP] start: topic=" .. topic );
     
+    ds18b20.setup ( dsPin );
+
     -- initialize acceleration sensor
     mpu6050.init ( sdaPin, sclPin );
     local id = readByte ( mpu6050.REG.WHO_AM_I );
