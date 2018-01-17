@@ -5,11 +5,9 @@
     "type": "button",
     "location": "indoor",
     "appCfg": {
-        "useOfflineCallback": false,
         "useQuickStartupAfterDeepSleep": true
     },
     "timer": {
-        "deepSleep": 3,
         "deepSleepDelay": 1000
     },
     "wifi": {
