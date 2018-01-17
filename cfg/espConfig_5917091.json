@@ -6,7 +6,6 @@
     "location": "fermenter",
     "appCfg": {
         "useAdc": true,
-        "useOfflineCallback": false,
         "useQuickStartupAfterDeepSleep": true,
         "timeBetweenSensorReadings": 1200000,
         "sampleNumber": 10,
@@ -16,7 +15,6 @@
         "intPin": 7
     },
     "timer": {
-        "deepSleep": 3,
         "deepSleepDelay": 5000
     },
     "wifi": {

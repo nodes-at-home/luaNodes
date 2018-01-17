@@ -23,83 +23,46 @@ local sdaPin = nodeConfig.appCfg.sdaPin or 5;   -- yellow
 local intPin = nodeConfig.appCfg.intPin or 1;   -- green
 local sampleNumber = nodeConfig.appCfg.sampleNumber or 10;
 
-----------------------------------------------------------------------------------------
--- private
-
 local restartConnection = true;
+
 local readByte = i2ctool.readByte;
 local writeByte = i2ctool.writeByte;
 local setBits = i2ctool.setBits;
 local setBit = i2ctool.setBit;
 
-local function goDeepSleep ( client )
+local deepSleepDelay = nodeConfig.timer.deepSleepDelay;
+local timeBetweenSensorReadings = nodeConfig.appCfg.timeBetweenSensorReadings;
 
-    if ( not nodeConfig.appCfg.useOfflineCallback ) then
-        restartConnection = false;
-        local deepSleepDelay = nodeConfig.timer.deepSleepDelay;
-        print ( "[APP] initiate alarm for closing connection in " ..  deepSleepDelay/1000 .. " seconds" );
-        -- wait a minute with closing connection
-        tmr.alarm ( nodeConfig.timer.deepSleep, deepSleepDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
-            function () 
-                print ( "[APP] closing connection" );
-                client:close ();
-                local timeBetweenSensorReadings = nodeConfig.appCfg.timeBetweenSensorReadings;
-                print ( "[APP] Going to deep sleep for ".. timeBetweenSensorReadings/1000 .." seconds" );
-                node.dsleep ( (timeBetweenSensorReadings - deepSleepDelay) * 1000, 1 ); -- us, RF_CAL after deep sleep
-            end
-        );
-    else
-        print ( "[APP] closing connection using offline handler" );
-        client:close ();
-    end
+local retain = nodeConfig.mqtt.retain;
 
-end
-
-local function publishTemperature ( client, topic, temperature, callback )
-
-    if ( temperature ) then
-        print ( "[APP] publishTemperature: t=" .. temperature );
-        client:publish ( topic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"C"}]], 0, nodeConfig.retain, -- qos, retain
-            function ( client )
-                callback ( client );
-            end
-        );
-    else
-        print ( "[APP] publishTemperature: nothing published" );
-        local t = temperature and temperature or "--";
-        client:publish ( topic .. "/value/error", "nothing published t=" .. t, 0, nodeConfig.retain, -- qos, retain
-            function ( client )
-                callback ( client );
-            end
-        );
-    end
-
-end
+----------------------------------------------------------------------------------------
+-- private
 
 local function readAndPublishTemperature ( client, topic )
 
     print ( "[APP] readAndPublishTemperature: topic=" .. topic );
     
     -- temperature
-    if ( dsPin ) then
-        ds18b20.read (
-            function ( index, address, resolution, temperature, tempinteger, parasitic )
-                -- only first sensor
-                if ( index == 1 ) then
-                    local addr = string.format ( "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X", string.match ( address, "(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+)" ) );
-                    print ( "[APP] index=" .. index .. " address=" .. addr .. " resolution=" .. resolution .. " temperature=" .. temperature .. " parasitic=" .. parasitic );
-                    publishTemperature ( client, topic, temperature, goDeepSleep );
-                end
-            end,
-            {}
-        );
-    else
-        goDeepSleep ( client );
-    end
+    ds18b20.read (
+        function ( index, address, resolution, temperature, tempinteger, parasitic )
+            -- only first sensor
+            if ( index == 1 ) then
+                local addr = string.format ( "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X", string.match ( address, "(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+)" ) );
+                print ( "[APP] index=" .. index .. " address=" .. addr .. " resolution=" .. resolution .. " temperature=" .. temperature .. " parasitic=" .. parasitic );
+                print ( "[APP] publishTemperature: t=" .. temperature );
+                client:publish ( topic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"°C"}]], 0, retain, -- qos, retain
+                    function ( client )
+                        require ( "deepsleep" ).go ( client, deepSleepDelay, timeBetweenSensorReadings );
+                    end
+                );
+            end
+        end,
+        {}
+    );
 
 end
 
-local function publishAcceleration ( client, topic, samples, callback )
+local function publishAcceleration ( client, topic, samples )
 
     print ( "[APP] publishAcceleration" );
     
@@ -114,9 +77,9 @@ local function publishAcceleration ( client, topic, samples, callback )
     table.insert ( json, "]" );
     local s = table.concat ( json );
     print ( "[APP] publishAcceleration: json=" .. s );
-    client:publish ( topic .. "/value/acceleration", s, 0, nodeConfig.retain, -- qos, retain
+    client:publish ( topic .. "/value/acceleration", s, 0, retain, -- qos, retain
         function ( client )
-            callback ( client, topic );
+            readAndPublishTemperature ( client, topic );
         end
     );
 
@@ -185,7 +148,7 @@ function M.start ( client, topic )
             sampleCount = sampleCount + 1;
             if ( sampleCount >= sampleNumber ) then
                 writeByte ( mpu6050.REG.INT_ENABLE, 0x00 ); -- stop interrupt
-                publishAcceleration ( client, topic, samples, readAndPublishTemperature );
+                publishAcceleration ( client, topic, samples );
                 setBit ( mpu6050.REG.PWR_MGMT_1, 6, 1 ); -- sleep 
                 unrequire ( "mpu6050" );
                 unrequire ( "i2ctool" );
@@ -206,18 +169,6 @@ function M.connect ( client, topic )
 
 end
 
-local function offline ( client )
-
-    print ( "[APP] offline" );
-
-    local timeBetweenSensorReadings = nodeConfig.appCfg.timeBetweenSensorReadings;
-    print ( "[APP] Going to deep sleep for ".. timeBetweenSensorReadings/1000 .." seconds" );
-    node.dsleep ( timeBetweenSensorReadings * 1000, 1 ); -- us, RF_CAL after deep sleep
-    
-    return restartConnection; -- restart mqtt connection
-    
-end
-
 function M.offline ( client )
 
     print ( "[APP] offline (local)" );
@@ -236,10 +187,6 @@ end
 -- main
 
 print ( "[MODULE] loaded: " .. moduleName )
-
-if ( nodeConfig.appCfg.useOfflineCallback ) then
-    M.offline = offline;
-end
 
 return M;
 
