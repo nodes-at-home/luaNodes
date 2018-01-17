@@ -12,7 +12,6 @@ cfg\espConfig_1689710.json ^
 cfg\espConfig_1829768.json ^
 cfg\espConfig_2028701.json ^
 cfg\espConfig_2030164.json ^
-cfg\espConfig_2677460.json ^
 cfg\espConfig_2677473.json ^
 cfg\espConfig_2691813.json ^
 cfg\espConfig_2692075.json ^
