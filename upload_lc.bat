@@ -3,6 +3,7 @@ bin\apds9960.lc ^
 bin\brewNode.lc ^
 bin\buttonNode.lc ^
 bin\credential.lc ^
+bin\deepsleep.lc ^
 bin\espConfig.lc ^
 bin\garageNode.lc ^
 bin\gestureNode.lc ^

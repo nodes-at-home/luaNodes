@@ -4,6 +4,7 @@ apds9960.lc
 brewNode.lc
 buttonNode.lc
 credential.lc
+deepsleep.lc
 espConfig.lc
 garageNode.lc
 gestureNode.lc

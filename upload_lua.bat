@@ -4,6 +4,7 @@ src\apds9960.lua ^
 src\brewNode.lua ^
 src\buttonNode.lua ^
 src\credential.lua ^
+src\deepsleep.lua ^
 src\espConfig.lua ^
 src\garageNode.lua ^
 src\gestureNode.lua ^
