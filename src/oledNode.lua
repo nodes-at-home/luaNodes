@@ -156,14 +156,6 @@ function M.message ( client, topic, payload )
 
 end
 
-local function offline ( client )
-
-    print ( "[APP] local offline" );
-
-    return true; -- restart mqtt connection
-    
-end
-
 function M.offline ( client )
 
     print ( "[APP] offline" );
@@ -176,10 +168,6 @@ end
 -- main
 
 print ( "[MODULE] loaded: " .. moduleName )
-
-if ( nodeConfig.appCfg.useOfflineCallback ) then
-    M.offline = offline;
-end
 
 return M;
 
