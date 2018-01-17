@@ -6,12 +6,10 @@
     "location": "terrace",
     "appCfg": {
         "dhtPin": 4,
-        "useOfflineCallback": false,
         "timeBetweenSensorReadings": 900000
     },
     "timer": {
-        "deepSleep": 3,
-        "deepSleepDelay": 60000
+        "deepSleepDelay": 5000
     },
     "wifi": {
         "ip": "192.168.2.23"
