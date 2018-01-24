@@ -13,6 +13,7 @@
     "timer": {
         "deepSleepDelay": 5000
     },
+    "phymode": "PHYMODE_G",
     "wifi": {
         "ip": "192.168.2.35"
     }
