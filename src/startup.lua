@@ -47,7 +47,9 @@ local function startApp ()
     -- Connect to the wifi network
     print ( "[WIFI] connecting to " .. wifiCredential.ssid );
     wifi.setmode ( wifi.STATION, true ); -- save to flash
-    wifi.setphymode ( wifi.PHYMODE_N );
+    local phymode = nodeConfig.phymode and wifi [nodeConfig.phymode] or wifi.PHYMODE_N;
+    wifi.setphymode ( phymode );
+    print ( "[WIFI} phymode=" .. wifi.getphymode () );    
     local configok = wifi.sta.config (
         { 
             ssid = wifiCredential.ssid, 
