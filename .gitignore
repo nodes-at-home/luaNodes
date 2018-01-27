@@ -1,6 +1,6 @@
 /.buildpath
 /.project
 
-credential.lua
+credential.*
 //*.lc
 //update_files.json
