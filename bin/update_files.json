@@ -1,1 +1,21 @@
-{"tag":"V0.60.2","files":[{"name":"$version.txt","size":7},{"name":"startup.lc","size":3752},{"name":"espConfig_2028701.json","size":412},{"name":"espConfig_1829768.json","size":354}]}
+{
+    "tag": "V0.60.3",
+    "files": [
+        {
+            "name": "$version.txt",
+            "size": 7
+        },
+        {
+            "name": "mqttNode.lc",
+            "size": 4244
+        },
+        {
+            "name": "espConfig_2028701.json",
+            "size": 463
+        },
+        {
+            "name": "espConfig_1829768.json",
+            "size": 405
+        }
+    ]
+}
