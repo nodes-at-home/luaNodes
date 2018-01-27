@@ -34,6 +34,11 @@ function wifiLoop ()
         -- Stop the loop
         -- tmr.stop ( TIMER_WIFI_LOOP );
 
+        local t = nodeConfig.trace.onStartup; 
+        if ( t ~= nil and t ) then
+            require ( "trace" ).on ();
+        end
+
         print ( "[WIFI] dnsname=" .. wifi.sta.gethostname () );
         print ( "[WIFI] network=" .. (wifi.sta.getip () and wifi.sta.getip () or "NO_IP") );
         print ( "[WIFI] mac=" .. wifi.sta.getmac () );
