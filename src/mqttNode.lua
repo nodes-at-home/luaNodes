@@ -20,7 +20,90 @@ mqttClient = nil;     -- mqtt client
 ----------------------------------------------------------------------------------------
 -- private
 
-function wifiLoop ()
+local function startMqtt ()
+        
+    print ( "[WIFI] dnsname=" .. wifi.sta.gethostname () );
+    print ( "[WIFI] network=" .. (wifi.sta.getip () and wifi.sta.getip () or "NO_IP") );
+    print ( "[WIFI] mac=" .. wifi.sta.getmac () );
+    
+    -- Setup MQTT client and events
+    if ( mqttClient == nil ) then
+        local mqttClientName = wifi.sta.gethostname () .. "-" .. nodeConfig.class .. "-" .. nodeConfig.type .. "-" .. nodeConfig.location;
+        mqttClient = mqtt.Client ( mqttClientName, nodeConfig.keepAliveTime, "", "" ); -- ..., keep_alive_time, username, password
+    end
+
+    print ( "[MQTT] connecting to " .. nodeConfig.mqttBroker );
+
+    -- this is never called, because the last registration wins
+    -- mqttClient:on ( "connect", 
+        -- function ( client )
+            -- print ( "[MQTT] CONNECTED" );
+            -- appNode.connect ();
+        -- end
+    -- );
+        
+    mqttClient:on ( "message", 
+        function ( client, topic, payload )
+            print ( "[MQTT] message received topic=" .. topic .." payload=" .. (payload == nil and "***nothing***" or payload) );
+            if ( payload ) then
+                -- check for update
+                if ( topic == nodeConfig.topic .. "/service/update" ) then 
+                    require ( "mqttNodeUpdate" ).checkAndStart ( payload );
+                    unrequire ( "mqttNodeUpdate" );
+                    collectgarbage ();
+                elseif ( topic == nodeConfig.topic .. "/service/trace" ) then
+                    require ( "trace" );
+                    if ( payload == "ON" ) then 
+                        trace.on ();
+                    else 
+                        trace.off ();
+                    end
+                elseif ( topic == nodeConfig.topic .. "/service/config" ) then
+                    require ( "mqttNodeConfig" ).subscribe ( client );
+                    unrequire ( "mqttNodeConfig" );
+                    collectgarbage ();
+                elseif ( topic == "nodes@home/config/" .. node.chipid () .. "/json" ) then
+                    require ( "mqttNodeConfig" ).receive ( client, payload );
+                    unrequire ( "mqttNodeConfig" );
+                    collectgarbage ();
+                else
+                    appNode.message ( client, topic, payload );
+                end
+            end
+        end
+    );
+        
+    mqttClient:on ( "offline", 
+        function ( client )
+            print ( "[MQTT] offline" );
+            local restartMqtt = appNode.offline ( client );
+            if ( restartMqtt ) then
+                print ( "[MQTT] restart connection" );
+                tmr.alarm ( nodeConfig.timer.wifiLoop, nodeConfig.timer.wifiLoopPeriod, tmr.ALARM_AUTO, wifiLoop ) -- timer_id, interval_ms, mode
+            end
+        end
+    );
+    
+    while not pcall (
+        function ()        
+            result = mqttClient:connect( nodeConfig.mqttBroker , 1883, 0, 0, -- broker, port, secure, autoreconnect
+                require ( "mqttNodeConnect" ).connect,        
+                function ( client, reason ) 
+                    print ( "[MQTT] not connected reason=" .. reason );
+                end
+            )
+        end
+    )
+    do
+        print ( "[MQTT] retry connecting" );
+    end
+    unrequire ( "mqttNodeConnect" );
+    collectgarbage ();
+
+    print ( "[MQTT] connect result=" .. tostring ( result ) );
+end
+
+local function wifiLoop ()
 
     -- 0: STA_IDLE,
     -- 1: STA_CONNECTING,
@@ -34,90 +117,24 @@ function wifiLoop ()
         -- Stop the loop
         -- tmr.stop ( TIMER_WIFI_LOOP );
 
-        local t = nodeConfig.trace.onStartup; 
+        local t = nodeConfig.trace.onStartup;
+        print ( "[MQTT] trace.onStartup=" .. tostring ( t ) ); 
         if ( t ~= nil and t ) then
+            print ( "[MQTT] start with trace" );
             require ( "trace" ).on ();
-        end
-
-        print ( "[WIFI] dnsname=" .. wifi.sta.gethostname () );
-        print ( "[WIFI] network=" .. (wifi.sta.getip () and wifi.sta.getip () or "NO_IP") );
-        print ( "[WIFI] mac=" .. wifi.sta.getmac () );
-        
-        -- Setup MQTT client and events
-        if ( mqttClient == nil ) then
-            local mqttClientName = wifi.sta.gethostname () .. "-" .. nodeConfig.class .. "-" .. nodeConfig.type .. "-" .. nodeConfig.location;
-            mqttClient = mqtt.Client ( mqttClientName, nodeConfig.keepAliveTime, "", "" ); -- ..., keep_alive_time, username, password
-        end
-
-        print ( "[MQTT] connecting to " .. nodeConfig.mqttBroker );
-
-        -- this is never called, because the last registration wins
-        -- mqttClient:on ( "connect", 
-            -- function ( client )
-                -- print ( "[MQTT] CONNECTED" );
-                -- appNode.connect ();
-            -- end
-        -- );
-            
-        mqttClient:on ( "message", 
-            function ( client, topic, payload )
-                print ( "[MQTT] message received topic=" .. topic .." payload=" .. (payload == nil and "***nothing***" or payload) );
-                if ( payload ) then
-                    -- check for update
-                    if ( topic == nodeConfig.topic .. "/service/update" ) then 
-                        require ( "mqttNodeUpdate" ).checkAndStart ( payload );
-                        unrequire ( "mqttNodeUpdate" );
-                        collectgarbage ();
-                    elseif ( topic == nodeConfig.topic .. "/service/trace" ) then
-                        require ( "trace" );
-                        if ( payload == "ON" ) then 
-                            trace.on ();
-                        else 
-                            trace.off ();
-                        end
-                    elseif ( topic == nodeConfig.topic .. "/service/config" ) then
-                        require ( "mqttNodeConfig" ).subscribe ( client );
-                        unrequire ( "mqttNodeConfig" );
-                        collectgarbage ();
-                    elseif ( topic == "nodes@home/config/" .. node.chipid () .. "/json" ) then
-                        require ( "mqttNodeConfig" ).receive ( client, payload );
-                        unrequire ( "mqttNodeConfig" );
-                        collectgarbage ();
-                    else
-                        appNode.message ( client, topic, payload );
+            local pollingTimer = tmr.create (); -- interval_ms, mode
+            pollingTimer:alarm ( 200, tmr.ALARM_AUTO, 
+                function ()
+                    if ( not trace.isStarting () ) then
+                        pollingTimer:unregister ();
+                        startMqtt ();
                     end
-                end
-            end
-        );
-            
-        mqttClient:on ( "offline", 
-            function ( client )
-                print ( "[MQTT] offline" );
-                local restartMqtt = appNode.offline ( client );
-                if ( restartMqtt ) then
-                    print ( "[MQTT] restart connection" );
-                    tmr.alarm ( nodeConfig.timer.wifiLoop, nodeConfig.timer.wifiLoopPeriod, tmr.ALARM_AUTO, wifiLoop ) -- timer_id, interval_ms, mode
-                end
-            end
-        );
-        
-        while not pcall (
-            function ()        
-                result = mqttClient:connect( nodeConfig.mqttBroker , 1883, 0, 0, -- broker, port, secure, autoreconnect
-                    require ( "mqttNodeConnect" ).connect,        
-                    function ( client, reason ) 
-                        print ( "[MQTT] not connected reason=" .. reason );
-                    end
-                )
-            end
-        )
-        do
-            print ( "[MQTT] retry connecting" );
+                end 
+            );
+        else
+            print ( "[MQTT] start with no trace" );
+            startMqtt ();
         end
-        unrequire ( "mqttNodeConnect" );
-        collectgarbage ();
-
-        print ( "[MQTT] connect result=" .. tostring ( result ) );
 
     else
 

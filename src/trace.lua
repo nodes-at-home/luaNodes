@@ -21,12 +21,22 @@ traceSocket = nil;
 ----------------------------------------------------------------------------------------
 -- private
 
+local starting = false;
+
 --------------------------------------------------------------------
 -- public
+
+function M.isStarting ()
+
+    return starting;
+    
+end
 
 function M.on ()
 
     if ( traceSocket == nil ) then
+    
+        starting = true;
     
         traceSocket = net.createConnection ( net.TCP, 0 ); -- no secure
         print ( "[TRACE] connecting to " .. nodeConfig.trace.ip .. ":" .. nodeConfig.trace.port );
@@ -46,6 +56,7 @@ function M.on ()
                     end,
                     1               -- additional serial out  
                 ); 
+                starting = false;
             end 
         );
         
