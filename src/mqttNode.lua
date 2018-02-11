@@ -41,6 +41,8 @@ local function startMqtt ()
             -- appNode.connect ();
         -- end
     -- );
+    
+    -- TODO move callback register code into if block above? 
         
     mqttClient:on ( "message", 
         function ( client, topic, payload )
@@ -79,7 +81,7 @@ local function startMqtt ()
             local restartMqtt = appNode.offline ( client );
             if ( restartMqtt ) then
                 print ( "[MQTT] restart connection" );
-                tmr.alarm ( nodeConfig.timer.wifiLoop, nodeConfig.timer.wifiLoopPeriod, tmr.ALARM_AUTO, wifiLoop ) -- timer_id, interval_ms, mode
+                tmr.start ( nodeConfig.timer.wifiLoop ) -- timer_id
             end
         end
     );
@@ -87,9 +89,13 @@ local function startMqtt ()
     while not pcall (
         function ()        
             result = mqttClient:connect( nodeConfig.mqttBroker , 1883, 0, 0, -- broker, port, secure, autoreconnect
-                require ( "mqttNodeConnect" ).connect,        
+                function ( client )
+                    print ( "[MQTT] connected, require connect module" );
+                    require ( "mqttNodeConnect" ).connect ( client );
+                end,        
                 function ( client, reason ) 
                     print ( "[MQTT] not connected reason=" .. reason );
+                    tmr.start ( nodeConfig.timer.wifiLoop );
                 end
             )
         end
@@ -97,10 +103,9 @@ local function startMqtt ()
     do
         print ( "[MQTT] retry connecting" );
     end
-    unrequire ( "mqttNodeConnect" );
-    collectgarbage ();
 
     print ( "[MQTT] connect result=" .. tostring ( result ) );
+    
 end
 
 local function wifiLoop ()
@@ -114,9 +119,8 @@ local function wifiLoop ()
 
     if ( wifi.sta.status () == wifi.STA_GOTIP ) then
     
-        -- Stop the loop
-        -- tmr.stop ( TIMER_WIFI_LOOP );
-
+        tmr.stop ( nodeConfig.timer.wifiLoop );
+        
         local t = nodeConfig.trace.onStartup;
         print ( "[MQTT] trace.onStartup=" .. tostring ( t ) ); 
         if ( t ~= nil and t ) then

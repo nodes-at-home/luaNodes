@@ -22,9 +22,6 @@ _G [moduleName] = M;
 
 function M.connect ( client )
 
-    -- Stop the loop only if connected
-    tmr.stop ( nodeConfig.timer.wifiLoop );
-
     print ( "[MQTT] connected to MQTT Broker" )
     print ( "[MQTT] node=" .. nodeConfig.topic );
     
