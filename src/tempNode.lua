@@ -156,7 +156,7 @@ function M.connect ( client, baseTopic )
                 function ()
                     local pressure = bme280.baro () / 1000;
                     print ( "[BMP] pressure=" .. pressure );
-                    if ( dhtPin ) then
+                    if ( dhtPin and temperature and humidity ) then
                         print ( "[BMP] t=" .. temperature .. " ,h=" .. humidity );
                         publishValues ( client, baseTopic, temperature, humidity, pressure );
                     else
