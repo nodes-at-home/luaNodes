@@ -39,7 +39,7 @@ function M.connect ( client )
             end
             print ( "[MQTT] send voltage=" .. voltage );
             client:publish ( nodeConfig.topic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], 0, nodeConfig.retain, -- qos, retain                                    
-            function ( client )
+                function ( client )
                     local topic = "nodes@home/config/" .. node.chipid ();
                     print ( "[MQTT] send config app " ..  nodeConfig.app .. " to " .. topic );
                     client:publish ( topic, nodeConfig.app .. "@" .. nodeConfig.location, 0, 1, -- ..., qos, retain
