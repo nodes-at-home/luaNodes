@@ -145,11 +145,11 @@ function M.connect ( client, baseTopic )
     
     if ( bme280SdaPin and bme280SclPin ) then
         local ret = bme280.init ( bme280SdaPin, bme280SclPin, nil, nil, nil, 0 ); -- initialize to sleep mode: temp_oss, press_oss, humi_oss, power_mode, sleep_mode
-        print ( "[BMP] ret=" .. ret );
+        print ( "[BMP] ret=" .. tostring ( ret ) );
         if ( not ret ) then
             print ( "[BMP] retry")
             ret = bme280.init ( bme280SdaPin, bme280SclPin, nil, nil, nil, 0 );
-            print ( "[BMP] ret=" .. ret );
+            print ( "[BMP] ret=" .. tostring ( ret ) );
         end
         if ( ret ) then
             bme280.startreadout ( 0, -- default delay 113ms
@@ -173,9 +173,21 @@ function M.connect ( client, baseTopic )
     
 end
 
+function M.periodic ( client, topic )
+
+    print ( "[APP] periodic call topic=" .. topic );
+    
+    print ( "[APP] closing connections and restart" );
+    restartConnection = false;
+    client:close ();
+    wifi.sta.disconnect ();
+    node.restart ();
+    
+end
+
 function M.offline ( client )
 
-    print ( "[APP] offline (local)" );
+    print ( "[APP] offline" );
 
     return restartConnection; 
 
