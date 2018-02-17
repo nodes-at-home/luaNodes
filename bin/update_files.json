@@ -1,25 +1,13 @@
 {
-    "tag": "V0.60.5a",
+    "tag": "V0.60.6",
     "files": [
         {
             "name": "$version.txt",
-            "size": 8
-        },
-        {
-            "name": "mqttNode.lc",
-            "size": 4884
-        },
-        {
-            "name": "mqttNodeConnect.lc",
-            "size": 2228
+            "size": 7
         },
         {
             "name": "tempNode.lc",
-            "size": 4380
-        },
-        {
-            "name": "trace.lc",
-            "size": 1752
+            "size": 4700
         }
     ]
 }
