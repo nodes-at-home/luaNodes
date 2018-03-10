@@ -28,67 +28,67 @@ local function startMqtt ()
     
     -- Setup MQTT client and events
     if ( mqttClient == nil ) then
+
         local mqttClientName = wifi.sta.gethostname () .. "-" .. nodeConfig.class .. "-" .. nodeConfig.type .. "-" .. nodeConfig.location;
-        mqttClient = mqtt.Client ( mqttClientName, nodeConfig.keepAliveTime, "", "" ); -- ..., keep_alive_time, username, password
-    end
+        mqttClient = mqtt.Client ( mqttClientName, nodeConfig.mqtt.keepAliveTime, "", "" ); -- ..., keep_alive_time, username, password
 
-    print ( "[MQTT] connecting to " .. nodeConfig.mqttBroker );
-
-    -- this is never called, because the last registration wins
-    -- mqttClient:on ( "connect", 
-        -- function ( client )
-            -- print ( "[MQTT] CONNECTED" );
-            -- appNode.connect ();
-        -- end
-    -- );
+        -- this is never called, because the last registration wins
+        -- mqttClient:on ( "connect", 
+            -- function ( client )
+                -- print ( "[MQTT] CONNECTED" );
+                -- appNode.connect ();
+            -- end
+        -- );
     
-    -- TODO move callback register code into if block above? 
-        
-    mqttClient:on ( "message", 
-        function ( client, topic, payload )
-            print ( "[MQTT] message received topic=" .. topic .." payload=" .. (payload == nil and "***nothing***" or payload) );
-            if ( payload ) then
-                -- check for update
-                if ( topic == nodeConfig.topic .. "/service/update" ) then 
-                    require ( "mqttNodeUpdate" ).checkAndStart ( payload );
-                    unrequire ( "mqttNodeUpdate" );
-                    collectgarbage ();
-                elseif ( topic == nodeConfig.topic .. "/service/trace" ) then
-                    require ( "trace" );
-                    if ( payload == "ON" ) then 
-                        trace.on ();
-                    else 
-                        trace.off ();
+        mqttClient:on ( "message", 
+            function ( client, topic, payload )
+                print ( "[MQTT] message received topic=" .. topic .." payload=" .. (payload == nil and "***nothing***" or payload) );
+                if ( payload ) then
+                    -- check for update
+                    if ( topic == nodeConfig.topic .. "/service/update" ) then 
+                        require ( "mqttNodeUpdate" ).checkAndStart ( payload );
+                        unrequire ( "mqttNodeUpdate" );
+                        collectgarbage ();
+                    elseif ( topic == nodeConfig.topic .. "/service/trace" ) then
+                        require ( "trace" );
+                        if ( payload == "ON" ) then 
+                            trace.on ();
+                        else 
+                            trace.off ();
+                        end
+                    elseif ( topic == nodeConfig.topic .. "/service/config" ) then
+                        require ( "mqttNodeConfig" ).subscribe ( client );
+                        unrequire ( "mqttNodeConfig" );
+                        collectgarbage ();
+                    elseif ( topic == "nodes@home/config/" .. node.chipid () .. "/json" ) then
+                        require ( "mqttNodeConfig" ).receive ( client, payload );
+                        unrequire ( "mqttNodeConfig" );
+                        collectgarbage ();
+                    else
+                        appNode.message ( client, topic, payload );
                     end
-                elseif ( topic == nodeConfig.topic .. "/service/config" ) then
-                    require ( "mqttNodeConfig" ).subscribe ( client );
-                    unrequire ( "mqttNodeConfig" );
-                    collectgarbage ();
-                elseif ( topic == "nodes@home/config/" .. node.chipid () .. "/json" ) then
-                    require ( "mqttNodeConfig" ).receive ( client, payload );
-                    unrequire ( "mqttNodeConfig" );
-                    collectgarbage ();
-                else
-                    appNode.message ( client, topic, payload );
                 end
             end
-        end
-    );
+        );
         
-    mqttClient:on ( "offline", 
-        function ( client )
-            print ( "[MQTT] offline" );
-            local restartMqtt = appNode.offline ( client );
-            if ( restartMqtt ) then
-                print ( "[MQTT] restart connection" );
-                tmr.start ( nodeConfig.timer.wifiLoop ) -- timer_id
+        mqttClient:on ( "offline", 
+            function ( client )
+                print ( "[MQTT] offline" );
+                local restartMqtt = appNode.offline ( client );
+                if ( restartMqtt ) then
+                    print ( "[MQTT] restart connection" );
+                    tmr.start ( nodeConfig.timer.wifiLoop ) -- timer_id
+                end
             end
-        end
-    );
+        );
+
+    end
+
+    print ( "[MQTT] connecting to " .. nodeConfig.mqtt.broker );
     
     while not pcall (
         function ()        
-            result = mqttClient:connect( nodeConfig.mqttBroker , 1883, 0, 0, -- broker, port, secure, autoreconnect
+            result = mqttClient:connect( nodeConfig.mqtt.broker , 1883, 0, 0, -- broker, port, secure, autoreconnect
                 function ( client )
                     print ( "[MQTT] connected, require connect module" );
                     require ( "mqttNodeConnect" ).connect ( client );
@@ -105,6 +105,9 @@ local function startMqtt ()
     end
 
     print ( "[MQTT] connect result=" .. tostring ( result ) );
+    if ( not result ) then
+        tmr.start ( nodeConfig.timer.wifiLoop );
+    end
     
 end
 
@@ -191,7 +194,7 @@ function M.start ( app )
                         voltage = adc.readvdd33 ();
                     end
                     print ( "[MQTT] send voltage=" .. voltage );
-                    mqttClient:publish ( nodeConfig.topic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], 0, nodeConfig.retain, -- qos, retain                                    
+                    mqttClient:publish ( nodeConfig.topic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], 0, nodeConfig.mqtt.retain, -- qos, retain                                    
                         function ( client )
                             appNode.periodic ( mqttClient, nodeConfig.topic );
                         end

@@ -29,7 +29,7 @@ local function changeState ( client, topic, payload )
     gpio.write ( nodeConfig.appCfg.relayPin, payload == "ON" and gpio.HIGH or gpio.LOW );
 
     print ( "[APP] publish state=" .. payload .. " to " .. topic );
-    client:publish ( topic .. "/state", payload, 0, nodeConfig.retain, function () end ); -- qos, retain
+    client:publish ( topic .. "/state", payload, 0, nodeConfig.mqtt.retain, function () end ); -- qos, retain
 
 end
 

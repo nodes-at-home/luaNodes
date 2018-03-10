@@ -102,7 +102,7 @@ local function publishState ( client, topic, state, callback )
 
     local s = POSITION_TEXT [state] or "unknown"; 
     print ( "[APP] publishState: state=" .. s );
-    client:publish ( topic .. "/value/position", s, 0, nodeConfig.retain, callback ); -- qos, retain
+    client:publish ( topic .. "/value/position", s, 0, nodeConfig.mqtt.retain, callback ); -- qos, retain
 
 end
 
@@ -285,10 +285,10 @@ function M.periodic ( client, topic )
     
     if ( success ) then
         print ( "[APP] periodic: temperature t=" .. t );
-        client:publish ( topic .. "/value/temperature", [[{"value":]] .. t .. [[,"unit":"°C"}]], 0, nodeConfig.retain, -- qos, retain
+        client:publish ( topic .. "/value/temperature", [[{"value":]] .. t .. [[,"unit":"°C"}]], 0, nodeConfig.mqtt.retain, -- qos, retain
             function ( client )
                 print ( "[APP] periodic: humidity h=" .. h );
-                client:publish ( topic .. "/value/humidity", [[{"value":]] .. h .. [[,"unit":"%"}]], 0, nodeConfig.retain, -- qos, retain 
+                client:publish ( topic .. "/value/humidity", [[{"value":]] .. h .. [[,"unit":"%"}]], 0, nodeConfig.mqtt.retain, -- qos, retain 
                 function () 
                 end 
             );

@@ -19,7 +19,7 @@ local dhtDataPin = nodeConfig.appCfg.dhtDataPin;
 local dhtPowerPin = nodeConfig.appCfg.dhtPowerPin;
 
 local retain = 0;
--- local retain = nodeConfig.retain;
+-- local retain = nodeConfig.mqtt.retain;
 
 ----------------------------------------------------------------------------------------
 -- private

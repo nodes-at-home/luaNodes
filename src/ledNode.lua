@@ -72,7 +72,7 @@ local function changeState ( client, topic, payload )
     setLedPwm( nodeConfig.appCfg.warmLightPin, brightnessWarm );
     setLedPwm( nodeConfig.appCfg.coldLightPin, brightnessCold );
          
-    client:publish ( topic .. "/state", payload, 0, nodeConfig.retain, function () end ); -- qos, retain
+    client:publish ( topic .. "/state", payload, 0, nodeConfig.mqtt.retain, function () end ); -- qos, retain
 
 end
 

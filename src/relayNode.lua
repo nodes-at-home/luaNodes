@@ -29,7 +29,7 @@ local function changeState ( client, topic, payload )
     print ( "[APP] relayPin=" .. relayPin );
     print ( "[APP] publish state=" .. payload .. " to " .. topic );
 
-    client:publish ( topic .. "/state", payload, 0, nodeConfig.retain, -- qos, retain 
+    client:publish ( topic .. "/state", payload, 0, nodeConfig.mqtt.retain, -- qos, retain 
         function () 
             local relayPulseLength = nodeConfig.appCfg.relayPulseLength * 1000; -- us
             gpio.serout ( relayPin, 1, { relayPulseLength, relayPulseLength }, 1, function ()  end ); -- async 

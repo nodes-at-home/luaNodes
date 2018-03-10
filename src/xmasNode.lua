@@ -152,7 +152,7 @@ local function changeState ( client, topic, payload )
         arduino = arduino .. "\n";
         
         -- send messages        
-        client:publish ( topic .. "/state", jsonState, 0, nodeConfig.retain, -- qos, retain 
+        client:publish ( topic .. "/state", jsonState, 0, nodeConfig.mqtt.retain, -- qos, retain 
             function () 
                 uart.write ( 0, arduino );
             end

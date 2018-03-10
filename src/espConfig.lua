@@ -168,11 +168,6 @@ function M.init ()
     local nodeName = pos and app:sub ( 1, pos - 1 ) or app;
     result.version = table.concat ( { sdk, "-", nodeName, "-", version } );
     
-    -- TODO eliminate this three deprecated fields
-    result.mqttBroker = result.mqtt.broker;
-    result.retain = result.mqtt.retain;
-    result.keepAliveTime = result.mqtt.keepAliveTime;
-    
     replaceNil ( result );
     
 --    print ( "[CONFIG] final config" );
