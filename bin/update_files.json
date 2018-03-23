@@ -1,9 +1,9 @@
 {
-    "tag": "V0.60.7",
+    "tag": "V0.60.8",
     "files": [
         {
             "name": "$version.txt",
-            "size": 7
+            "size": 8
         },
         {
             "name": "brewNode.lc",
@@ -34,12 +34,28 @@
             "size": 2096
         },
         {
+            "name": "tempNode.lc",
+            "size": 4724
+        },
+        {
             "name": "sonoffNode.lc",
             "size": 2464
         },
         {
             "name": "updateMqttState.lc",
             "size": 1944
+        },
+        {
+            "name": "espConfig_1829768.json",
+            "size": 439
+        },
+        {
+            "name": "espConfig_2030164.json",
+            "size": 362
+        },
+        {
+            "name": "espConfig_2028701.json",
+            "size": 497
         }
     ]
 }
