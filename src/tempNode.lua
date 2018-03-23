@@ -36,7 +36,7 @@ local function getSensorData ( pin )
     local status, temperature, humidity, temp_decimial, humi_decimial = dht.read ( pin );
     
     if( status == dht.OK ) then
-
+    
         print ( "[DHT] Temperature: " .. temperature .. " C" );
         print ( "[DHT] Humidity: " .. humidity .. "%" );
         
@@ -136,6 +136,10 @@ function M.connect ( client, baseTopic )
         if ( not success ) then -- first retry
             success, temperature, humidity = getSensorData ( dhtPin );
         end
+        if ( temperature < -100 or temperature > 100 ) then
+            temperature = nil;
+            success = false;
+        end
         if ( success ) then
             print ( "[APP] t=" .. temperature .. " ,h=" .. humidity );
         else
@@ -144,13 +148,10 @@ function M.connect ( client, baseTopic )
     end
     
     if ( bme280SdaPin and bme280SclPin ) then
-        local ret = bme280.init ( bme280SdaPin, bme280SclPin, nil, nil, nil, 0 ); -- initialize to sleep mode: temp_oss, press_oss, humi_oss, power_mode, sleep_mode
+        local speed = i2c.setup ( 0, bme280SdaPin, bme280SclPin, i2c.SLOW );
+        print ( "[BMP] i2c speed=" .. speed );
+        local ret = bme280.setup ();
         print ( "[BMP] ret=" .. tostring ( ret ) );
-        if ( not ret ) then
-            print ( "[BMP] retry")
-            ret = bme280.init ( bme280SdaPin, bme280SclPin, nil, nil, nil, 0 );
-            print ( "[BMP] ret=" .. tostring ( ret ) );
-        end
         if ( ret ) then
             bme280.startreadout ( 0, -- default delay 113ms
                 function ()

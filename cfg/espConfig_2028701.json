@@ -11,7 +11,8 @@
         "timeBetweenSensorReadings": 900000
     },
     "timer": {
-        "deepSleepDelay": 5000
+        "deepSleepDelay": 5000,
+        "periodicPeriod": 60000
     },
     "phymode": "PHYMODE_G",
     "wifi": {
