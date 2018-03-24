@@ -1,0 +1,23 @@
+{
+    "chipid": 5901469,
+    "app": "ssrNode",
+    "class": "switch",
+    "type": "ssr",
+    "location": "brewery",
+    "appCfg": {
+        "activeHigh": false,
+        "sockets": [
+            {
+                "device": "socket1",
+                "pin": 1
+            },
+            {
+                "device": "socket2",
+                "pin": 2
+            }
+        ]
+    },
+    "wifi": {
+        "ip": "192.168.2.47"
+    }
+}

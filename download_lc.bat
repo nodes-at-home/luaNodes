@@ -23,6 +23,7 @@ relayNode.lc
 rfNode.lc
 sonoffNode.lc
 spindleNode.lc
+ssrNode.lc
 startup.lc
 tempNode.lc
 trace.lc

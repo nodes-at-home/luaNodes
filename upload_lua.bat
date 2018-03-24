@@ -23,6 +23,7 @@ src\relayNode.lua ^
 src\rfNode.lua ^
 src\sonoffNode.lua ^
 src\spindleNode.lua ^
+src\ssrNode.lua ^
 src\startup.lua ^
 src\tempNode.lua ^
 src\trace.lua ^

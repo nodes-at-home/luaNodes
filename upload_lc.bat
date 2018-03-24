@@ -22,6 +22,7 @@ bin\relayNode.lc ^
 bin\rfNode.lc ^
 bin\sonoffNode.lc ^
 bin\spindleNode.lc ^
+bin\ssrNode.lc ^
 bin\startup.lc ^
 bin\tempNode.lc ^
 bin\trace.lc ^
