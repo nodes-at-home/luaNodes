@@ -121,7 +121,7 @@ end
 function M.init ()
 
     -- read version
-    if ( file.open ( "$version.txt" ) ) then
+    if ( file.open ( "_version.txt" ) ) then
         version = file.read ();
         file.close ();
     end
