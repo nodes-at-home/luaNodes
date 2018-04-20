@@ -1,20 +1,25 @@
 {
-    "chipid": "581906",
-    "app": "gestureNode",
-    "class": "sensor",
-    "type": "gesture",
-    "location": "test",
+    "chipid": 581906,
+    "app": "electricityNode",
+    "class": "meter",
+    "type": "electricity",
+    "location": "utilityroom",
+    "comment": "use adc, but not for battery level; therefor as a ir light level detector",
     "appCfg": {
-        "sdaPin": 1,
-        "sclPin": 2,
-        "triggerPin": 3,
-        "proximityPersistence": 4,
-        "proximityThreshhold": 20
+        "useAdc": true,
+        "irLedPin": 1,
+        "threshold": 155
     },
     "timer": {
-        "offDelay": 2000
+        "periodic": "nil",
+        "periodicPeriod": "nil",
+        "irPeriod": 100,
+        "irDelay": 10
     },
     "wifi": {
-        "ip": "192.168.2.43"
+        "ip": "192.168.2.48"
+    },
+    "trace": {
+        "onStartup": true
     }
 }

@@ -2,9 +2,11 @@
 FOR %%F IN (
 apds9960.lc
 brewNode.lc
+breweryNode.lc
 buttonNode.lc
 credential.lc
 deepsleep.lc
+electricityNode.lc
 espConfig.lc
 garageNode.lc
 gestureNode.lc
