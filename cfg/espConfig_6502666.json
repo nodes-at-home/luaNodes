@@ -1,16 +1,16 @@
 {
     "chipid": 6502666,
-    "app": "poolNode",
+    "app": "brewNode",
     "class": "sensor",
     "type": "ds18b20",
-    "location": "fermenter",
+    "location": "brewery",
     "appCfg": {
         "useAdc": true,
-        "timeBetweenSensorReadings": 900000,
-        "dsPin": 3
+        "dsPin": 3,
+        "numSensors": 2
     },
     "timer": {
-        "deepSleepDelay": 5000
+        "periodicPeriod": 5000
     },
     "wifi": {
         "ip": "192.168.2.45"
