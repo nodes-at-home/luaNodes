@@ -15,8 +15,7 @@ _G [moduleName] = M;
 --  Settings
 
 local dsPin = nodeConfig.appCfg.dsPin;
-local dhtDataPin = nodeConfig.appCfg.dhtDataPin;
-local dhtPowerPin = nodeConfig.appCfg.dhtPowerPin;
+local numSensors = nodeConfig.appCfg.numSensors;
 
 local retain = 0;
 -- local retain = nodeConfig.mqtt.retain;
@@ -24,44 +23,20 @@ local retain = 0;
 ----------------------------------------------------------------------------------------
 -- private
 
-local function getSensorData ( pin )
+local function publishValues ( client, topic, temperatures )
 
-    print ( "[DHT] pin=" .. pin );
-
---    local dht = require ( "dht" );
+    print ( "[APP] publish: count=" .. #temperatures );
     
-    local status, temperature, humidity, temp_decimial, humi_decimial = dht.read ( pin );
+    local payload = '{';
     
-    if( status == dht.OK ) then
-
-        print ( "[DHT] Temperature: " .. temperature .. " C" );
-        print ( "[DHT] Humidity: " .. humidity .. "%" );
-        
-    elseif( status == dht.ERROR_CHECKSUM ) then
-    
-        print ( "[DHT] Checksum error" );
-        temperature = nil;
-        humidity = nil;
-        
-    elseif( status == dht.ERROR_TIMEOUT ) then
-    
-        print ( "[DHT] Time out" );
-        temperature = nil;
-        humidity = nil;
-        
+    for i = 1, #temperatures do
+        payload = string.format ( '%s"temperature%d":%.1f,', payload, i, temperatures [i] ); 
     end
     
-    local result = status == dht.OK; 
+    payload = payload .. '"unit":"°C"}';
     
-    return result, temperature, humidity;
+    print ( "[APP] payload=" .. payload );
     
-end
-
-local function publishValues ( client, topic, brewTemperature, outerTemperature )
-
-    print ( string.format ( "[APP] publish temperatures brew= %f outer=%f", brewTemperature, outerTemperature ) );
-    
-    local payload = string.format ( '{"brew":%f,"outer":%f,"unit":"°C"}', brewTemperature, outerTemperature );
     client:publish ( topic .. "/value/temperature", payload, 0, retain, -- qos, retain
         function ( client )
         end
@@ -71,22 +46,17 @@ end
 
 local function readAndPublish ( client, topic )
 
-    if ( dsPin and dhtDataPin ) then
+    if ( dsPin ) then
+    
+        local temps = {};
 
         ds18b20.read (
-            function ( index, address, resolution, brewTemperature, tempinteger, parasitic )
+            function ( index, address, resolution, temperature, tempinteger, parasitic )
                 local addr = string.format ( "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X", string.match ( address, "(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+)" ) );
-                print ( "[APP] index=" .. index .. " address=" .. addr .. " resolution=" .. resolution .. " temperature=" .. brewTemperature .. " parasitic=" .. parasitic );
-                -- only first sensor
-                if ( index == 1 ) then
-                    local success, outerTemperature = getSensorData ( dhtDataPin );
-                    if ( success ) then
-                        print ( "[DHT] t=" .. outerTemperature );
-                        publishValues ( client, topic, brewTemperature, outerTemperature );
-                    else
-                        print ( "[DHT] no values" );
-                        publishValues ( client, topic, brewTemperature, 0 );
-                    end
+                print ( "[APP] index=" .. index .. " address=" .. addr .. " resolution=" .. resolution .. " temperature=" .. temperature .. " parasitic=" .. parasitic );
+                temps [#temps + 1] = temperature;
+                if ( index == numSensors ) then
+                    publishValues ( client, topic, temps );
                 end
             end,
             {}
@@ -103,9 +73,6 @@ end
 function M.start ( client, topic )
 
     print ( "[APP] start" );
-    
-    gpio.mode ( dhtPowerPin, gpio.OUTPUT );
-    gpio.write ( dhtPowerPin, gpio.HIGH );
     
     ds18b20.setup ( dsPin );
 
