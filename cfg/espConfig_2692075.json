@@ -1,31 +1,16 @@
 {
     "chipid": 2692075,
-    "app": "oledNode",
+    "app": "pixelNode",
     "class": "display",
-    "type": "oled",
+    "type": "pixel",
     "location": "kitchen",
     "appCfg": {
-        "_resolution": {
-            "width": 128,
-            "height": 32
-        },
-        "resolution": {
-            "width": 128,
-            "height": 64
-        },
-        "_i2c": {
-            "sdaPin": 5,
-            "sclPin": 6
-        },
-        "spi": {
-            "csPin": 8,
-            "dcPin": 4,
-            "resetPin": 0 
-        }
+        "csPin": 8,
+        "brightness": 3,
+        "sntpServer": "192.168.2.1"
     },
     "timer": {
-        "displayLoop": 3,
-        "displayLoopPeriod": 3000
+        "shakePeriod": 200
     },
     "wifi": {
         "ip": "192.168.2.49"
