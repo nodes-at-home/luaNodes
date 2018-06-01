@@ -20,6 +20,10 @@ src\mqttNodeConnect.lua ^
 src\mqttNodeUpdate.lua ^
 src\noNode.lua ^
 src\oledNode.lua ^
+src\pixel.lua ^
+src\pixelNode.lua ^
+src\pixelNodeConnect.lua ^
+src\pixelNodeMessage.lua ^
 src\poolNode.lua ^
 src\relayNode.lua ^
 src\rfNode.lua ^

@@ -19,6 +19,10 @@ bin\mqttNodeConnect.lc ^
 bin\mqttNodeUpdate.lc ^
 bin\noNode.lc ^
 bin\oledNode.lc ^
+bin\pixel.lc ^
+bin\pixelNode.lc ^
+bin\pixelNodeConnect.lc ^
+bin\pixelNodeMessage.lc ^
 bin\poolNode.lc ^
 bin\relayNode.lc ^
 bin\rfNode.lc ^
