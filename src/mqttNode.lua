@@ -92,6 +92,7 @@ local function startMqtt ()
                 function ( client )
                     print ( "[MQTT] connected, require connect module" );
                     require ( "mqttNodeConnect" ).connect ( client );
+                    unrequire ( "mqttNodeConnect" );
                 end,        
                 function ( client, reason ) 
                     print ( "[MQTT] not connected reason=" .. reason );
