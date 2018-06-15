@@ -45,27 +45,40 @@ local function startMqtt ()
                 print ( "[MQTT] message received topic=" .. topic .." payload=" .. (payload == nil and "***nothing***" or payload) );
                 if ( payload ) then
                     -- check for update
-                    if ( topic == nodeConfig.topic .. "/service/update" ) then 
-                        require ( "mqttNodeUpdate" ).checkAndStart ( payload );
-                        unrequire ( "mqttNodeUpdate" );
-                        collectgarbage ();
-                    elseif ( topic == nodeConfig.topic .. "/service/trace" ) then
-                        require ( "trace" );
-                        if ( payload == "ON" ) then 
-                            trace.on ();
-                        else 
-                            trace.off ();
+                    local _, pos = topic:find ( nodeConfig.topic );
+                    if ( pos ) then
+                        local subtopic = topic:sub ( pos + 1 );
+                        print ( "[MQTT] subtopic=" .. subtopic );
+                        if ( subtopic == "/service/update" ) then 
+                            require ( "mqttNodeUpdate" ).checkAndStart ( payload );
+                            unrequire ( "mqttNodeUpdate" );
+                            collectgarbage ();
+                        elseif ( subtopic == "/service/trace" ) then
+                            require ( "trace" );
+                            if ( payload == "ON" ) then 
+                                trace.on ();
+                            else 
+                                trace.off ();
+                            end
+                        elseif ( subtopic == "/service/config" ) then
+                            require ( "mqttNodeConfig" ).subscribe ( client );
+                            unrequire ( "mqttNodeConfig" );
+                            collectgarbage ();
+                        elseif ( subtopic == "/service/restart" ) then
+                            print ( "[MQTT] RESTARTING")
+                            if ( trace ) then 
+                                print ( "[MQTT] ... wait ..." );
+                                trace.off ( node.restart ); 
+                            else
+                                node.restart ();
+                            end
+                        else
+                            appNode.message ( client, topic, payload );
                         end
-                    elseif ( topic == nodeConfig.topic .. "/service/config" ) then
-                        require ( "mqttNodeConfig" ).subscribe ( client );
-                        unrequire ( "mqttNodeConfig" );
-                        collectgarbage ();
-                    elseif ( topic == "nodes@home/config/" .. node.chipid () .. "/json" ) then
+                    elseif ( subtopic == "nodes@home/config/" .. node.chipid () .. "/json" ) then
                         require ( "mqttNodeConfig" ).receive ( client, payload );
                         unrequire ( "mqttNodeConfig" );
                         collectgarbage ();
-                    else
-                        appNode.message ( client, topic, payload );
                     end
                 end
             end
