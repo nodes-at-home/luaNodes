@@ -28,9 +28,10 @@ local REVOLUTION_PER_kWh = 75;
 
 local loopTimer = tmr.create ();
 local shortTimer = tmr.create ();
-local lastLevel = nil;
-local lastTimestamp = nil;
-local counter = 0;
+
+lastLevel = "high";
+lastTimestamp = nil;
+counter = 0;
     
 --------------------------------------------------------------------
 -- public
@@ -63,13 +64,13 @@ function M.connect ( client, topic )
                             gpio.write ( irLedPin, gpio.LOW );
                             local voltage = voltageIrOn - voltageIrOff;
                             local level = voltage > threshold and "high" or "low";
-                            print ( "[APP] voltages level=" .. level .. " diff=" .. voltage .. " irOff" .. voltageIrOff .. " irOn=" .. voltageIrOn );
+                            print ( "[APP] voltages last=" .. lastLevel .. " level=" .. level .. " diff=" .. voltage .. " irOff" .. voltageIrOff .. " irOn=" .. voltageIrOn );
                             if ( level ~= lastLevel ) then
                                 lastLevel = level;
                                 if ( level == "low" ) then
                                     local timestamp = tmr.now (); -- µs
                                     counter = counter + 1000 / REVOLUTION_PER_kWh; -- Wh
-                                    print ( "[APP] voltages level=" .. level .. " diff=" .. voltage .. " irOff" .. voltageIrOff .. " irOn=" .. voltageIrOn );
+                                    print ( "[APP] voltages last=" .. lastLevel .. " level=" .. level .. " diff=" .. voltage .. " irOff" .. voltageIrOff .. " irOn=" .. voltageIrOn );
                                     print ( "[APP] counter" .. counter .. "Wh" );
                                     local payload = string.format ( '{"electricity":%f,"unit":"Wh"}', counter );
                                     client:publish ( topic .. "/value/counter", payload, 0, retain, -- qos, retain

@@ -11,10 +11,10 @@
         "threshold": 155
     },
     "timer": {
-        "periodic": "nil",
-        "periodicPeriod": "nil",
-        "irPeriod": 100,
-        "irDelay": 10
+        "_periodic": "nil",
+        "_periodicPeriod": "nil",
+        "irPeriod": 500,
+        "irDelay": 50
     },
     "wifi": {
         "ip": "192.168.2.48"
