@@ -62,7 +62,9 @@ function M.connect ( client )
                                             print ( "[MQTT] subscribe to topic=" .. topic );
                                             client:subscribe ( topic, 0, -- ..., qos
                                                 function ( client )
-                                                    appNode.connect ( client, nodeConfig.topic );
+                                                    if ( appNode.connect ) then
+                                                        appNode.connect ( client, nodeConfig.topic );
+                                                    end
                                                 end
                                             );
                                         end

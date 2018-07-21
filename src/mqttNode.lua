@@ -73,7 +73,9 @@ local function startMqtt ()
                                 node.restart ();
                             end
                         else
-                            appNode.message ( client, topic, payload );
+                            if ( appNode.message ) then
+                                appNode.message ( client, topic, payload );
+                            end
                         end
                     elseif ( subtopic == "nodes@home/config/" .. node.chipid () .. "/json" ) then
                         require ( "mqttNodeConfig" ).receive ( client, payload );
@@ -87,8 +89,7 @@ local function startMqtt ()
         mqttClient:on ( "offline", 
             function ( client )
                 print ( "[MQTT] offline" );
-                local restartMqtt = appNode.offline ( client );
-                if ( restartMqtt ) then
+                if ( appNode.offline and appNode.offline ( client ) ) then
                     print ( "[MQTT] restart connection" );
                     tmr.start ( nodeConfig.timer.wifiLoop ) -- timer_id
                 end
@@ -168,29 +169,10 @@ end
 --------------------------------------------------------------------
 -- public
 
-function M.start ( app )
+function M.start ()
 
-    local function noop () return false; end
-    
-    local function initAppNode ( app )
-    
-        if ( app.version == nil ) then app.version = "undefined"; end
-        if ( app.start == nil ) then app.start = noop; end
-        if ( app.connect == nil ) then app.connect = noop; end
-        if ( app.offline == nil ) then app.offline = noop; end
-        if ( app.message == nil ) then app.message = noop; end
-        if ( app.periodic == nil ) then app.periodic = noop; end
-        
-        appNode = app;
-        
-    end
-    
-    if ( app ) then
-        initAppNode ( app );
-    else
-        print ( "[MQTT] no app" );
-        initAppNode ( {} );
-    end
+    print ( "[MQTT] start app=" .. nodeConfig.app  );
+    appNode = require ( nodeConfig.app );
     
     -- loop to wait up to connected to wifi
     tmr.alarm ( nodeConfig.timer.wifiLoop, nodeConfig.timer.wifiLoopPeriod, tmr.ALARM_AUTO, wifiLoop ); -- timer_id, interval_ms, mode
@@ -210,7 +192,9 @@ function M.start ( app )
                     print ( "[MQTT] send voltage=" .. voltage );
                     mqttClient:publish ( nodeConfig.topic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], 0, nodeConfig.mqtt.retain, -- qos, retain                                    
                         function ( client )
-                            appNode.periodic ( mqttClient, nodeConfig.topic );
+                            if ( appNode.periodic ) then
+                                appNode.periodic ( mqttClient, nodeConfig.topic );
+                            end
                         end
                     );
                 end

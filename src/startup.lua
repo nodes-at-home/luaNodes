@@ -71,16 +71,14 @@ local function startApp ()
         print ( "[STARTUP] update file found" );
         require ( "update" ).update ();
     else
-        print ( "[STARTUP] start app=" .. nodeConfig.app  );
         if ( nodeConfig.appCfg.disablePrint ) then
             print ( "[STARTUP] DISABLE PRINT" );
             oldprint = print;
             print = function ( ... ) end
         end
-        local app = require ( nodeConfig.app );
         print ( "[STARTUP] starting mqttNode", node.heap () );
-        require ( "mqttNode" ).start ( app );
-        unrequire ( "mqttNode" );
+        require ( "mqttNode" ).start ();
+        --unrequire ( "mqttNode" );
     end
 
 end
