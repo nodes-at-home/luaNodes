@@ -1,0 +1,18 @@
+{
+    "chipid": 5918040,
+    "app": "rgbNode",
+    "class": "light",
+    "type": "ws2812",
+    "location": "terrace",
+    "appCfg": {
+        "device:": "led",
+        "ledCount": 64,
+        "initialBrightness": 5,
+        "initialColor": { "red": 255, "green": 0, "blue": 191 },
+        "initialEffect": "rainbow",
+        "initialDelay": 1500
+    },
+    "wifi": {
+        "ip": "192.168.2.50"
+    }
+}

@@ -26,6 +26,7 @@ bin\pixelNodeMessage.lc ^
 bin\poolNode.lc ^
 bin\relayNode.lc ^
 bin\rfNode.lc ^
+bin\rgbNode.lc ^
 bin\sonoffNode.lc ^
 bin\spindleNode.lc ^
 bin\ssrNode.lc ^

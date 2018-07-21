@@ -27,6 +27,7 @@ pixelNodeMessage.lc
 poolNode.lc
 relayNode.lc
 rfNode.lc
+rgbNode.lc
 sonoffNode.lc
 spindleNode.lc
 ssrNode.lc

@@ -27,6 +27,7 @@ src\pixelNodeMessage.lua ^
 src\poolNode.lua ^
 src\relayNode.lua ^
 src\rfNode.lua ^
+src\rgbNode.lua ^
 src\sonoffNode.lua ^
 src\spindleNode.lua ^
 src\ssrNode.lua ^
