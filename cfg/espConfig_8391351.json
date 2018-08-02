@@ -1,24 +1,20 @@
 {
     "chipid": 8391351,
-    "app": "garageNode",
-    "class": "cover",
-    "type": "relay",
-    "location": "garage",
+    "app": "rgbNode",
+    "class": "light",
+    "type": "ws2812",
+    "location": "terrace2",
     "appCfg": {
-        "relayPin": 1,
-        "openPositionPin": 5,
-        "dhtPin": 4,
-        "closedPositionPin": 6
-    },
-    "timer": {
-        "debounce": 3,
-        "debounceDelay": 200,
-        "trigger": 4,
-        "triggerDelay": 300,
-        "state": 5,
-        "statePeriod": 1000
+        "device:": "led",
+        "ledCount": 50,
+        "order": "rgb",
+        "initialBrightness": 150,
+        "initialColor": { "red": 255, "green": 0, "blue": 191 },
+        "initialEffect": "rainbow",
+        "initialDelay": 1500,
+        "gndPin": 3
     },
     "wifi": {
-        "ip": "192.168.2.25"
+        "ip": "192.168.2.50"
     }
 }

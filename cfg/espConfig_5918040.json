@@ -3,10 +3,11 @@
     "app": "rgbNode",
     "class": "light",
     "type": "ws2812",
-    "location": "terrace",
+    "location": "terrace1",
     "appCfg": {
         "device:": "led",
         "ledCount": 64,
+        "order": "grb",
         "initialBrightness": 5,
         "initialColor": { "red": 255, "green": 0, "blue": 191 },
         "initialEffect": "rainbow",
