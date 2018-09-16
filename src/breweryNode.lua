@@ -1,6 +1,6 @@
 --------------------------------------------------------------------
 --
--- nodes@home/luaNodes/brewNode
+-- nodes@home/luaNodes/breweryNode
 -- author: andreas at jungierek dot de
 -- LICENSE http://opensource.org/licenses/MIT
 --

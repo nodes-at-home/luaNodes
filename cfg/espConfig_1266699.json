@@ -1,0 +1,23 @@
+{
+    "chipid": 1266699,
+    "app": "sonoffNode",
+    "class": "switch",
+    "type": "sonoff",
+    "location": "bedroom",
+    "appCfg": {
+        "device": "socket",
+        "buttonPin": 3,
+        "relayPin": 6,
+        "ledPin": 7,
+        "flashHighPulseLength": 50000,
+        "flashLowPulseLength": 200000,
+        "useLedForState": false
+    },
+    "timer": {
+        "debounce": 3,
+        "debounceDelay": 500
+    },
+    "wifi": {
+        "ip": "192.168.2.52"
+    }
+}
