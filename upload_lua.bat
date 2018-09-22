@@ -33,6 +33,7 @@ src\spindleNode.lua ^
 src\ssrNode.lua ^
 src\startup.lua ^
 src\tempNode.lua ^
+src\touchNode.lua ^
 src\trace.lua ^
 src\update.lua ^
 src\updateCompletion.lua ^

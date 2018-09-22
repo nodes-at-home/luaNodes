@@ -1,17 +1,18 @@
 {
     "chipid": 5918336,
-    "app": "brewNode",
+    "app": "touchNode",
     "class": "sensor",
-    "type": "ds18b20",
-    "location": "brewery",
+    "type": "ttp223",
+    "location": "bedroom",
     "appCfg": {
-        "useAdc": true,
-        "dsPin": 3,
-        "dhtDataPin": 7,
-        "dhtPowerPin": 8
+        "sensors": [
+            {
+                "device": "touch1",
+                "pin": 1
+            }
+        ]
     },
-    "timer": {
-        "periodicPeriod": 5000
+    "_timer": {
     },
     "wifi": {
         "ip": "192.168.2.21"

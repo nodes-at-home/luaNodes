@@ -33,6 +33,7 @@ spindleNode.lc
 ssrNode.lc
 startup.lc
 tempNode.lc
+touchNode.lc
 trace.lc
 update.lc
 updateCompletion.lc

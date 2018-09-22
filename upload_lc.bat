@@ -32,6 +32,7 @@ bin\spindleNode.lc ^
 bin\ssrNode.lc ^
 bin\startup.lc ^
 bin\tempNode.lc ^
+bin\touchNode.lc ^
 bin\trace.lc ^
 bin\update.lc ^
 bin\updateCompletion.lc ^
