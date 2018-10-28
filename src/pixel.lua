@@ -9,9 +9,9 @@ _G[modname] = M;
 -- spi pins
 --
 --  label           esp8266     esp32   remarks
---  clk             5           GPIO14                      
---  cs              8           GPIO15
---  mosi            7           GPIO13
+--  clk             5           GPIO14                  black
+--  cs              8           GPIO15                  white
+--  mosi            7           GPIO13                  grey
 --  miso            6           GPIO12   not used
 --
 

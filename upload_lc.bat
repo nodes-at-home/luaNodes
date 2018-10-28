@@ -1,22 +1,13 @@
 nodemcu-tool.cmd upload ^
-bin\apds9960.lc ^
+bin\lfs.img ^
 bin\brewNode.lc ^
 bin\breweryNode.lc ^
 bin\buttonNode.lc ^
 bin\credential.lc ^
-bin\deepsleep.lc ^
 bin\electricityNode.lc ^
-bin\espConfig.lc ^
 bin\garageNode.lc ^
 bin\gestureNode.lc ^
-bin\httpDL.lc ^
-bin\i2ctool.lc ^
 bin\ledNode.lc ^
-bin\mpu6050.lc ^
-bin\mqttNode.lc ^
-bin\mqttNodeConfig.lc ^
-bin\mqttNodeConnect.lc ^
-bin\mqttNodeUpdate.lc ^
 bin\noNode.lc ^
 bin\oledNode.lc ^
 bin\pixel.lc ^
@@ -30,15 +21,12 @@ bin\rgbNode.lc ^
 bin\sonoffNode.lc ^
 bin\spindleNode.lc ^
 bin\ssrNode.lc ^
-bin\startup.lc ^
 bin\tempNode.lc ^
 bin\touchNode.lc ^
-bin\trace.lc ^
 bin\update.lc ^
 bin\updateCompletion.lc ^
 bin\updateFailure.lc ^
 bin\updateFiles.lc ^
 bin\updateMqttState.lc ^
 bin\updateWifi.lc ^
-bin\util.lc ^
 bin\xmasNode.lc
