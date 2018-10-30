@@ -18,18 +18,16 @@ _G[modname] = M;
 --------------------------------------------------------------------------------
 -- settings
 
-local csPin;
-
-local numberOfModules = 1; 
-local numberOfDisplayColumns = 8 * numberOfModules;
-local numberOfBufferColumns = 2 * numberOfDisplayColumns + (numberOfModules == 1 and (128 - numberOfDisplayColumns) or 0);
-
---print ( "numberOfBufferColumns=" .. numberOfBufferColumns )
-
 --------------------------------------------------------------------------------
 -- local variables
 
-pixelBuffer = {};
+local csPin;
+
+local numberOfModules; 
+local numberOfDisplayColumns;
+local numberOfBufferColumns;
+
+local pixelBuffer = {};
 
 local shakeFrom;
 local shakeTo;
@@ -104,15 +102,6 @@ local function printChar ( char, startCol )
                     insertCol = insertCol + 1; 
                 end 
             );
---            local sprite = require ( filename );
---            unrequire ( filename );
---            for i = 1, #sprite do
---                local col = startCol + i - 1;
---                if ( col > 0 and col <= numberOfBufferColumns ) then
---                    pixelBuffer [col] = sprite [i];
---                end
---            end
---            insertCol = insertCol + #sprite; 
             insertCol = insertCol + M.printEmptyColumn ( insertCol );
         end
     end
@@ -124,11 +113,15 @@ end
 --------------------------------------------------------------------------------
 -- public functions
 
-function M.init ( pin, period, brightness )
+function M.init ( pin, modules, period, brightness )
 
-    --print ( "[MAX7219] pin=" .. tostring ( pin ) .. " init: period=" .. tostring ( period ) .. " brightness=" .. tostring ( brightness ) );
+    --print ( "[MAX7219] init: pin=" .. tostring ( pin ) .. " period=" .. tostring ( period ) .. " brightness=" .. tostring ( brightness ) );
     
     csPin = pin;
+    
+    numberOfModules = modules;
+    numberOfDisplayColumns = 8 * numberOfModules;
+    numberOfBufferColumns = 2 * numberOfDisplayColumns + (numberOfModules == 1 and (128 - numberOfDisplayColumns) or 0);
     
     if ( not shakeTimer ) then
         shakeTimer = tmr.create ();
