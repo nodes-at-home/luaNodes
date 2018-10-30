@@ -5,38 +5,31 @@
 -- LICENSE http://opensource.org/licenses/MIT
 --
 --------------------------------------------------------------------
--- junand 22.09.2016
+-- junand 27.10.2018
+-- 
+-- start from lfs
 
--- dofile ( "startup.lua" );
+-- TODO testen ob lfs geladen ist (z.B. auf "_lfs", wenn nicht laden und dann erst starten
+--      nicht immer laden
 
--- boot reason https://nodemcu.readthedocs.io/en/master/en/modules/node/#nodebootreason
--- 0, power-on
--- 1, hardware watchdog reset
--- 2, exception reset
--- 3, software watchdog reset
--- 4, software restart
--- 5, wake from deep sleep
--- 6, external reset
-local rawcode, bootreason = node.bootreason ();
-print ( "[INIT] boot: rawcode=" .. rawcode .. " ,reason=" .. bootreason );
+local delay = 2000;
+local lfs_filename = "lfs.img";
 
-local NO_BOOT_FILE = "no_boot";
-
-if ( bootreason == 1 or bootreason == 2 or bootreason == 3 ) then
-    if ( file.exists ( NO_BOOT_FILE ) ) then
-        print ( "[INIT] booting after error; NO STARTUP" );
+local init_from_lfs = node.flashindex ( "_init" );
+if ( not init_from_lfs ) then
+    if ( file.exists ( lfs_filename ) ) then
+        print ( "[INIT] reloading flash from " .. lfs_filename );
+        node.flashreload ( lfs_filename );
+        -- after reload a reboot occurs
+        print ( "[INIT] image not reloaded, exiting" );
         return;
     else
-        file.open ( NO_BOOT_FILE, "w" );
-        file.close ();
-    end
-else
-    if ( file.exists ( NO_BOOT_FILE ) ) then 
-        file.remove ( NO_BOOT_FILE ); 
+        print ( "[INIT] no image found, exiting" );
+        return;
     end
 end
 
-require ( "startup" ).init ();
-unrequire ( "startup" );
-collectgarbage ();
+-- Start
+print ( "[INIT] start from lfs with " .. delay/1000 .. " seconds delay" );
+tmr.create ():alarm ( 2000, tmr.ALARM_SINGLE, function () pcall ( init_from_lfs ) end ); 
 
