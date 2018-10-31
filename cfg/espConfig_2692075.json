@@ -5,6 +5,7 @@
     "type": "pixel",
     "location": "kitchen",
     "appCfg": {
+        "modules": 8,
         "csPin": 8,
         "brightness": 3,
         "sntpServer": "192.168.2.1"

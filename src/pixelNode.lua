@@ -11,7 +11,7 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
-require ( "pixel" );
+local pixel = require ( "pixel" );
 
 -------------------------------------------------------------------------------
 --  Settings
@@ -26,11 +26,12 @@ local displayCategory = "time";
 local SNTP = nodeConfig.appCfg.sntpServer or "de.pool.ntp.org" or "192.168.2.1";
 
 local displayBrightness = 3;
-local displayCategoryPeriod = 15;
+local standardDisplayCategoryPeriod = 15;
+local displayCategoryPeriod = standardDisplayCategoryPeriod;
 local displayEnabled = {};
 local displayMessage = {};
 
-local displayCategoryPeriodCounter = displayCategoryPeriod;
+local displayCategoryPeriodCounter = 1;
 
 ----------------------------------------------------------------------------------------
 -- private
@@ -63,32 +64,41 @@ end
 
 local loop;
 
-local function handleCategory ( category, text, printFunc, insertCol )
+local function handleCategory ( category, clear, text, printFunc, insertCol )
 
     --print ( "[APP] handleCategory: category=" .. category .. " text=" .. tostring ( text ) .. " enabled=" .. tostring ( displayEnabled [category] ) .. " heap=" .. node.heap () );
 
     if ( text ~= nil and ( displayEnabled [category] == nil or displayEnabled [category] ) ) then
+        if ( clear ) then
+            pixel.clear ();
+        end            
         if ( printFunc ) then
             printFunc ( text, insertCol );
-         else
-            pixel.printAndShakeString ( text );
-         end
+        else
+            local len, cols = pixel.printAndShakeString ( text );
+            local ticks = standardDisplayCategoryPeriod * 1000 / shakePeriod;
+            if ( (len - cols) > ticks ) then
+                local period = math.floor ( (len - cols) * shakePeriod / 1000 + 1 );
+                displayCategoryPeriod = period;
+            end
+        end
     else
-        -- process next category, the category is computet in loop
+        -- process next category, the category is computed in loop
+        displayCategoryPeriod = standardDisplayCategoryPeriod;
         displayCategoryPeriodCounter = displayCategoryPeriod;
         node.task.post ( loop );
     end
 
 end
 
-loop = function ()
+loop = function () -- every 1sec
 
     --print ( "[APP] loop: category=" .. tostring ( displayCategory ) ..  " heap=" .. node.heap () );
 
-    if ( false and displayCategory == "time" ) then -- toggle colon
+    if ( displayCategory == "time" ) then -- toggle colon
         local tm = rtctime.epoch2cal ( correctTimezone ( rtctime.get () ) );
         local sign = tm ["sec"] % 2 == 0 and ":" or " ";
-        matrix.printDateTimeString ( string.format ( "%02d%s%02d", tm ["hour"], sign, tm ["min"] ) );
+        handleCategory ( displayCategory, false, string.format ( "%02d%s%02d", tm ["hour"], sign, tm ["min"] ), pixel.printDateTimeString, 22 );
     end
     
     displayCategoryPeriodCounter = displayCategoryPeriodCounter + 1;
@@ -96,17 +106,14 @@ loop = function ()
     if ( displayCategoryPeriodCounter > displayCategoryPeriod ) then
 
         displayCategoryPeriodCounter = 1;
+        displayCategoryPeriod = standardDisplayCategoryPeriod;
+        
+        -- split between state transitions and display routines, so displayCategory is every time the current category !
 
-        local oldDisplayCategory = displayCategory;
         if ( displayCategory == "time" ) then
             displayCategory = "date";
-            local tm = rtctime.epoch2cal ( correctTimezone ( rtctime.get () ) );
-            local sign = tm ["sec"] % 2 == 0 and ":" or " ";
-            handleCategory ( oldDisplayCategory, string.format ( "%02d%s%02d", tm ["hour"], sign, tm ["min"] ), pixel.printDateTimeString );
         elseif ( displayCategory == "date" ) then
             displayCategory = "msg1";
-            local tm = rtctime.epoch2cal ( correctTimezone ( rtctime.get () ) );
-            handleCategory ( oldDisplayCategory, string.format ( "%02d.%02d.%04d", tm ["day"], tm ["mon"], tm ["year"] ), pixel.printDateTimeString );
         elseif ( displayCategory:sub ( 1, 3 ) == "msg" ) then
             local i = tonumber ( displayCategory:sub ( 4 ) );
             if ( i < 20 ) then
@@ -114,7 +121,20 @@ loop = function ()
             else
                 displayCategory = "time";
             end
-            handleCategory ( oldDisplayCategory, displayMessage [i] );
+        else
+            displayCategory = "time";
+        end
+
+        if ( displayCategory == "time" ) then
+            local tm = rtctime.epoch2cal ( correctTimezone ( rtctime.get () ) );
+            local sign = tm ["sec"] % 2 == 0 and ":" or " ";
+            handleCategory ( displayCategory, true, string.format ( "%02d%s%02d", tm ["hour"], sign, tm ["min"] ), pixel.printDateTimeString, 22 );
+        elseif ( displayCategory == "date" ) then
+            local tm = rtctime.epoch2cal ( correctTimezone ( rtctime.get () ) );
+            handleCategory ( displayCategory, true, string.format ( "%02d.%02d.%04d", tm ["day"], tm ["mon"], tm ["year"] ), pixel.printDateTimeString, 10 );
+        elseif ( displayCategory:sub ( 1, 3 ) == "msg" ) then
+            local i = tonumber ( displayCategory:sub ( 4 ) );
+            handleCategory ( displayCategory, true, displayMessage [i] );
         else
             displayCategory = "time";
         end
@@ -127,17 +147,17 @@ end
 -- public
 -- mqtt callbacks
 
---function M.start ( client, topic )
---
---    print ( "[APP] start" );
---    
---end
+function M.start ( client, topic )
+
+    print ( "[APP] start" );
+    
+    pixel.init ( csPin, numberOfModules, shakePeriod, displayBrightness );
+    
+end
 
 function M.connect ( client, topic )
 
     print ( "[APP] connect: topic=" .. topic );
-    
-    pixel.init ( csPin, numberOfModules, shakePeriod, displayBrightness );
     
     -- subscribe to .../message/#
     -- subscription to .../command and .../alert is not necessary
@@ -188,7 +208,7 @@ function M.message ( client, topic, payload )
             if ( json.display ) then
                 if ( json.display.duration ) then
                     print ( "[APP] duration=" .. json.display.duration ); 
-                    displayCategoryPeriod = json.display.duration;
+                    standardDisplayCategoryPeriod = json.display.duration;
                 end
                 if ( json.display.brightness ) then
                     print ( "[APP] brightness=" .. json.display.brightness ); 

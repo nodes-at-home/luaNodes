@@ -57,7 +57,7 @@ end
 
 local function display ( startColumn )
 
-    --print ( "[MAX7219] send: start=" ..  startColumn .. " verticalShift=" .. tostring ( verticalShift ) );
+    --print ( "[MAX7219] display: startColumn=" ..  startColumn );
     
     startColumn = startColumn or 1;
     
@@ -115,13 +115,15 @@ end
 
 function M.init ( pin, modules, period, brightness )
 
-    --print ( "[MAX7219] init: pin=" .. tostring ( pin ) .. " period=" .. tostring ( period ) .. " brightness=" .. tostring ( brightness ) );
+    --print ( "[MAX7219] init: pin=" .. tostring ( pin ) .. " modules=" .. modules .. " period=" .. tostring ( period ) .. " brightness=" .. tostring ( brightness ) );
     
     csPin = pin;
     
     numberOfModules = modules;
     numberOfDisplayColumns = 8 * numberOfModules;
-    numberOfBufferColumns = 2 * numberOfDisplayColumns + (numberOfModules == 1 and (128 - numberOfDisplayColumns) or 0);
+    numberOfBufferColumns = 3 * numberOfDisplayColumns + (numberOfModules == 1 and (128 - numberOfDisplayColumns) or 0);
+    
+    --print ( "[MAX7219] init: modules=" .. numberOfModules .. " displayCols=" .. numberOfDisplayColumns .. " bufferCols=" .. numberOfBufferColumns );
     
     if ( not shakeTimer ) then
         shakeTimer = tmr.create ();
@@ -142,7 +144,9 @@ function M.init ( pin, modules, period, brightness )
         end
     );
     
-    spi.setup ( 1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 16, 8 );
+    -- max7219 has max clk frequency 10MHz, esp8266 has 80 MHz
+    local CLK_DIVIDER = 800; -- 80 -> 1MHz, 800 -> 100kHz
+    spi.setup ( 1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 16, CLK_DIVIDER );
     
     --print ( "[MAX7219] init: set gpio mode");
     -- Must NOT be done _before_ spi.setup() because that function configures all HSPI* pins for SPI. Hence,
@@ -312,7 +316,7 @@ function M.printAndShakeString ( s )
         M.static ( 1 );
     end
     
-    return len;
+    return len, numberOfDisplayColumns;
     
 end
 
