@@ -12,8 +12,6 @@ noNode.lc
 oledNode.lc
 pixel.lc
 pixelNode.lc
-pixelNodeConnect.lc
-pixelNodeMessage.lc
 poolNode.lc
 relayNode.lc
 rfNode.lc

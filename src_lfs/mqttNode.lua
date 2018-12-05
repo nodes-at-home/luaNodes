@@ -14,11 +14,148 @@ _G [moduleName] = M;
 -------------------------------------------------------------------------------
 --  Settings
 
-appNode = nil;    -- application callbacks
-mqttClient = nil;     -- mqtt client
+local appNode = nil;    -- application callbacks
+local mqttClient = nil;     -- mqtt client
 
 ----------------------------------------------------------------------------------------
 -- private
+
+local function connect ( client )
+
+    print ( "[MQTT] connected to MQTT Broker" )
+    print ( "[MQTT] node=" .. nodeConfig.topic );
+    
+    local version = nodeConfig.version;
+    print ( "[MQTT] send <" .. version .. "> to topic=" .. nodeConfig.topic );
+    client:publish ( nodeConfig.topic, version, 0, nodeConfig.mqtt.retain, -- ..., qos, retain
+        function ( client )
+            local voltage = -1;
+            if ( nodeConfig.appCfg.useAdc ) then
+                    local scale = nodeConfig.appCfg.adcScale or 4200;
+                    print ( "[MQTT] adcScale=" .. scale );           
+                    voltage = adc.read ( 0 ) / 1023 * scale; -- mV
+            else
+                voltage = adc.readvdd33 ();
+            end
+            print ( "[MQTT] send voltage=" .. voltage );
+            client:publish ( nodeConfig.topic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], 0, nodeConfig.mqtt.retain, -- qos, retain                                    
+                function ( client )
+                    local topic = "nodes@home/config/" .. node.chipid ();
+                    print ( "[MQTT] send config app " ..  nodeConfig.app .. " to " .. topic );
+                    client:publish ( topic, nodeConfig.app .. "@" .. nodeConfig.location, 0, 1, -- ..., qos, retain
+                        function ( client )
+                            local str = cjson.encode ( nodeConfig );
+                            local topic = "nodes@home/config/" .. node.chipid () .. "/state";
+                            print ( "[MQTT] send config to " .. topic .. str );
+                            client:publish ( topic, str, 0, 1, -- ..., qos, retain
+                                function ( client )
+                                    if ( appNode.start ) then 
+                                        appNode.start ( client, nodeConfig.topic ); 
+                                    end
+                                    -- subscribe to service topics
+                                    local topic = nodeConfig.topic .. "/service/+";
+                                    print ( "[MQTT] subscribe to topic=" .. topic );
+                                    client:subscribe ( topic, 0, -- ..., qos
+                                        function ( client )
+                                            -- subscribe to all topics based on base topic of the node
+                                            local topic = nodeConfig.topic .. "/+";
+                                            print ( "[MQTT] subscribe to topic=" .. topic );
+                                            client:subscribe ( topic, 0, -- ..., qos
+                                                function ( client )
+                                                    if ( appNode.connect ) then
+                                                        appNode.connect ( client, nodeConfig.topic );
+                                                    end
+                                                end
+                                            );
+                                        end
+                                    );
+                                end
+                            );
+                        end
+                    );
+                end
+            );
+        end
+    );
+
+end
+
+local function subscribeConfig ( client )
+
+    print ( "[MQTT] subscribeConfig:" )
+    
+    local topic = "nodes@home/config/" .. node.chipid () .. "/json";
+    print ( "[MQTT] subscribeConfig: topic=" .. topic );
+    client:subscribe ( topic, 0, -- ..., qos
+        function ( client )
+            -- reset topic
+            local topic = nodeConfig.topic .. "/service/config"
+            print ( "[[MQTT] subscribeConfig: topic=" .. topic );
+            client:publish ( topic, "", 0, 1, -- ..., qos, retain
+                function ( client )
+                end
+            );
+        end
+    );
+
+end
+
+local function receiveConfig ( client, payload )
+
+    print ( "[MQTT] receiveConfig:" )
+    
+    local json = cjson.decode ( payload );
+    if ( json.chipid == node.chipid () ) then
+        print ( "[MQTT] receiveConfig: found same chipid " .. node.chipid () );
+        if ( file.open ( "espConfig_mqtt.json", "w" ) ) then
+            file.write ( payload );
+            file.close ();
+            print ( "[MQTT] receiveConfig: restarting after config save")
+            if ( trace ) then 
+                trace.off ( node.restart ); 
+            else
+                node.restart ();
+            end
+        end
+    end
+
+end
+
+local function update ( payload )
+
+    -- and there was no update with this url before
+    local forceUpdate = true;
+    if ( file.exists ( "old_update.url" ) ) then
+        if ( file.open ( "old_update.url" ) ) then
+            local url = file.readline ();
+            file.close ();
+            if ( url and url == payload ) then
+                print ( "[UPDATE] already updated with " .. payload );
+                forceUpdate = false;
+             end
+        end
+    end
+    
+    -- start update procedure
+    if ( forceUpdate ) then
+        print ( "[MQTT] update: start heap: " .. node.heap () )
+        if ( file.open ( "update.url", "w" ) ) then
+            local success = file.write ( payload );
+            print ( "[MQTT] update: url write success=" .. tostring ( success ) );
+            file.close ();
+            if ( success ) then
+                print ( "[MQTT] update:  restart for second step" );
+                if ( trace ) then 
+                    print ( "[MQTT] update: ... wait ..." );
+                    trace.off ( node.restart ); 
+                else
+                    node.restart ();
+                end
+            end
+        end
+    end
+
+end
 
 local function startMqtt ()
         
@@ -49,10 +186,8 @@ local function startMqtt ()
                     if ( pos ) then
                         local subtopic = topic:sub ( pos + 1 );
                         print ( "[MQTT] subtopic=" .. subtopic );
-                        if ( subtopic == "/service/update" ) then 
-                            require ( "mqttNodeUpdate" ).checkAndStart ( payload );
-                            unrequire ( "mqttNodeUpdate" );
-                            collectgarbage ();
+                        if ( subtopic == "/service/update" ) then
+                            update ( payload ); 
                         elseif ( subtopic == "/service/trace" ) then
                             require ( "trace" );
                             if ( payload == "ON" ) then 
@@ -61,9 +196,7 @@ local function startMqtt ()
                                 trace.off ();
                             end
                         elseif ( subtopic == "/service/config" ) then
-                            require ( "mqttNodeConfig" ).subscribe ( client );
-                            unrequire ( "mqttNodeConfig" );
-                            collectgarbage ();
+                            subscribeConfig ( client );
                         elseif ( subtopic == "/service/restart" ) then
                             print ( "[MQTT] RESTARTING")
                             if ( trace ) then 
@@ -78,9 +211,7 @@ local function startMqtt ()
                             end
                         end
                     elseif ( subtopic == "nodes@home/config/" .. node.chipid () .. "/json" ) then
-                        require ( "mqttNodeConfig" ).receive ( client, payload );
-                        unrequire ( "mqttNodeConfig" );
-                        collectgarbage ();
+                        receiveConfig ( client, payload );
                     end
                 end
             end
@@ -98,15 +229,12 @@ local function startMqtt ()
 
     end
 
-    print ( "[MQTT] connecting to " .. nodeConfig.mqtt.broker );
-    
+    local result;
     while not pcall (
         function ()        
             result = mqttClient:connect( nodeConfig.mqtt.broker , 1883, 0, 0, -- broker, port, secure, autoreconnect
                 function ( client )
-                    print ( "[MQTT] connected, require connect module" );
-                    require ( "mqttNodeConnect" ).connect ( client );
-                    unrequire ( "mqttNodeConnect" );
+                    connect ( client );
                 end,        
                 function ( client, reason ) 
                     print ( "[MQTT] not connected reason=" .. reason );

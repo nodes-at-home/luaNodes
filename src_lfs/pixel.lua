@@ -1,9 +1,15 @@
+--------------------------------------------------------------------
+--
+-- nodes@home/luaNodes/pixel
+-- author: andreas at jungierek dot de
+-- LICENSE http://opensource.org/licenses/MIT
+--
+--------------------------------------------------------------------
 -- junand 21.04.2018
 
--- Set module name as parameter of require
-local modname = ...;
+local moduleName = ...;
 local M = {};
-_G[modname] = M;
+_G [moduleName] = M;
 
 --------------------------------------------------------------------------------
 -- spi pins
@@ -17,6 +23,9 @@ _G[modname] = M;
 
 --------------------------------------------------------------------------------
 -- settings
+
+-- max7219 has max clk frequency 10MHz, esp8266 has 80 MHz
+local CLK_DIVIDER = 800; -- 80 -> 1MHz, 800 -> 100kHz
 
 --------------------------------------------------------------------------------
 -- local variables
@@ -35,6 +44,10 @@ local displayColumn;
 local shakeDelta;
 
 local shakeTimer;
+
+local brightness;
+
+local sprites;
 
 --------------------------------------------------------------------------------
 -- private functions
@@ -78,6 +91,17 @@ local function display ( startColumn )
     
 end
 
+local umlaute = {
+    ["0xC3_0x84"] = 95,
+    ["0xC3_0x96"] = 96,
+    ["0xC3_0x9C"] = 97,
+    ["0xC3_0xA4"] = 98,
+    ["0xC3_0xB6"] = 99,
+    ["0xC3_0xBC"] = 100,
+    ["0xC3_0x9F"] = 101,
+    ["0xC2_0xB0"] = 102
+};
+
 local function printChar ( char, startCol )
 
     --print ( "[MAX7219] printChar: char=" .. tostring ( char ) .. " startCol=" .. tostring ( startCol ) );
@@ -85,25 +109,25 @@ local function printChar ( char, startCol )
     --assert ( startCol, "printChar: at not set" );
     
     local insertCol = startCol;
-    local filename = "sprite_" .. char .. ".dat";
-    
+
     if ( startCol > 0 and startCol <= numberOfBufferColumns ) then
-        --print ( "[MAX7219] printChar: " .. filename );
-        if ( file.exists ( filename ) ) then
-            file.open ( filename );
-            local s = file.read ();
-            file.close ();
-            --print ( "[MAX7219] printChar: s=" .. s );
-            string.gsub ( s, "(%w+)",
-                function ( w ) 
-                    if ( insertCol > 0 and insertCol <= numberOfBufferColumns ) then
-                        pixelBuffer [insertCol] = 0 + w;
-                    end
-                    insertCol = insertCol + 1; 
-                end 
-            );
-            insertCol = insertCol + M.printEmptyColumn ( insertCol );
+        local offset;
+        if ( umlaute [char] ) then
+            offset = 1 + 6 * umlaute [char]; 
+        else
+            offset = 1 + 6 * (tonumber ( char, 16 ) - 32 );
         end
+        
+        local len = sprites:byte ( offset );
+
+        for i = 1, len do
+            if ( insertCol <= numberOfBufferColumns ) then
+                pixelBuffer [insertCol] = sprites:byte ( offset + i );
+            end
+            insertCol = insertCol + 1;
+        end
+       insertCol = insertCol + M.printEmptyColumn ( insertCol );
+       
     end
 
     return insertCol - startCol;
@@ -113,7 +137,7 @@ end
 --------------------------------------------------------------------------------
 -- public functions
 
-function M.init ( pin, modules, period, brightness )
+function M.init ( pin, modules, period, ledBrightness )
 
     --print ( "[MAX7219] init: pin=" .. tostring ( pin ) .. " modules=" .. modules .. " period=" .. tostring ( period ) .. " brightness=" .. tostring ( brightness ) );
     
@@ -122,6 +146,8 @@ function M.init ( pin, modules, period, brightness )
     numberOfModules = modules;
     numberOfDisplayColumns = 8 * numberOfModules;
     numberOfBufferColumns = 3 * numberOfDisplayColumns + (numberOfModules == 1 and (128 - numberOfDisplayColumns) or 0);
+    
+    brightness = ledBrightness;
     
     --print ( "[MAX7219] init: modules=" .. numberOfModules .. " displayCols=" .. numberOfDisplayColumns .. " bufferCols=" .. numberOfBufferColumns );
     
@@ -144,14 +170,22 @@ function M.init ( pin, modules, period, brightness )
         end
     );
     
-    -- max7219 has max clk frequency 10MHz, esp8266 has 80 MHz
-    local CLK_DIVIDER = 800; -- 80 -> 1MHz, 800 -> 100kHz
     spi.setup ( 1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 16, CLK_DIVIDER );
     
     --print ( "[MAX7219] init: set gpio mode");
     -- Must NOT be done _before_ spi.setup() because that function configures all HSPI* pins for SPI. Hence,
     -- if you want to use one of the HSPI* pins for slave select spi.setup() would overwrite that.
     gpio.mode ( csPin, gpio.OUTPUT );
+
+    -- empty registers, turn all LEDs off
+    M.clear ();
+    
+end
+
+function M.clear ()
+
+    --print ( "[MAX7219] clear:");
+    
     gpio.write ( csPin, gpio.HIGH );
 
 --    local MAX7219_REG_DECODEMODE = 0x09;
@@ -167,15 +201,6 @@ function M.init ( pin, modules, period, brightness )
     setCommand ( 0x0F, 0x00 );          -- no display test
     setCommand ( 0x0A, brightness );    -- intensity
 
-    -- empty registers, turn all LEDs off
-    M.clear ();
-    
-end
-
-function M.clear ()
-
-    --print ( "[MAX7219] clear:");
-    
     for i = 1, numberOfBufferColumns do
         pixelBuffer [i] = nil;
     end
@@ -321,6 +346,26 @@ function M.printAndShakeString ( s )
 end
 
 --------------------------------------------------------------------------------
+-- main
+
+print ( "[MODULE] loaded: " .. moduleName )
+
+if ( file.open ( "pixel.dat", "r" ) ) then
+
+    local line = "";
+    repeat
+        local content = file.read (); -- is rading max., 1024 bytes
+        if ( content ) then line = line .. content end 
+    until not content        
+    
+    file.close ();
+    
+    sprites = line;
+    
+    print ( "[MODULE] len=" .. line:len () );
+
+end
+
 
 return M;
 

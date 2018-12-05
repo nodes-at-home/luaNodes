@@ -16,10 +16,12 @@ local pixel = require ( "pixel" );
 -------------------------------------------------------------------------------
 --  Settings
 
+local dev = nodeConfig.appCfg.dev;
+
 local csPin = nodeConfig.appCfg.csPin;
 local shakePeriod = nodeConfig.timer.shakePeriod;
 
-local numberOfModules = nodeConfig.appCfg.modules or 1;
+local numberOfModules = dev and 1 or nodeConfig.appCfg.modules or 1;
 
 local displayCategory = "time";
 
@@ -32,6 +34,10 @@ local displayEnabled = {};
 local displayMessage = {};
 
 local displayCategoryPeriodCounter = 1;
+
+local timeInsertCol = dev and 1 or 22;
+local dateInsertCol = dev and 1 or 10;
+
 
 ----------------------------------------------------------------------------------------
 -- private
@@ -79,6 +85,7 @@ local function handleCategory ( category, clear, text, printFunc, insertCol )
             local ticks = standardDisplayCategoryPeriod * 1000 / shakePeriod;
             if ( (len - cols) > ticks ) then
                 local period = math.floor ( (len - cols) * shakePeriod / 1000 + 1 );
+                --print ( "[APP] handleCategory: category=" .. category .. " text=" .. tostring ( text ) .. " enabled=" .. tostring ( displayEnabled [category] ) .. " heap=" .. node.heap () );
                 displayCategoryPeriod = period;
             end
         end
@@ -95,10 +102,10 @@ loop = function () -- every 1sec
 
     --print ( "[APP] loop: category=" .. tostring ( displayCategory ) ..  " heap=" .. node.heap () );
 
-    if ( displayCategory == "time" ) then -- toggle colon
+    if ( displayCategory == "time" and not dev ) then -- toggle colon
         local tm = rtctime.epoch2cal ( correctTimezone ( rtctime.get () ) );
         local sign = tm ["sec"] % 2 == 0 and ":" or " ";
-        handleCategory ( displayCategory, false, string.format ( "%02d%s%02d", tm ["hour"], sign, tm ["min"] ), pixel.printDateTimeString, 22 );
+        handleCategory ( displayCategory, false, string.format ( "%02d%s%02d", tm ["hour"], sign, tm ["min"] ), pixel.printDateTimeString, timeInsertCol );
     end
     
     displayCategoryPeriodCounter = displayCategoryPeriodCounter + 1;
@@ -128,10 +135,10 @@ loop = function () -- every 1sec
         if ( displayCategory == "time" ) then
             local tm = rtctime.epoch2cal ( correctTimezone ( rtctime.get () ) );
             local sign = tm ["sec"] % 2 == 0 and ":" or " ";
-            handleCategory ( displayCategory, true, string.format ( "%02d%s%02d", tm ["hour"], sign, tm ["min"] ), pixel.printDateTimeString, 22 );
+            handleCategory ( displayCategory, true, string.format ( "%02d%s%02d", tm ["hour"], sign, tm ["min"] ), pixel.printDateTimeString, timeInsertCol );
         elseif ( displayCategory == "date" ) then
             local tm = rtctime.epoch2cal ( correctTimezone ( rtctime.get () ) );
-            handleCategory ( displayCategory, true, string.format ( "%02d.%02d.%04d", tm ["day"], tm ["mon"], tm ["year"] ), pixel.printDateTimeString, 10 );
+            handleCategory ( displayCategory, true, string.format ( "%02d.%02d.%04d", tm ["day"], tm ["mon"], tm ["year"] ), pixel.printDateTimeString, dateInsertCol );
         elseif ( displayCategory:sub ( 1, 3 ) == "msg" ) then
             local i = tonumber ( displayCategory:sub ( 4 ) );
             handleCategory ( displayCategory, true, displayMessage [i] );
