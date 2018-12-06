@@ -124,6 +124,9 @@ function M.init ()
     if ( file.open ( "_version.txt" ) ) then
         version = file.read ();
         file.close ();
+    else
+        local v = require ( "_version" );
+        version = v and v or version;
     end
     print ( "[CONFIG] init: version=" .. version );
 

@@ -9,9 +9,6 @@
 -- 
 -- start from lfs
 
--- TODO testen ob lfs geladen ist (z.B. auf "_lfs", wenn nicht laden und dann erst starten
---      nicht immer laden
-
 local delay = 2000;
 local lfs_filename = "lfs.img";
 
