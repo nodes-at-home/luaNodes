@@ -45,6 +45,4 @@ end
 --require ( "_lfs" );
 
 require ( "startup" ).init ();
-unrequire ( "startup" );
-collectgarbage ();
 

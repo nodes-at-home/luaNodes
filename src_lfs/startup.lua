@@ -78,7 +78,6 @@ local function startApp ()
         end
         print ( "[STARTUP] starting mqttNode", node.heap () );
         require ( "mqttNode" ).start ();
-        --unrequire ( "mqttNode" );
     end
 
 end
@@ -116,8 +115,6 @@ function M.init ()
 
     require ( "espConfig" );
     nodeConfig = espConfig.init ();
-    unrequire ( "espConfig" );
-    collectgarbage ();
     
     if ( nodeConfig == nil ) then
         print ( "[STARTUP] #########" );
@@ -126,7 +123,7 @@ function M.init ()
         return;
     end
     
-    require ( "credential" );
+    require ( "credential" ); -- is called  from lc file
     wifiCredential = credential.init ( nodeConfig.mode );
     unrequire ( "credential" );
     collectgarbage ();
