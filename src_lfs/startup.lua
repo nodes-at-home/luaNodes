@@ -34,10 +34,6 @@ function tohex ( byte, len )
     
 end
 
--- workaround for json parser
---      before 2.1.0 cjson, with 2.1.0 sjson
-cjson = cjson or sjson; 
-
 --------------------------------------------------------------------
 -- private
 

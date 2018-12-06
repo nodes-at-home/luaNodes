@@ -144,8 +144,7 @@ function M.init ()
                 print ( "[CONFIG] open config file: " .. loadFile );
                 local jsonStr = file.read ();
                 if ( jsonStr ) then
-                    --local json = cjson.decode ( jsonStr );
-                    local ok, json = pcall ( function () return cjson.decode ( jsonStr ) end );
+                    local ok, json = pcall ( sjson.decode, jsonStr );
                     if ( ok ) then
                         print ( "[CONFIG] config loaded")
                         tableMerge ( result, json );

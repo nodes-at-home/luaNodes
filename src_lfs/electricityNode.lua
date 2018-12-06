@@ -114,7 +114,7 @@ function M.message ( client, topic, payload )
     print ( "[APP] message: topic=" .. topic .. " payload=" .. payload );
     
     if ( topic == nodeConfig.topic .. "/service/set" ) then
-        local pcallOk, json = pcall ( function () return sjson.decode ( payload ) end );
+        local pcallOk, json = pcall ( sjson.decode, payload );
         print ( "[APP] pcall: pcallOk=" .. tostring ( pcallOk ) .. " result=" .. tostring ( json ) );
         if ( pcallOk ) then
             print ( "[APP] message: oldCounter=" .. counter/1000 .. " newCounter=" .. json.counter );

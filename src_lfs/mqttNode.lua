@@ -44,7 +44,7 @@ local function connect ( client )
                     print ( "[MQTT] send config app " ..  nodeConfig.app .. " to " .. topic );
                     client:publish ( topic, nodeConfig.app .. "@" .. nodeConfig.location, 0, 1, -- ..., qos, retain
                         function ( client )
-                            local str = cjson.encode ( nodeConfig );
+                            local str = sjson.encode ( nodeConfig );
                             local topic = "nodes@home/config/" .. node.chipid () .. "/state";
                             print ( "[MQTT] send config to " .. topic .. str );
                             client:publish ( topic, str, 0, 1, -- ..., qos, retain
@@ -104,8 +104,8 @@ local function receiveConfig ( client, payload )
 
     print ( "[MQTT] receiveConfig:" )
     
-    local json = cjson.decode ( payload );
-    if ( json.chipid == node.chipid () ) then
+    local ok, json = pcall ( sjson.decode, payload );
+    if ( ok and json.chipid == node.chipid () ) then
         print ( "[MQTT] receiveConfig: found same chipid " .. node.chipid () );
         if ( file.open ( "espConfig_mqtt.json", "w" ) ) then
             file.write ( payload );

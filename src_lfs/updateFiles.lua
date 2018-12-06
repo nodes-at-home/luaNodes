@@ -110,7 +110,7 @@ function M.start ()
             if ( content ) then payload = payload .. content end 
         until not content        
         print ( "[UPDATE] payload=" .. payload );
-        local pcallOk, json = pcall ( function () return cjson.decode ( payload ) end );
+        local pcallOk, json = pcall ( sjson.decode, payload );
         print ( "[UPDATE] pcall: pcallOk=" .. tostring ( pcallOk ) .. " result=" .. tostring ( json ) );
         if ( pcallOk ) then
             update.filesList = json and json.files or {};

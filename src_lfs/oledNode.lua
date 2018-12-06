@@ -146,7 +146,8 @@ function M.message ( client, topic, payload )
             messages [k] = nil;
         else
             -- insert message
-            if ( pcall ( function () json = cjson.decode ( payload ); end ) ) then
+            local ok, json = pcall ( sjson.decode, payload ); 
+            if ( ok ) then
                 messages [k] = json;
             else
                 messages [k] = payload;

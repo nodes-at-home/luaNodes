@@ -28,5 +28,5 @@ end
 
 -- Start
 print ( "[INIT] start from lfs with " .. delay/1000 .. " seconds delay" );
-tmr.create ():alarm ( 2000, tmr.ALARM_SINGLE, function () pcall ( init_from_lfs ) end ); 
+tmr.create ():alarm ( 2000, tmr.ALARM_SINGLE, init_from_lfs ); 
 

@@ -11,10 +11,6 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
---require ( "util" );
-require ( "uart" );
-require ( "cjson" );
-
 -------------------------------------------------------------------------------
 --  Settings
 
@@ -108,14 +104,14 @@ local function changeState ( client, topic, payload )
     print ( "[APP] change to state=" .. payload .. " at " .. topic );
     
     -- payload ist json
-    local json = cjson.decode ( payload );
-    if ( json.state ) then
+    local ok, json = pcall ( sjson.decode, payload );
+    if ( ok and json.state ) then
 
         print ( "[JSON] state=" .. tostring ( json.state ) );
         
         -- prepare answer
         state = json.state;
-        local jsonState = cjson.encode ( { state = state } );
+        local jsonState = sjson.encode ( { state = state } );
         if ( state == "ON" ) then
             if ( json.brightness ) then
                 print ( "[JSON] brightness=" .. json.brightness );
@@ -127,7 +123,7 @@ local function changeState ( client, topic, payload )
                 green = json.color.g;
                 blue = json.color.b;
             end
-            jsonState = cjson.encode ( { state = state, brightness = brightness, color = { r = red, g = green, b = blue } } );
+            jsonState = sjson.encode ( { state = state, brightness = brightness, color = { r = red, g = green, b = blue } } );
         end
 
         -- prepare arduino message
