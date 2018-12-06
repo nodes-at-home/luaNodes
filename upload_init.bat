@@ -1,3 +1,4 @@
 nodemcu-tool.cmd upload ^
 src\__init.lua ^
-src\_version.txt
+bin\credential.lc ^
+bin\lfs.img
