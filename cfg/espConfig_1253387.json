@@ -3,7 +3,7 @@
     "app": "sonoffNode",
     "class": "switch",
     "type": "sonoff",
-    "location": "location1",
+    "location": "k8200",
     "appCfg": {
         "device": "socket",
         "buttonPin": 3,
