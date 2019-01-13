@@ -9,6 +9,18 @@
             {
                 "device": "touch1",
                 "pin": 1
+            },
+            {
+                "device": "touch2",
+                "pin": 2
+            },
+            {
+                "device": "touch3",
+                "pin": 3
+            },
+            {
+                "device": "touch4",
+                "pin": 4
             }
         ]
     },
