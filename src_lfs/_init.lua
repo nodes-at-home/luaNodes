@@ -22,10 +22,12 @@ print ( "[INIT] boot: rawcode=" .. rawcode .. " ,reason=" .. bootreason );
 
 local NO_BOOT_FILE = "no_boot";
 
+local startTelnet;
+
 if ( bootreason == 1 or bootreason == 2 or bootreason == 3 ) then
     if ( file.exists ( NO_BOOT_FILE ) ) then
         print ( "[INIT] booting after error; NO STARTUP" );
-        return;
+        startTelnet = true;
     else
         file.open ( NO_BOOT_FILE, "w" );
         file.close ();
@@ -44,5 +46,5 @@ end
 
 --require ( "_lfs" );
 
-require ( "startup" ).init ();
+require ( "startup" ).init ( startTelnet );
 

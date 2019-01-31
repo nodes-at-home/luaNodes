@@ -107,7 +107,9 @@ end
 --------------------------------------------------------------------
 -- public
 
-function M.init ()
+function M.init ( startTelnet)
+
+    print ( "[STARTUP] telnet=" .. tostring ( startTelnet ) );
 
     require ( "espConfig" );
     nodeConfig = espConfig.init ();
@@ -123,6 +125,9 @@ function M.init ()
     wifiCredential = credential.init ( nodeConfig.mode );
     unrequire ( "credential" );
     collectgarbage ();
+    
+    local lfsTimestamp = node.flashindex ( nil );
+    nodeConfig.lfsts = lfsTimestamp;
 
     if ( nodeConfig.appCfg.useAdc ) then
         if ( adc.force_init_mode ( adc.INIT_ADC ) ) then
@@ -140,24 +145,30 @@ function M.init ()
     
     print ( "[STARTUP] version=" .. nodeConfig.version );
     print ( "[STARTUP] waiting for application start" );
+
+    if ( startTelnet ) then    
+        require ( "telnet" ):open ( wifiCredential.ssid, wifiCredential.password, 23, nodeConfig.wifi );
+    else
     
-    -- boot reason https://nodemcu.readthedocs.io/en/master/en/modules/node/#nodebootreason
-    -- 0, power-on
-    -- 1, hardware watchdog reset
-    -- 2, exception reset
-    -- 3, software watchdog reset
-    -- 4, software restart
-    -- 5, wake from deep sleep
-    -- 6, external reset
-    local rawcode, bootreason = node.bootreason ();
-    print ( "[STARTUP] boot: rawcode=" .. rawcode .. " ,reason=" .. bootreason );
-    if ( nodeConfig.appCfg.useQuickStartupAfterDeepSleep and bootreason == 5 ) then
-        print ( "[STARTUP] quick start" );
---        startApp ();
-        tmr.alarm ( nodeConfig.timer.startup, 10, tmr.ALARM_SINGLE, startApp )
-    else 
-        print ( "[STARTUP] classic start" );
-        tmr.alarm ( nodeConfig.timer.startup, nodeConfig.timer.startupDelay1, tmr.ALARM_SINGLE, startup )
+        -- boot reason https://nodemcu.readthedocs.io/en/master/en/modules/node/#nodebootreason
+        -- 0, power-on
+        -- 1, hardware watchdog reset
+        -- 2, exception reset
+        -- 3, software watchdog reset
+        -- 4, software restart
+        -- 5, wake from deep sleep
+        -- 6, external reset
+        local rawcode, bootreason = node.bootreason ();
+        print ( "[STARTUP] boot: rawcode=" .. rawcode .. " ,reason=" .. bootreason );
+        if ( nodeConfig.appCfg.useQuickStartupAfterDeepSleep and bootreason == 5 ) then
+            print ( "[STARTUP] quick start" );
+    --        startApp ();
+            tmr.alarm ( nodeConfig.timer.startup, 10, tmr.ALARM_SINGLE, startApp )
+        else 
+            print ( "[STARTUP] classic start" );
+            tmr.alarm ( nodeConfig.timer.startup, nodeConfig.timer.startupDelay1, tmr.ALARM_SINGLE, startup )
+        end
+        
     end
     
 end
