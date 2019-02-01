@@ -1,0 +1,13 @@
+{
+    "tag": "V0.70.0",
+    "files": [
+        {
+            "name": "lfs.img.ts",
+            "size": 1
+        },
+        {
+            "name": "lfs.img",
+            "size": 72124
+        }
+    ]
+}
