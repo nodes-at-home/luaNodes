@@ -9,6 +9,15 @@
 
 -- dofile ( "startup.lua" );
 
+-------------------------------------------------------------------------------
+--  Settings
+
+local NO_BOOT_FILE = "no_boot";
+local LFS_RELOAD_FILE = "lfs_reload";
+
+----------------------------------------------------------------------------------------
+-- private
+
 -- boot reason https://nodemcu.readthedocs.io/en/master/en/modules/node/#nodebootreason
 -- 0, power-on
 -- 1, hardware watchdog reset
@@ -17,31 +26,41 @@
 -- 4, software restart
 -- 5, wake from deep sleep
 -- 6, external reset
-local rawcode, bootreason = node.bootreason ();
-print ( "[INIT] boot: rawcode=" .. rawcode .. " ,reason=" .. bootreason );
-
-local NO_BOOT_FILE = "no_boot";
+local rawcode, bootreason, cause = node.bootreason ();
 
 local startTelnet;
 
-if ( bootreason == 1 or bootreason == 2 or bootreason == 3 ) then
-    if ( file.exists ( NO_BOOT_FILE ) ) then
-        print ( "[INIT] booting after error; NO STARTUP" );
-        startTelnet = true;
-    else
-        file.open ( NO_BOOT_FILE, "w" );
-        file.close ();
-    end
-else
-    if ( file.exists ( NO_BOOT_FILE ) ) then 
-        file.remove ( NO_BOOT_FILE ); 
-    end
+--------------------------------------------------------------------
+-- public
+
+package.loaders [3] = function ( module ) -- loader_flash
+    local fn, ba = node.flashindex ( module );
+    return ba and "Module not in LFS" or fn; 
 end
 
-local index = node.flashindex;
-package.loaders [3] = function ( module ) -- loader_flash
-    local fn, ba = index ( module );
-    return ba and "Module not in LFS" or fn; 
+print ( "[INIT] boot: rawcode=" .. rawcode .. " reason=" .. bootreason .. " cause=" .. tostring ( cause ) );
+
+
+if ( file.exists ( LFS_RELOAD_FILE ) ) then
+    file.remove ( LFS_RELOAD_FILE );
+    node.restart ();
+    print ( "[INIT] restart after lfs reload" );
+    return;
+else
+    if ( bootreason == 1 or bootreason == 2 or bootreason == 3 ) then
+        if ( file.exists ( NO_BOOT_FILE ) ) then
+            print ( "[INIT] booting after error; NO STARTUP" );
+            startTelnet = true;
+        else
+            file.open ( NO_BOOT_FILE, "w" );
+            file.close ();
+        end
+    else
+        if ( file.exists ( NO_BOOT_FILE ) ) then 
+            file.remove ( NO_BOOT_FILE ); 
+        end
+    end
+    
 end
 
 --require ( "_lfs" );

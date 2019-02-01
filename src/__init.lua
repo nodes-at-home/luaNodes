@@ -9,14 +9,44 @@
 -- 
 -- start from lfs
 
-local delay = 2000;
-local lfs_filename = "lfs.img";
+-------------------------------------------------------------------------------
+--  Settings
 
-local init_from_lfs = node.flashindex ( "_init" );
-if ( not init_from_lfs ) then
-    if ( file.exists ( lfs_filename ) ) then
-        print ( "[INIT] reloading flash from " .. lfs_filename );
-        node.flashreload ( lfs_filename );
+local DELAY = 2000;
+local LFS_FILENAME = "lfs.img";
+local LFS_TS_FILENAME = "lfs.img.ts";
+local LFS_RELOAD_FILE = "lfs_reload";
+
+----------------------------------------------------------------------------------------
+-- private
+
+local lfsts = node.flashindex ();
+local expectedLfsts;
+
+--------------------------------------------------------------------
+-- public
+
+if ( lfsts ) then
+    if ( file.open ( LFS_TS_FILENAME ) ) then
+        expectedLfsts = tonumber ( file.read () );
+    else
+        file.open ( LFS_TS_FILENAME, "w" );
+        file.write ( lfsts );
+        expectedLfsts = lfsts;
+    end
+    file.close ();
+end
+
+print ( "[INIT] lfsts=" .. tostring ( lfsts ) .. "< expected=" .. tostring ( expectedLfsts ) .. "<" );
+
+if ( not ( lfsts and expectedLfsts and lfsts == expectedLfsts ) ) then
+    if ( file.exists ( LFS_FILENAME ) ) then
+        print ( "[INIT] reloading flash from " .. LFS_FILENAME );
+        if ( file.open ( LFS_RELOAD_FILE, "w" ) ) then
+            file.close ();
+        end
+        file.remove ( LFS_TS_FILENAME );
+        node.flashreload ( LFS_FILENAME );
         -- after reload a reboot occurs
         print ( "[INIT] image not reloaded, exiting" );
         return;
@@ -27,6 +57,7 @@ if ( not init_from_lfs ) then
 end
 
 -- Start
-print ( "[INIT] start from lfs with " .. delay/1000 .. " seconds delay" );
+print ( "[INIT] start from lfs with " .. DELAY/1000 .. " seconds delay" );
+local init_from_lfs = node.flashindex ( "_init" );
 tmr.create ():alarm ( 2000, tmr.ALARM_SINGLE, init_from_lfs ); 
 
