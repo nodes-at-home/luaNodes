@@ -57,7 +57,11 @@ if ( not ( lfsts and expectedLfsts and lfsts == expectedLfsts ) ) then
 end
 
 -- Start
+local id = node.chipid ();
+if ( id == 15892791 or id == 16061971 or id == 6130344 ) then
+    DELAY = 2;
+end
 print ( "[INIT] start from lfs with " .. DELAY/1000 .. " seconds delay" );
 local init_from_lfs = node.flashindex ( "_init" );
-tmr.create ():alarm ( 2000, tmr.ALARM_SINGLE, init_from_lfs ); 
+tmr.create ():alarm ( DELAY, tmr.ALARM_SINGLE, init_from_lfs ); 
 
