@@ -3,7 +3,7 @@
     "app": "sonoffNode",
     "class": "switch",
     "type": "sonoff",
-    "location": "xmastree",
+    "location": "gallery1",
     "appCfg": {
         "device": "socket",
         "buttonPin": 3,
