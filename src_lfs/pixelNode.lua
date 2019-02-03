@@ -38,6 +38,8 @@ local displayCategoryPeriodCounter = 1;
 local timeInsertCol = dev and 1 or 22;
 local dateInsertCol = dev and 1 or 10;
 
+local loopTimer;
+
 
 ----------------------------------------------------------------------------------------
 -- private
@@ -178,11 +180,14 @@ function M.connect ( client, topic )
                 function ( sec, usec )
                     print ( "[APP] setting time to sec=" .. sec .. " usec=" .. usec );
                     rtctime.set ( sec, usec );
-                    tmr.create ():alarm ( 1000, tmr.ALARM_AUTO, loop );
+                    if ( not loopTimer ) then
+                        loopTimer = tmr.create ()
+                        loopTimer:alarm ( 1000, tmr.ALARM_AUTO, loop );
+                    end
                 end,                
                 function ()
                     print ( "[APP] sntp sync failed" );
-                    node.task.post ( function () M.connect ( client, topic ) end );
+                    --node.task.post ( function () M.connect ( client, topic ) end );
                 end,                        
                 1       -- autorepeat
             );

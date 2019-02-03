@@ -208,9 +208,11 @@ function M.clear ()
     
 end
 
-function M.setBrightness ( brightness )
+function M.setBrightness ( ledBrightness )
 
     assert ( brightness, "brightness not set" );
+    
+    brightness = ledBrightness;
     
     if ( brightness >= 0 and brightness < 20 ) then
         setCommand ( 0x0A, brightness );    -- intensity
