@@ -1,13 +1,17 @@
 {
-    "tag": "V0.70.0",
+    "tag": "V0.70.1",
     "files": [
+        {
+            "name": "init.lua",
+            "size": 2064
+        },
         {
             "name": "lfs.img.ts",
             "size": 1
         },
         {
             "name": "lfs.img",
-            "size": 72124
+            "size": 72097
         }
     ]
 }
