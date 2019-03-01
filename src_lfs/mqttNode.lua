@@ -220,6 +220,7 @@ local function startMqtt ()
         mqttClient:on ( "offline", 
             function ( client )
                 print ( "[MQTT] offline" );
+                tmr.stop ( nodeConfig.timer.periodic ); 
                 if ( appNode.offline and appNode.offline ( client ) ) then
                     print ( "[MQTT] restart connection" );
                     tmr.start ( nodeConfig.timer.wifiLoop ) -- timer_id
@@ -234,6 +235,7 @@ local function startMqtt ()
         function ()        
             result = mqttClient:connect( nodeConfig.mqtt.broker , 1883, 0, 0, -- broker, port, secure, autoreconnect
                 function ( client )
+                    tmr.start ( nodeConfig.timer.periodic ); 
                     connect ( client );
                 end,        
                 function ( client, reason ) 
@@ -306,7 +308,7 @@ function M.start ()
     tmr.alarm ( nodeConfig.timer.wifiLoop, nodeConfig.timer.wifiLoopPeriod, tmr.ALARM_AUTO, wifiLoop ); -- timer_id, interval_ms, mode
     
     if ( nodeConfig.timer.periodic ) then
-        tmr.alarm ( nodeConfig.timer.periodic, nodeConfig.timer.periodicPeriod, tmr.ALARM_AUTO, -- timer_id, interval_ms, mode
+        tmr.register ( nodeConfig.timer.periodic, nodeConfig.timer.periodicPeriod, tmr.ALARM_AUTO, -- timer_id, interval_ms, mode
             function ()
                 if ( mqttClient ) then 
                     local voltage = -1;
