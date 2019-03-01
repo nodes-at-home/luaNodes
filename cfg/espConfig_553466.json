@@ -1,0 +1,20 @@
+{
+    "chipid": "553466",
+    "app": "gestureNode",
+    "class": "sensor",
+    "type": "gesture",
+    "location": "test",
+    "appCfg": {
+        "sdaPin": 1,
+        "sclPin": 2,
+        "triggerPin": 3,
+        "proximityPersistence": 4,
+        "proximityThreshhold": 20
+    },
+    "timer": {
+        "offDelay": 2000
+    },
+    "wifi": {
+        "ip": "192.168.2.55"
+    }
+}
