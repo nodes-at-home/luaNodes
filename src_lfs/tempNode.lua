@@ -54,13 +54,11 @@ local function getSensorData ( pin )
         
     end
     
-    local result = status == dht.OK; 
-    
-    return result, temperature, humidity;
+    return status, temperature, humidity;
     
 end
 
-local function publishValues ( client, baseTopic, temperature, humidity, pressure )
+local function publishValues ( client, baseTopic, temperature, humidity, pressure, dhtstatus )
 
     -- all Values
     if ( temperature and humidity and pressure ) then
@@ -111,7 +109,8 @@ local function publishValues ( client, baseTopic, temperature, humidity, pressur
         local t = temperature and temperature or "--";
         local h = humidity and humidity or "--";
         local p = pressure and pressure or "--"
-        client:publish ( baseTopic .. "/value/error", "nothing published t=" .. t .." h=" .. h .." p=" .. p, 0, retain, -- qos, retain
+        local s = dhtstatus and dhtstatus or "--"
+        client:publish ( baseTopic .. "/value/error", "nothing published dht=" .. s .. " t=" .. t .." h=" .. h .." p=" .. p, 0, retain, -- qos, retain
             function ( client )
                 require ( "deepsleep" ).go ( client, deepSleepDelay, timeBetweenSensorReadings );
             end
@@ -130,21 +129,16 @@ function M.connect ( client, baseTopic )
     
     local temperature, humidity = 0;
 
+    local dhtstatus;
     if ( dhtPin ) then
-        local success;
-        success, temperature, humidity = getSensorData ( dhtPin );
-        if ( not success ) then -- first retry
-            success, temperature, humidity = getSensorData ( dhtPin );
+        dhtstatus, temperature, humidity = getSensorData ( dhtPin );
+        if ( dhtstatus ~= dht.OK ) then -- first retry
+            dhtstatus, temperature, humidity = getSensorData ( dhtPin );
         end
-        if ( temperature < -100 or temperature > 100 ) then
+        if ( dhtstatus == dht.OK and ( temperature < -100 or temperature > 100 ) ) then
             temperature = nil;
-            success = false;
         end
-        if ( success ) then
-            print ( "[APP] t=" .. temperature .. " ,h=" .. humidity );
-        else
-            print ( "[APP] no values" );
-        end
+        print ( "[APP] status=" .. dhtstatus .. " t=" .. tostring ( temperature ) .. " ,h=" .. tostring ( humidity ) );
     end
     
     if ( bme280SdaPin and bme280SclPin ) then
@@ -159,17 +153,17 @@ function M.connect ( client, baseTopic )
                     print ( "[BMP] pressure=" .. pressure );
                     if ( dhtPin and temperature and humidity ) then
                         print ( "[BMP] t=" .. temperature .. " ,h=" .. humidity );
-                        publishValues ( client, baseTopic, temperature, humidity, pressure );
+                        publishValues ( client, baseTopic, temperature, humidity, pressure, dhtstatus );
                     else
                         temperature = bme280.temp () / 100;
                         print ( "[BMP] temperature=" .. temperature );
-                        publishValues ( client, baseTopic, temperature, nil, pressure );
+                        publishValues ( client, baseTopic, temperature, nil, pressure, dhtstatus );
                     end
                 end
             );
         end
     else
-        publishValues ( client, baseTopic, temperature, humidity, nil );
+        publishValues ( client, baseTopic, temperature, humidity, nil, dhtstatus );
     end
     
 end
