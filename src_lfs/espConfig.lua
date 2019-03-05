@@ -47,7 +47,8 @@ local DEFAULT_CONFIG = {
     trace = {
         ip = "192.168.2.117",
         port = 10001,
-        onUpdate = true
+        onUpdate = true,
+        onStartup = false
     },
 };
 

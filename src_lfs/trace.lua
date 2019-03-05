@@ -16,7 +16,10 @@ _G [moduleName] = M;
 
 local CALLBACK_DELAY = 5*1000; -- ms
 
-traceSocket = nil;
+local ip = nodeConfig.trace and nodeConfig.trace.ip;
+local port = nodeConfig.trace and nodeConfig.trace.port;
+
+local traceSocket = nil;
 
 ----------------------------------------------------------------------------------------
 -- private
@@ -36,39 +39,48 @@ function M.on ()
 
     if ( traceSocket == nil ) then
     
-        starting = true;
+        if ( ip and port ) then
+
+            print ( "[TRACE] connecting to " .. ip .. ":" .. port );
     
-        traceSocket = net.createConnection ( net.TCP, 0 ); -- no secure
-        print ( "[TRACE] connecting to " .. nodeConfig.trace.ip .. ":" .. nodeConfig.trace.port );
-        traceSocket:connect ( nodeConfig.trace.port, nodeConfig.trace.ip );
-        
-        traceSocket:on ( "connection", 
-            function ( socket, errorCode )
-                socket:send ( node.chipid () .. "#***" .. node.chipid () .. " is tracing ***###"  );
-                -- redirect
-                node.output ( 
-                    function ( s )
-                        if ( s and s ~= "\n" ) then
-                            if ( socket ) then
-                                socket:send ( node.chipid () .. "#" .. s .. "###" );
+            starting = true;
+    
+            traceSocket = net.createConnection ( net.TCP, 0 ); -- no secure
+            traceSocket:connect ( nodeConfig.trace.port, nodeConfig.trace.ip );
+            
+            traceSocket:on ( "connection", 
+                function ( socket, errorCode )
+                    socket:send ( node.chipid () .. "#***" .. node.chipid () .. " is tracing ***###"  );
+                    -- redirect
+                    node.output ( 
+                        function ( s )
+                            if ( s and s ~= "\n" ) then
+                                if ( socket ) then
+                                    socket:send ( node.chipid () .. "#" .. s .. "###" );
+                                end
                             end
-                        end
-                    end,
-                    1               -- additional serial out  
-                ); 
-                starting = false;
-            end 
-        );
-        
-        traceSocket:on ( "disconnection",
-            function ( socket, errorCode )
-                print ( "[TRACE] disconnection errorCode= " .. tostring ( errorCode ) );
-                traceSocket = nil;
-                node.output ( nil );
-                starting = false;
-                -- TODO reconnect here?
-            end
-        );
+                        end,
+                        1               -- additional serial out  
+                    ); 
+                    starting = false;
+                end 
+            );
+            
+            traceSocket:on ( "disconnection",
+                function ( socket, errorCode )
+                    print ( "[TRACE] disconnection errorCode= " .. tostring ( errorCode ) );
+                    traceSocket = nil;
+                    node.output ( nil );
+                    starting = false;
+                    -- TODO reconnect here?
+                end
+            );
+            
+        else
+            
+            print ( "[TRACE] parameter undefined ip=" .. tostring ( ip ) .. " port=" .. tostring ( port ) );
+
+        end
         
     end  
 
