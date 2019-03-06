@@ -269,9 +269,7 @@ local function wifiLoop ()
     
         tmr.stop ( nodeConfig.timer.wifiLoop );
         
-        local t = nodeConfig.trace and nodeConfig.trace.onStartup;
-        print ( "[MQTT] trace.onStartup=" .. tostring ( t ) ); 
-        if ( t ) then
+        if ( nodeConfig.trace and nodeConfig.trace.onStartup ) then
             print ( "[MQTT] start with trace" );
             require ( "trace" ).on ();
             local pollingTimer = tmr.create (); -- interval_ms, mode

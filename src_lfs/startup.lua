@@ -46,6 +46,8 @@ local function startApp ()
     local phymode = nodeConfig.phymode and wifi [nodeConfig.phymode] or wifi.PHYMODE_N;
     wifi.setphymode ( phymode );
     print ( "[WIFI] phymode=" .. wifi.getphymode () .. " (1=B,2=G,3=N) country=" .. wifi.getcountry ().country );    
+    wifi.nullmodesleep ( false ); 
+    print ( "[WIFI] nullmodesleep=" .. tostring ( wifi.nullmodesleep () ) );    
     local configok = wifi.sta.config (
         { 
             ssid = wifiCredential.ssid, 
@@ -72,8 +74,8 @@ local function startApp ()
             oldprint = print;
             print = function ( ... ) end
         end
-        print ( "[STARTUP] starting mqttNode", node.heap () );
-        require ( "mqttNode" ).start ();
+        print ( "[STARTUP] starting mqttWifi", node.heap () );
+        require ( "mqttWifi" ).start ();
     end
 
 end
