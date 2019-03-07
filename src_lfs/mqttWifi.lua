@@ -14,6 +14,16 @@ _G [moduleName] = M;
 -------------------------------------------------------------------------------
 --  Settings
 
+local baseTopic = nodeConfig.topic;
+local mqttTopic = baseTopic .. "/state/mqtt";
+
+local configTopic = "nodes@home/config/" .. node.chipid ();
+local configJsonTopic = configTopic .. "/json";
+
+local retain = nodeConfig.mqtt.retain;
+
+local app = nodeConfig.app;
+
 local appNode = nil;    -- application callbacks
 local mqttClient = nil;     -- mqtt client
 
@@ -22,49 +32,53 @@ local mqttClient = nil;     -- mqtt client
 
 local function connect ( client )
 
-    print ( "[MQTT] connected to MQTT Broker" )
-    print ( "[MQTT] node=" .. nodeConfig.topic );
+    print ( "[MQTTWIFI] connect: baseTopic=" .. baseTopic );
     
     local version = nodeConfig.version;
-    print ( "[MQTT] send <" .. version .. "> to topic=" .. nodeConfig.topic );
-    client:publish ( nodeConfig.topic, version, 0, nodeConfig.mqtt.retain, -- ..., qos, retain
+    print ( "[MQTTWIFI] connect: send <" .. version .. "> to topic=" .. baseTopic );
+    client:publish ( baseTopic, version, 0, retain, -- ..., qos, retain
         function ( client )
             local voltage = -1;
             if ( nodeConfig.appCfg.useAdc ) then
                     local scale = nodeConfig.appCfg.adcScale or 4200;
-                    print ( "[MQTT] adcScale=" .. scale );           
+                    print ( "[MQTTWIFI] adcScale=" .. scale );           
                     voltage = adc.read ( 0 ) / 1023 * scale; -- mV
             else
                 voltage = adc.readvdd33 ();
             end
-            print ( "[MQTT] send voltage=" .. voltage );
-            client:publish ( nodeConfig.topic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], 0, nodeConfig.mqtt.retain, -- qos, retain                                    
+            print ( "[MQTTWIFI] connect: send voltage=" .. voltage );
+            client:publish ( baseTopic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], 0, retain, -- qos, retain                                    
                 function ( client )
-                    local topic = "nodes@home/config/" .. node.chipid ();
-                    print ( "[MQTT] send config app " ..  nodeConfig.app .. " to " .. topic );
-                    client:publish ( topic, nodeConfig.app .. "@" .. nodeConfig.location, 0, 1, -- ..., qos, retain
+                    local s = app .. "@" .. nodeConfig.location;
+                    print ( "[MQTTWIFI] connect: send <" ..  s .. "> to " .. configTopic );
+                    client:publish ( configTopic, s, 0, retain, -- ..., qos, retain
                         function ( client )
                             local str = sjson.encode ( nodeConfig );
-                            local topic = "nodes@home/config/" .. node.chipid () .. "/state";
-                            print ( "[MQTT] send config to " .. topic .. str );
-                            client:publish ( topic, str, 0, 1, -- ..., qos, retain
+                            local topic = configTopic .. "/state";
+                            print ( "[MQTTWIFI] connect: send config to " .. topic .. " -> " .. str );
+                            client:publish ( topic, str, 0, retain, -- ..., qos, retain
                                 function ( client )
-                                    if ( appNode.start ) then 
-                                        appNode.start ( client, nodeConfig.topic ); 
-                                    end
-                                    -- subscribe to service topics
-                                    local topic = nodeConfig.topic .. "/service/+";
-                                    print ( "[MQTT] subscribe to topic=" .. topic );
-                                    client:subscribe ( topic, 0, -- ..., qos
+                                    print ( "[MQTTWIFI] connect: send mqtt online state to " .. mqttTopic );
+                                    client:publish ( mqttTopic, "online", 0, retain, -- ..., qos, retain
                                         function ( client )
-                                            -- subscribe to all topics based on base topic of the node
-                                            local topic = nodeConfig.topic .. "/+";
-                                            print ( "[MQTT] subscribe to topic=" .. topic );
+                                            if ( appNode.start ) then 
+                                                appNode.start ( client, baseTopic ); 
+                                            end
+                                            -- subscribe to service topics
+                                            local topic = baseTopic .. "/service/+";
+                                            print ( "[MQTTWIFI] connect: subscribe to topic=" .. topic );
                                             client:subscribe ( topic, 0, -- ..., qos
                                                 function ( client )
-                                                    if ( appNode.connect ) then
-                                                        appNode.connect ( client, nodeConfig.topic );
-                                                    end
+                                                    -- subscribe to all topics based on base topic of the node
+                                                    local topic = baseTopic .. "/+";
+                                                    print ( "[MQTTWIFI] connect: subscribe to topic=" .. topic );
+                                                    client:subscribe ( topic, 0, -- ..., qos
+                                                        function ( client )
+                                                            if ( appNode.connect ) then
+                                                                appNode.connect ( client, baseTopic );
+                                                            end
+                                                        end
+                                                    );
                                                 end
                                             );
                                         end
@@ -82,16 +96,14 @@ end
 
 local function subscribeConfig ( client )
 
-    print ( "[MQTT] subscribeConfig:" )
+    print ( "[MQTTWIFI] subscribeConfig: topic=" .. configJsonTopic );
     
-    local topic = "nodes@home/config/" .. node.chipid () .. "/json";
-    print ( "[MQTT] subscribeConfig: topic=" .. topic );
     client:subscribe ( topic, 0, -- ..., qos
         function ( client )
             -- reset topic
-            local topic = nodeConfig.topic .. "/service/config"
-            print ( "[[MQTT] subscribeConfig: topic=" .. topic );
-            client:publish ( topic, "", 0, 1, -- ..., qos, retain
+            local topic = baseTopic .. "/service/config"
+            print ( "[MQTTWIFI] subscribeConfig: reset topic=" .. topic );
+            client:publish ( topic, "", 0, retain, -- ..., qos, retain
                 function ( client )
                 end
             );
@@ -102,15 +114,15 @@ end
 
 local function receiveConfig ( client, payload )
 
-    print ( "[MQTT] receiveConfig:" )
+    print ( "[MQTTWIFI] receiveConfig:" )
     
     local ok, json = pcall ( sjson.decode, payload );
     if ( ok and json.chipid == node.chipid () ) then
-        print ( "[MQTT] receiveConfig: found same chipid " .. node.chipid () );
+        print ( "[MQTTWIFI] receiveConfig: found same chipid " .. node.chipid () );
         if ( file.open ( "espConfig_mqtt.json", "w" ) ) then
             file.write ( payload );
             file.close ();
-            print ( "[MQTT] receiveConfig: restarting after config save")
+            print ( "[MQTTWIFI] receiveConfig: restarting after config save")
             if ( trace ) then 
                 trace.off ( node.restart ); 
             else
@@ -130,7 +142,7 @@ local function update ( payload )
             local url = file.readline ();
             file.close ();
             if ( url and url == payload ) then
-                print ( "[UPDATE] already updated with " .. payload );
+                print ( "[MQTTWIFI] aupdate: already updated with " .. payload );
                 forceUpdate = false;
              end
         end
@@ -138,15 +150,15 @@ local function update ( payload )
     
     -- start update procedure
     if ( forceUpdate ) then
-        print ( "[MQTT] update: start heap: " .. node.heap () )
+        print ( "[MQTTWIFI] update: start heap=" .. node.heap () )
         if ( file.open ( "update.url", "w" ) ) then
             local success = file.write ( payload );
-            print ( "[MQTT] update: url write success=" .. tostring ( success ) );
+            print ( "[MQTTWIFI] update: url write success=" .. tostring ( success ) );
             file.close ();
             if ( success ) then
-                print ( "[MQTT] update:  restart for second step" );
+                print ( "[MQTTWIFI] update:  restart for second step" );
                 if ( trace ) then 
-                    print ( "[MQTT] update: ... wait ..." );
+                    print ( "[MQTTWIFI] update: ... wait ..." );
                     trace.off ( node.restart ); 
                 else
                     node.restart ();
@@ -159,10 +171,6 @@ end
 
 local function startMqtt ()
         
-    print ( "[WIFI] dnsname=" .. wifi.sta.gethostname () );
-    print ( "[WIFI] network=" .. (wifi.sta.getip () and wifi.sta.getip () or "NO_IP") );
-    print ( "[WIFI] mac=" .. wifi.sta.getmac () );
-    
     -- Setup MQTT client and events
     if ( mqttClient == nil ) then
 
@@ -172,20 +180,20 @@ local function startMqtt ()
         -- this is never called, because the last registration wins
         -- mqttClient:on ( "connect", 
             -- function ( client )
-                -- print ( "[MQTT] CONNECTED" );
+                -- print ( "[MQTTWIFI] CONNECTED" );
                 -- appNode.connect ();
             -- end
         -- );
     
         mqttClient:on ( "message", 
             function ( client, topic, payload )
-                print ( "[MQTT] message received topic=" .. topic .." payload=" .. (payload == nil and "***nothing***" or payload) );
+                print ( "[MQTTWIFI] message: received topic=" .. topic .." payload=" .. (payload == nil and "***nothing***" or payload) );
                 if ( payload ) then
                     -- check for update
-                    local _, pos = topic:find ( nodeConfig.topic );
+                    local _, pos = topic:find ( baseTopic );
                     if ( pos ) then
                         local subtopic = topic:sub ( pos + 1 );
-                        print ( "[MQTT] subtopic=" .. subtopic );
+                        print ( "[MQTTWIFI] message: subtopic=" .. subtopic );
                         if ( subtopic == "/service/update" ) then
                             update ( payload ); 
                         elseif ( subtopic == "/service/trace" ) then
@@ -198,9 +206,9 @@ local function startMqtt ()
                         elseif ( subtopic == "/service/config" ) then
                             subscribeConfig ( client );
                         elseif ( subtopic == "/service/restart" ) then
-                            print ( "[MQTT] RESTARTING")
+                            print ( "[MQTTWIFI] RESTARTING")
                             if ( trace ) then 
-                                print ( "[MQTT] ... wait ..." );
+                                print ( "[MQTTWIFI] ... wait ..." );
                                 trace.off ( node.restart ); 
                             else
                                 node.restart ();
@@ -210,7 +218,7 @@ local function startMqtt ()
                                 appNode.message ( client, topic, payload );
                             end
                         end
-                    elseif ( subtopic == "nodes@home/config/" .. node.chipid () .. "/json" ) then
+                    elseif ( subtopic == configJsonTopic ) then
                         receiveConfig ( client, payload );
                     end
                 end
@@ -219,16 +227,18 @@ local function startMqtt ()
         
         mqttClient:on ( "offline", 
             function ( client )
-                print ( "[MQTT] offline" );
+                print ( "[MQTTWIFI] offline:" );
                 tmr.stop ( nodeConfig.timer.periodic ); 
                 if ( appNode.offline and appNode.offline ( client ) ) then
-                    print ( "[MQTT] restart connection" );
+                    print ( "[MQTTWIFI] offline: restart connection" );
                     tmr.start ( nodeConfig.timer.wifiLoop ) -- timer_id
                 end
             end
         );
 
     end
+    
+    mqttClient:lwt ( mqttTopic, "offline", 0, retain ); -- qos, retain
 
     local result;
     while not pcall (
@@ -239,17 +249,17 @@ local function startMqtt ()
                     connect ( client );
                 end,        
                 function ( client, reason ) 
-                    print ( "[MQTT] not connected reason=" .. reason );
+                    print ( "[MQTTWIFI] startMqtt: not connected reason=" .. reason );
                     tmr.start ( nodeConfig.timer.wifiLoop );
                 end
             )
         end
     )
     do
-        print ( "[MQTT] retry connecting" );
+        print ( "[MQTTWIFI] retry connecting" );
     end
 
-    print ( "[MQTT] connect result=" .. tostring ( result ) );
+    print ( "[MQTTWIFI] startMqtt: connect result=" .. tostring ( result ) );
     if ( not result ) then
         tmr.start ( nodeConfig.timer.wifiLoop );
     end
@@ -269,8 +279,12 @@ local function wifiLoop ()
     
         tmr.stop ( nodeConfig.timer.wifiLoop );
         
+        print ( "[MQTTWIFI] wifiLoop: dnsname=" .. wifi.sta.gethostname () );
+        print ( "[MQTTWIFI] wifiLoop: network=" .. (wifi.sta.getip () and wifi.sta.getip () or "NO_IP") );
+        print ( "[MQTTWIFI] wifiLoop: mac=" .. wifi.sta.getmac () );
+
         if ( nodeConfig.trace and nodeConfig.trace.onStartup ) then
-            print ( "[MQTT] start with trace" );
+            print ( "[MQTTWIFI] wifiLoop: start with trace" );
             require ( "trace" ).on ();
             local pollingTimer = tmr.create (); -- interval_ms, mode
             pollingTimer:alarm ( 200, tmr.ALARM_AUTO, 
@@ -282,13 +296,13 @@ local function wifiLoop ()
                 end 
             );
         else
-            print ( "[MQTT] start with no trace" );
+            print ( "[MQTTWIFI] wifiLoop: start with no trace" );
             startMqtt ();
         end
 
     else
 
-        print ( "[WIFI] Connecting..." );
+        print ( "[MQTTWIFI] wifiLoop: Connecting..." );
 
     end
     
@@ -299,8 +313,8 @@ end
 
 function M.start ()
 
-    print ( "[MQTT] start app=" .. nodeConfig.app  );
-    appNode = require ( nodeConfig.app );
+    print ( "[MQTTWIFI] start: app=" .. app  );
+    appNode = require ( app );
     
     -- loop to wait up to connected to wifi
     tmr.alarm ( nodeConfig.timer.wifiLoop, nodeConfig.timer.wifiLoopPeriod, tmr.ALARM_AUTO, wifiLoop ); -- timer_id, interval_ms, mode
@@ -312,16 +326,16 @@ function M.start ()
                     local voltage = -1;
                     if ( nodeConfig.appCfg.useAdc ) then
                         local scale = nodeConfig.appCfg.adcScale or 4200;
-                        print ( "[MQTT] adcScale=" .. scale );           
+                        print ( "[MQTTWIFI] start: adcScale=" .. scale );           
                         voltage = adc.read ( 0 ) / 1023 * scale; -- mV
                     else
                         voltage = adc.readvdd33 ();
                     end
-                    print ( "[MQTT] send voltage=" .. voltage );
-                    mqttClient:publish ( nodeConfig.topic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], 0, nodeConfig.mqtt.retain, -- qos, retain                                    
+                    print ( "[MQTTWIFI] start: send voltage=" .. voltage );
+                    mqttClient:publish ( baseTopic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], 0, retain, -- qos, retain                                    
                         function ( client )
                             if ( appNode.periodic ) then
-                                appNode.periodic ( mqttClient, nodeConfig.topic );
+                                appNode.periodic ( mqttClient, baseTopic );
                             end
                         end
                     );

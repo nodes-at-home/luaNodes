@@ -39,15 +39,15 @@ end
 
 local function startApp ()
 
-    print ( "[STARTUP] application " .. nodeConfig.app .. " is starting" );
+    print ( "[STARTUP] startApp: " .. nodeConfig.app .. " is starting" );
     -- Connect to the wifi network
-    print ( "[WIFI] connecting to " .. wifiCredential.ssid );
+    print ( "[STARTUP] startApp: connecting to " .. wifiCredential.ssid );
     wifi.setmode ( wifi.STATION, true ); -- save to flash
     local phymode = nodeConfig.phymode and wifi [nodeConfig.phymode] or wifi.PHYMODE_N;
     wifi.setphymode ( phymode );
-    print ( "[WIFI] phymode=" .. wifi.getphymode () .. " (1=B,2=G,3=N) country=" .. wifi.getcountry ().country );    
+    print ( "[STARTUP] startApp: phymode=" .. wifi.getphymode () .. " (1=B,2=G,3=N) country=" .. wifi.getcountry ().country );    
     wifi.nullmodesleep ( false ); 
-    print ( "[WIFI] nullmodesleep=" .. tostring ( wifi.nullmodesleep () ) );    
+    print ( "[STARTUP] startApp: nullmodesleep=" .. tostring ( wifi.nullmodesleep () ) );    
     local configok = wifi.sta.config (
         { 
             ssid = wifiCredential.ssid, 
@@ -56,25 +56,25 @@ local function startApp ()
             save = true 
         }
     );
-    print ( "[WIFI] config=" .. tostring ( configok ) );    
+    print ( "[STARTUP] startApp: wifi config loaded=" .. tostring ( configok ) );    
     --wifi.sta.connect ();
     
     local wificfg = nodeConfig.wifi;
     if ( wificfg ) then
-        print ( "[WIFI] fix ip=" .. wificfg.ip );
+        print ( "[STARTUP] startApp: wifi fix ip=" .. wificfg.ip );
         wifi.sta.setip ( wificfg );
     end
     
     if ( file.exists ( "update.url" ) ) then
-        print ( "[STARTUP] update file found" );
+        print ( "[STARTUP] startApp: update file found" );
         require ( "update" ).update ();
     else
         if ( nodeConfig.appCfg.disablePrint ) then
-            print ( "[STARTUP] DISABLE PRINT" );
+            print ( "[STARTUP] startApp: DISABLE PRINT" );
             oldprint = print;
             print = function ( ... ) end
         end
-        print ( "[STARTUP] starting mqttWifi", node.heap () );
+        print ( "[STARTUP] startApp: starting mqttWifi heap=" .. node.heap () );
         require ( "mqttWifi" ).start ();
     end
 
@@ -111,7 +111,7 @@ end
 
 function M.init ( startTelnet)
 
-    print ( "[STARTUP] telnet=" .. tostring ( startTelnet ) );
+    print ( "[STARTUP] init: telnet=" .. tostring ( startTelnet ) );
 
     require ( "espConfig" );
     nodeConfig = espConfig.init ();
@@ -133,20 +133,20 @@ function M.init ( startTelnet)
 
     if ( nodeConfig.appCfg.useAdc ) then
         if ( adc.force_init_mode ( adc.INIT_ADC ) ) then
-            print ( "[STARTUP] force_init_adc" );
+            print ( "[STARTUP] init: force_init_adc" );
             node.restart ();
             return; -- don't bother continuing, the restart is scheduled
         end        
     else
         if ( adc.force_init_mode ( adc.INIT_VDD33 ) ) then
-            print ( "[STARTUP] force_init_vdd33" );
+            print ( "[STARTUP] init: force_init_vdd33" );
             node.restart ();
             return; -- don't bother continuing, the restart is scheduled
         end
     end
     
-    print ( "[STARTUP] version=" .. nodeConfig.version );
-    print ( "[STARTUP] waiting for application start" );
+    print ( "[STARTUP] init: version=" .. nodeConfig.version );
+    print ( "[STARTUP] init: waiting for application start" );
 
     if ( startTelnet ) then    
         require ( "telnet" ):open ( wifiCredential.ssid, wifiCredential.password, 23, nodeConfig.wifi );
@@ -161,7 +161,7 @@ function M.init ( startTelnet)
         -- 5, wake from deep sleep
         -- 6, external reset
         local rawcode, bootreason = node.bootreason ();
-        print ( "[STARTUP] boot: rawcode=" .. rawcode .. " ,reason=" .. bootreason );
+        print ( "[STARTUP] init: rawcode=" .. rawcode .. " reason=" .. bootreason );
         if ( nodeConfig.appCfg.useQuickStartupAfterDeepSleep and bootreason == 5 ) then
             print ( "[STARTUP] quick start" );
     --        startApp ();
