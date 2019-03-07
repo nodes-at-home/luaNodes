@@ -227,6 +227,11 @@ function M.message ( client, topic, payload )
                     displayBrightness = json.display.brightness;
                     pixel.setBrightness ( displayBrightness );
                 end
+                if ( json.display.shakeperiod ) then
+                    print ( "[APP] shakeperiod=" .. json.display.shakeperiod ); 
+                    shakePeriod = json.display.shakeperiod;
+                    pixel.setShakeperiod ( shakePeriod );
+                end
                 if ( json.display.time ) then
                     --print ( "[APP] time=" .. json.display.time );
                     displayEnabled.time = (json.display.time == "on") and nil;

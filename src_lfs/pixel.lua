@@ -220,6 +220,16 @@ function M.setBrightness ( ledBrightness )
     
 end
 
+function M.setShakeperiod ( shakeperiod )
+
+    assert ( shakeperiod, "shakeperiod not set" );
+
+    shakeTimer:stop ();    
+    shakeTimer:interval ( shakeperiod );
+    shakeTimer:start ();    
+     
+end
+
 function M.printEmptyColumn ( startCol )
 
     --print ( "[MAX7219] printEmptyColumn: at=" .. at );
