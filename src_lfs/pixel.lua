@@ -145,7 +145,8 @@ function M.init ( pin, modules, period, ledBrightness )
     
     numberOfModules = modules;
     numberOfDisplayColumns = 8 * numberOfModules;
-    numberOfBufferColumns = 3 * numberOfDisplayColumns + (numberOfModules == 1 and (128 - numberOfDisplayColumns) or 0);
+    --numberOfBufferColumns = 3 * numberOfDisplayColumns + (numberOfModules == 1 and (128 - numberOfDisplayColumns) or 0);
+    numberOfBufferColumns = 10 * numberOfDisplayColumns;
     
     brightness = ledBrightness;
     
