@@ -27,6 +27,8 @@ local app = nodeConfig.app;
 local appNode = nil;    -- application callbacks
 local mqttClient = nil;     -- mqtt client
 
+local startTelnet;
+
 ----------------------------------------------------------------------------------------
 -- private
 
@@ -205,6 +207,9 @@ local function startMqtt ()
                             end
                         elseif ( subtopic == "/service/config" ) then
                             subscribeConfig ( client );
+                        elseif ( subtopic == "/service/telnet" ) then
+                            startTelnet = true;
+                            require ( "telnet" ):open ( wifiCredential.ssid, wifiCredential.password );
                         elseif ( subtopic == "/service/restart" ) then
                             print ( "[MQTTWIFI] RESTARTING")
                             if ( trace ) then 
@@ -229,7 +234,7 @@ local function startMqtt ()
             function ( client )
                 print ( "[MQTTWIFI] offline:" );
                 tmr.stop ( nodeConfig.timer.periodic ); 
-                if ( appNode.offline and appNode.offline ( client ) ) then
+                if ( not startTelnet and appNode.offline and appNode.offline ( client ) ) then
                     print ( "[MQTTWIFI] offline: restart connection" );
                     tmr.start ( nodeConfig.timer.wifiLoop ) -- timer_id
                 end

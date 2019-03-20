@@ -149,7 +149,7 @@ function M.init ( startTelnet)
     print ( "[STARTUP] init: waiting for application start" );
 
     if ( startTelnet ) then    
-        require ( "telnet" ):open ( wifiCredential.ssid, wifiCredential.password, 23, nodeConfig.wifi );
+        require ( "telnet" ):open ( wifiCredential.ssid, wifiCredential.password );
     else
     
         -- boot reason https://nodemcu.readthedocs.io/en/master/en/modules/node/#nodebootreason
