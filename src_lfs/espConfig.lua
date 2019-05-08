@@ -26,12 +26,9 @@ local DEFAULT_CONFIG = {
         useAdc = false,
     },
     timer = {
-        startup = 0,
         startupDelay1 = 2 * 1000,
         startupDelay2 = 5 * 1000,
-        wifiLoop = 1,
         wifiLoopPeriod = 1 * 1000,
-        periodic = 2,
         periodicPeriod = 15 * 60 * 1000,
     },
     wifi = {
@@ -42,6 +39,7 @@ local DEFAULT_CONFIG = {
     mqtt = {
         broker = "192.168.2.117",
         retain = 1,
+        qos = 1,
         keepAliveTime = 5 * 60, -- in seconds
     },
     trace = {

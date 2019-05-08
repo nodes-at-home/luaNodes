@@ -15,6 +15,8 @@ _G [moduleName] = M;
 --------------------------------------------------------------------
 -- vars
 
+local startupTimer = tmr.create ();
+
 --------------------------------------------------------------------
 -- application global
 
@@ -40,30 +42,6 @@ end
 local function startApp ()
 
     print ( "[STARTUP] startApp: " .. nodeConfig.app .. " is starting" );
-    -- Connect to the wifi network
-    print ( "[STARTUP] startApp: connecting to " .. wifiCredential.ssid );
-    wifi.setmode ( wifi.STATION, true ); -- save to flash
-    local phymode = nodeConfig.phymode and wifi [nodeConfig.phymode] or wifi.PHYMODE_N;
-    wifi.setphymode ( phymode );
-    print ( "[STARTUP] startApp: phymode=" .. wifi.getphymode () .. " (1=B,2=G,3=N) country=" .. wifi.getcountry ().country );    
-    wifi.nullmodesleep ( false ); 
-    print ( "[STARTUP] startApp: nullmodesleep=" .. tostring ( wifi.nullmodesleep () ) );    
-    local configok = wifi.sta.config (
-        { 
-            ssid = wifiCredential.ssid, 
-            pwd = wifiCredential.password,
-            auto = true,
-            save = true 
-        }
-    );
-    print ( "[STARTUP] startApp: wifi config loaded=" .. tostring ( configok ) );    
-    --wifi.sta.connect ();
-    
-    local wificfg = nodeConfig.wifi;
-    if ( wificfg ) then
-        print ( "[STARTUP] startApp: wifi fix ip=" .. wificfg.ip );
-        wifi.sta.setip ( wificfg );
-    end
     
     if ( file.exists ( "update.url" ) ) then
         print ( "[STARTUP] startApp: update file found" );
@@ -87,21 +65,19 @@ local function startup ()
     -- if <CR> is pressed, abort startup
     uart.on ( "data", "\r", 
         function ()
-            tmr.unregister ( nodeConfig.timer.startup );   -- disable the start up timer
+            startupTimer:unregister ();   -- disable the start up timer
             uart.on ( "data" );                 -- stop capturing the uart
             print ( "[STARTUP] aborted" );
         end, 
         0 );
 
     -- startup timer to execute startup function in 5 seconds
-    tmr.alarm ( nodeConfig.timer.startup, nodeConfig.timer.startupDelay2, tmr.ALARM_SINGLE, 
-    
+    startupTimer:alarm ( nodeConfig.timer.startupDelay2, tmr.ALARM_SINGLE, 
         function () 
             -- stop capturing the uart
             uart.on ( "data" );
             startApp ();
         end 
-
     );
 
 end
@@ -165,10 +141,10 @@ function M.init ( startTelnet)
         if ( nodeConfig.appCfg.useQuickStartupAfterDeepSleep and bootreason == 5 ) then
             print ( "[STARTUP] quick start" );
     --        startApp ();
-            tmr.alarm ( nodeConfig.timer.startup, 10, tmr.ALARM_SINGLE, startApp )
+            startupTimer:alarm ( 10, tmr.ALARM_SINGLE, startApp )
         else 
             print ( "[STARTUP] classic start" );
-            tmr.alarm ( nodeConfig.timer.startup, nodeConfig.timer.startupDelay1, tmr.ALARM_SINGLE, startup )
+            startupTimer:alarm ( nodeConfig.timer.startupDelay1, tmr.ALARM_SINGLE, startup )
         end
         
     end
