@@ -6,7 +6,7 @@
     "location": "pool",
     "appCfg": {
         "useAdc": true,
-        "timeBetweenSensorReadings": 900000,
+        "timeBetweenSensorReadings": 1800000,
         "dsPin": 3
     },
     "timer": {
