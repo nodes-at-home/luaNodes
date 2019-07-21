@@ -294,6 +294,9 @@ local function wifiLoop ()
         print ( "[WIFI] wifiLoop: dnsname=" .. wifi.sta.gethostname () );
         print ( "[WIFI] wifiLoop: network=" .. (wifi.sta.getip () and wifi.sta.getip () or "NO_IP") );
         print ( "[WIFI] wifiLoop: mac=" .. wifi.sta.getmac () );
+        print ( "[WIFI] wifiLoop: rssi=" .. wifi.sta.getrssi () );
+        
+        nodeConfig.wifi.rssi= wifi.sta.getrssi ();
 
         if ( nodeConfig.trace and nodeConfig.trace.onStartup ) then
             print ( "[WIFI] wifiLoop: start with trace" );
