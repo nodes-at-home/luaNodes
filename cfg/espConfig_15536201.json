@@ -1,5 +1,5 @@
 {
-    "chipid": 555700,
+    "chipid": 15536201,
     "app": "poolNode",
     "class": "sensor",
     "type": "ds18b20",
@@ -14,5 +14,8 @@
     },
     "wifi": {
         "ip": "192.168.2.44"
+    },
+    "trace": {
+        "onStartup": true
     }
 }
