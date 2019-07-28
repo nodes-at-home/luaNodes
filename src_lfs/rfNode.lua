@@ -59,7 +59,7 @@ local function sendCode ( code, pin, repeats, period )
     local data = codeBase4;
     local delayTimes = {};
     for i = 1, 12 do
-        local trit = bit.band ( data, 2 ); -- B11
+        local trit = bit.band ( data, 3 ); -- B11
         appendTable ( delayTimes, tritDelayTimes [trit] );
         data = bit.arshift ( data, 2 ); -- next trit
     end
@@ -167,7 +167,7 @@ gpio.mode ( nodeConfig.appCfg.ledpin, gpio.OUTPUT );
 gpio.write ( nodeConfig.appCfg.ledpin, gpio.LOW );
 
 M.queue = {};
-tmr.alarm ( nodeConfig.timer.queue, nodeConfig.timer.queuePeriod, tmr.ALARM_AUTO, function () dequeueCommand () end ) -- timer_id, interval_ms, mode, callback
+tmr.create ():alarm ( nodeConfig.timer.queuePeriod, tmr.ALARM_AUTO, dequeueCommand );
 
 return M;
 
