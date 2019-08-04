@@ -11,7 +11,8 @@
         "sntpServer": "192.168.2.1"
     },
     "timer": {
-        "shakePeriod": 130
+        "shakePeriod": 130,
+        "periodicPeriod": 300000
     },
     "wifi": {
         "ip": "192.168.2.49"
