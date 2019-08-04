@@ -29,7 +29,7 @@ end
 
 function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=" .. topic .. " ,payload=", payload );
+    print ( "[APP] message: topic=" .. topic .. " payload=" .. payload );
     
 end
 
