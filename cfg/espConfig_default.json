@@ -6,12 +6,9 @@
     "location": "anywhere",
     "mode": "prod",
     "timer": {
-        "startup": 0,
         "startupDelay1": 2000,
         "startupDelay2": 5000,
-        "wifiLoop": 1,
         "wifiLoopPeriod": 1000,
-        "periodic": 2,
         "periodicPeriod": 900000
     },
     "wifi": {
@@ -20,12 +17,12 @@
         "ip": "192.168.2.90"
     },
     "mqtt": {
-        "broker": "192.168.2.117",
+        "broker": "nodesathome1",
         "retain": 1,
         "keepAliveTime": 300
     },
     "trace": {
-        "ip": "192.168.2.117",
+        "ip": "nodesathome1",
         "port": 10001,
         "onUpdate": true,
         "onStartup": false

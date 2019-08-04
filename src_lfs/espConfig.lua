@@ -16,6 +16,8 @@ _G [moduleName] = M;
 
 local version = "UNKNOWN"
 
+local HOST = "nodesathome1";
+
 local DEFAULT_CONFIG = {
     app = "noNode",
     class = "nonode", 
@@ -37,13 +39,13 @@ local DEFAULT_CONFIG = {
         ip = "192.168.2.90",
     },
     mqtt = {
-        broker = "192.168.2.117",
+        broker = HOST,
         retain = 1,
         qos = 1,
         keepAliveTime = 5 * 60, -- in seconds
     },
     trace = {
-        ip = "192.168.2.117",
+        ip = HOST,
         port = 10001,
         onUpdate = true,
         onStartup = false
