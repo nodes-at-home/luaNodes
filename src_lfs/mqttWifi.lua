@@ -254,8 +254,10 @@ local function startMqtt ()
 
     local result;
     while not pcall (
-        function ()        
-            result = mqttClient:connect( nodeConfig.mqtt.broker , 1883, 0, 0, -- broker, port, secure, autoreconnect
+        function ()       
+            local broker = nodeConfig.mqtt.broker;
+            print ( "[MQTT] startMqtt: connect to broker=" .. broker );
+            result = mqttClient:connect( broker, 1883, 0, 0, -- broker, port, secure, autoreconnect
                 function ( client )
                     periodicTimer:start (); 
                     connect ( client );
