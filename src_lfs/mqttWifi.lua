@@ -1,4 +1,3 @@
---------------------------------------------------------------------
 --
 -- nodes@home/luaNodes/mqttNode
 -- author: andreas at jungierek dot de
@@ -20,6 +19,8 @@ local mqttTopic = baseTopic .. "/state/mqtt";
 local configTopic = "nodes@home/config/" .. node.chipid ();
 local configJsonTopic = configTopic .. "/json";
 
+local rssiTopic = "nodes@home/rssi/" .. node.chipid ();
+
 local retain = nodeConfig.mqtt.retain;
 local qos = nodeConfig.mqtt.qos or 1;
 
@@ -37,6 +38,8 @@ local isWifiConnected = false;
 
 ----------------------------------------------------------------------------------------
 -- private
+
+local apmac;
 
 local function connect ( client )
 
@@ -296,10 +299,18 @@ local function wifiLoop ()
         print ( "[WIFI] wifiLoop: dnsname=" .. wifi.sta.gethostname () );
         print ( "[WIFI] wifiLoop: network=" .. (wifi.sta.getip () and wifi.sta.getip () or "NO_IP") );
         print ( "[WIFI] wifiLoop: mac=" .. wifi.sta.getmac () );
-        print ( "[WIFI] wifiLoop: rssi=" .. wifi.sta.getrssi () );
+        local rssi = wifi.sta.getrssi ();
+        print ( "[WIFI] wifiLoop: rssi=" .. rssi );
         
-        nodeConfig.wifi.rssi= wifi.sta.getrssi ();
-
+        local ssid, pwd, _, mac = wifi.sta.getconfig ( false ); -- old sytle, true: returns table
+        print ( "[WIFI] wifiLoop: ssid=" .. tostring ( ssid ) );
+        --print ( "[WIFI] wifiLoop: pwd=" .. tostring ( pwd ) );
+        print ( "[WIFI] wifiLoop: apmac=" .. tostring ( mac ) );
+        
+        apmac = mac;
+        nodeConfig.wifi.rssi= rssi;
+        nodeConfig.wifi.apmac = mac;  
+        
         if ( nodeConfig.trace and nodeConfig.trace.onStartup ) then
             print ( "[WIFI] wifiLoop: start with trace" );
             require ( "trace" ).on ();
@@ -373,12 +384,19 @@ function M.start ()
                     else
                         voltage = adc.readvdd33 ();
                     end
-                    print ( "[MQTT] start: send voltage=" .. voltage );
-                    mqttClient:publish ( baseTopic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], qos, retain,                                    
-                        function ( client )
-                            if ( appNode.periodic ) then
-                                appNode.periodic ( mqttClient, baseTopic );
-                            end
+                    local rssi = wifi.sta.getrssi ();
+                    print ( "[MQTT] start: send voltage=" .. voltage .. " rssi=" .. rssi );
+                    mqttClient:publish ( baseTopic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], qos, retain,
+                        function ( client )                                    
+                            client:publish ( rssiTopic, 
+                                [[{"chipid":]] .. node.chipid () .. [[,"topic":"]] .. baseTopic .. [[","apmac":"]] .. apmac .. [[","value":]] .. rssi .. [[, "unit":"dBm"}]], 
+                                qos, retain,                                    
+                                function ( client )
+                                    if ( appNode.periodic ) then
+                                        appNode.periodic ( mqttClient, baseTopic );
+                                    end
+                                end
+                            );
                         end
                     );
                 end
