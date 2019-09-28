@@ -54,7 +54,7 @@ function M.connect ( client, topic )
 
         gpio.trig ( nodeConfig.appCfg.buttonPin, "up",
             function ( level )
-                tmr.alarm ( nodeConfig.timer.debounce, nodeConfig.timer.debounceDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
+                tmr.create ():alarm ( nodeConfig.timer.debounceDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
                     function ()
                         local state = gpio.read ( nodeConfig.appCfg.relayPin );
                         changeState ( client, topic .. "/" .. nodeDevice, state == 0 and "ON" or "OFF" );
