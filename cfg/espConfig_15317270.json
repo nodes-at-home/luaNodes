@@ -1,9 +1,9 @@
 {
     "chipid": 15317270,
     "app": "sonoffNode",
-    "class": "switch",
+    "class": "light",
     "type": "sonoff",
-    "location": "location4",
+    "location": "corridor",
     "appCfg": {
         "buttonPin": 3,
         "extraPin": 5,
@@ -13,10 +13,9 @@
         "flashLowPulseLength": 200000
     },
     "timer": {
-        "debounce": 3,
-        "debounceDelay": 500
+        "debounceDelay": 800
     },
     "wifi": {
-        "ip": "192.168.2.41"
+        "ip": "192.168.2.40"
     }
 }
