@@ -57,37 +57,44 @@ local function connect ( client )
             else
                 voltage = adc.readvdd33 ();
             end
-            print ( "[MQTT] connect: send voltage=" .. voltage );
+            local rssi = wifi.sta.getrssi ();
+            print ( "[MQTT] connect: send voltage=" .. voltage .. " rssi=" .. rssi );
             client:publish ( baseTopic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], qos, retain,                                    
-                function ( client )
-                    local s = app .. "@" .. nodeConfig.location;
-                    print ( "[MQTT] connect: send <" ..  s .. "> to " .. configTopic );
-                    client:publish ( configTopic, s, qos, retain,
+                function ( client )                                    
+                    client:publish ( rssiTopic, 
+                        [[{"chipid":]] .. node.chipid () .. [[,"topic":"]] .. baseTopic .. [[","apmac":"]] .. apmac .. [[","value":]] .. rssi .. [[, "unit":"dBm"}]], 
+                        qos, retain,                                    
                         function ( client )
-                            local str = sjson.encode ( nodeConfig );
-                            local topic = configTopic .. "/state";
-                            print ( "[MQTT] connect: send config to " .. topic .. " -> " .. str );
-                            client:publish ( topic, str, qos, retain,
+                            local s = app .. "@" .. nodeConfig.location;
+                            print ( "[MQTT] connect: send <" ..  s .. "> to " .. configTopic );
+                            client:publish ( configTopic, s, qos, retain,
                                 function ( client )
-                                    print ( "[MQTT] connect: send mqtt online state to " .. mqttTopic );
-                                    client:publish ( mqttTopic, "online", qos, retain,
+                                    local str = sjson.encode ( nodeConfig );
+                                    local topic = configTopic .. "/state";
+                                    print ( "[MQTT] connect: send config to " .. topic .. " -> " .. str );
+                                    client:publish ( topic, str, qos, retain,
                                         function ( client )
-                                            if ( appNode.start ) then 
-                                                appNode.start ( client, baseTopic ); 
-                                            end
-                                            -- subscribe to service topics
-                                            local topic = baseTopic .. "/service/+";
-                                            print ( "[MQTT] connect: subscribe to topic=" .. topic );
-                                            client:subscribe ( topic, qos,
+                                            print ( "[MQTT] connect: send mqtt online state to " .. mqttTopic );
+                                            client:publish ( mqttTopic, "online", qos, retain,
                                                 function ( client )
-                                                    -- subscribe to all topics based on base topic of the node
-                                                    local topic = baseTopic .. "/+";
+                                                    if ( appNode.start ) then 
+                                                        appNode.start ( client, baseTopic ); 
+                                                    end
+                                                    -- subscribe to service topics
+                                                    local topic = baseTopic .. "/service/+";
                                                     print ( "[MQTT] connect: subscribe to topic=" .. topic );
                                                     client:subscribe ( topic, qos,
                                                         function ( client )
-                                                            if ( appNode.connect ) then
-                                                                appNode.connect ( client, baseTopic );
-                                                            end
+                                                            -- subscribe to all topics based on base topic of the node
+                                                            local topic = baseTopic .. "/+";
+                                                            print ( "[MQTT] connect: subscribe to topic=" .. topic );
+                                                            client:subscribe ( topic, qos,
+                                                                function ( client )
+                                                                    if ( appNode.connect ) then
+                                                                        appNode.connect ( client, baseTopic );
+                                                                    end
+                                                                end
+                                                            );
                                                         end
                                                     );
                                                 end
@@ -379,13 +386,13 @@ function M.start ()
                     local voltage = -1;
                     if ( nodeConfig.appCfg.useAdc ) then
                         local scale = nodeConfig.appCfg.adcScale or 4200;
-                        print ( "[MQTT] start: adcScale=" .. scale );           
+                        print ( "[MQTT] periodic: adcScale=" .. scale );           
                         voltage = adc.read ( 0 ) / 1023 * scale; -- mV
                     else
                         voltage = adc.readvdd33 ();
                     end
                     local rssi = wifi.sta.getrssi ();
-                    print ( "[MQTT] start: send voltage=" .. voltage .. " rssi=" .. rssi );
+                    print ( "[MQTT] periodic: send voltage=" .. voltage .. " rssi=" .. rssi );
                     mqttClient:publish ( baseTopic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], qos, retain,
                         function ( client )                                    
                             client:publish ( rssiTopic, 
