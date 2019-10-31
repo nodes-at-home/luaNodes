@@ -47,7 +47,7 @@ local function publishAmbientJson ( client, topic )
     local json = table.concat (
         {
             "{",
-            [["clear":]], cdata, ",",
+            [["ambient":]], cdata, ",",
             [["red":]], rdata, ",",
             [["green":]], gdata, ",",
             [["blue":]], bdata,
