@@ -18,6 +18,7 @@
     },
     "mqtt": {
         "broker": "nodesathome1",
+        "qos": 1,
         "retain": 1,
         "keepAliveTime": 300
     },
