@@ -40,8 +40,9 @@ local DEFAULT_CONFIG = {
     },
     mqtt = {
         broker = HOST,
-        retain = 1,
+        dnsretries = 1,
         qos = 1,
+        retain = 1,
         keepAliveTime = 5 * 60, -- in seconds
     },
     trace = {
@@ -164,7 +165,8 @@ function M.init ()
     result.topic = table.concat ( { "nodes@home/", result.class, "/", result.type, "/", result.location } );
     
     -- result.version = VERSION .. " (" .. result.app .. ")";
-    local major, minor, patch = node.info ();
+    local swversion = node.info ( "sw_version" );
+    local major, minor, patch = swversion.node_version_major, swversion.node_version_minor, swversion.node_version_revision; 
     local sdk = table.concat ( { major, ".", minor, ".", patch } );
     local app = result.app;
     local pos = app:find ( "Node" );
