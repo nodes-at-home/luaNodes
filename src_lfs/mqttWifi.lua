@@ -267,7 +267,7 @@ local function startMqtt ()
         function ()       
             local broker = nodeConfig.mqtt.broker;
             print ( "[MQTT] startMqtt: connect to broker=" .. broker );
-            result = mqttClient:connect( broker, 1883, 0, 0, -- broker, port, secure, autoreconnect
+            result = mqttClient:connect( broker, 1883, false, -- broker, port, secure
                 function ( client )
                     periodicTimer:start (); 
                     connect ( client );
@@ -315,8 +315,10 @@ local function wifiLoop ()
         print ( "[WIFI] wifiLoop: apmac=" .. tostring ( mac ) );
         
         apmac = mac;
-        nodeConfig.wifi.rssi= rssi;
-        nodeConfig.wifi.apmac = mac;  
+        if ( nodeConfig.wifi ) then
+            nodeConfig.wifi.rssi= rssi;
+            nodeConfig.wifi.apmac = mac;
+        end  
         
         if ( nodeConfig.trace and nodeConfig.trace.onStartup ) then
             print ( "[WIFI] wifiLoop: start with trace" );
