@@ -33,7 +33,7 @@ function M.go ( client, delay, duration )
                 function ( event )
                     print ( "[SLEEP] Going to deep sleep for ".. duration/1000 .." seconds" );
                     if duration > 0 then duration = (duration - delay) * 1000 end  
-                    node.dsleep ( duration, 1, 1 ); -- us, 1 -> RF_CAL after deep sleep 2-> no RF Call, sleep immediately
+                    node.dsleep ( duration ); -- us, 1 -> RF_CAL after deep sleep 2-> no RF Call, sleep immediately
                 end 
             );
             wifi.sta.disconnect ();
