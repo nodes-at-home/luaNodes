@@ -11,8 +11,9 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
-require ( "i2ctool" );
-require ( "mpu6050" );
+local i2ctool = require ( "i2ctool" );
+local mpu6050 = require ( "mpu6050" );
+local ds18b20 = require ( "ds18b20" );
 
 -------------------------------------------------------------------------------
 --  Settings
@@ -34,31 +35,55 @@ local deepSleepDelay = nodeConfig.timer.deepSleepDelay;
 local timeBetweenSensorReadings = nodeConfig.appCfg.timeBetweenSensorReadings;
 
 local retain = nodeConfig.mqtt.retain;
+local qos = nodeConfig.mqtt.qos or 1;
 
 ----------------------------------------------------------------------------------------
 -- private
+
+local function printSensors ()
+
+    if ( ds18b20.sens ) then
+        print  ( "[APP] number of sensors=" .. #ds18b20.sens );
+        for i, s  in ipairs ( ds18b20.sens ) do
+            local addr = ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X'):format ( s:byte ( 1, 8 ) );
+            local parasitic = s:byte ( 9 ) == 1 and " (parasite)" or "";
+            print ( string.format ( "[APP] sensor #%d address: %s%s",  i, addr, parasitic ) );
+        end
+    end
+
+end
 
 local function readAndPublishTemperature ( client, topic )
 
     print ( "[APP] readAndPublishTemperature: topic=" .. topic );
     
     -- temperature
-    ds18b20.read (
-        function ( index, address, resolution, temperature, tempinteger, parasitic )
-            -- only first sensor
-            if ( index == 1 ) then
-                local addr = string.format ( "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X", string.match ( address, "(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+)" ) );
-                print ( "[APP] index=" .. index .. " address=" .. addr .. " resolution=" .. resolution .. " temperature=" .. temperature .. " parasitic=" .. parasitic );
-                print ( "[APP] publishTemperature: t=" .. temperature );
-                client:publish ( topic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"°C"}]], 0, retain, -- qos, retain
-                    function ( client )
-                        require ( "deepsleep" ).go ( client, deepSleepDelay, timeBetweenSensorReadings );
-                    end
-                );
+    ds18b20:read_temp (
+        function ( sensorValues )
+            printSensors ();
+            local i = 0;
+            for address, temperature in pairs ( sensorValues ) do
+                i = i + 1;
+                if ( i == 1 ) then -- only first sensor
+                    local addr = ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X'):format ( address:byte ( 1, 8 ) );
+                    print ( ("[APP] Sensor %s -> %s°C %s"):format ( addr, temperature, address:byte ( 9 ) == 1 and "(parasite)" or "-" ) );
+                    print ( "[APP] publish temperature t=" .. temperature );
+                    local payload = ('{"value":%f,"unit":"°C"}'):format ( temperature );
+                    client:publish ( topic .. "/value/temperature", payload, qos, retain,
+                        function ( client )
+                            require ( "deepsleep" ).go ( client, deepSleepDelay, timeBetweenSensorReadings );
+                        end
+                    );
+                end
             end
+  
         end,
-        {}
+        dsPin,
+        ds18b20.C,          -- °C
+        nil,                -- no search
+        "save"
     );
+    
 
 end
 
@@ -77,7 +102,7 @@ local function publishAcceleration ( client, topic, samples )
     table.insert ( json, "]" );
     local s = table.concat ( json );
     print ( "[APP] publishAcceleration: json=" .. s );
-    client:publish ( topic .. "/value/acceleration", s, 0, retain, -- qos, retain
+    client:publish ( topic .. "/value/acceleration", s, qos, retain,
         function ( client )
             readAndPublishTemperature ( client, topic );
         end
@@ -93,8 +118,6 @@ function M.start ( client, topic )
 
     print ( "[APP] start: topic=" .. topic );
     
-    ds18b20.setup ( dsPin );
-
     -- initialize acceleration sensor
     mpu6050.init ( sdaPin, sclPin );
     local id = readByte ( mpu6050.REG.WHO_AM_I );

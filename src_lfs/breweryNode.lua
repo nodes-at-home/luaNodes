@@ -13,6 +13,8 @@ _G [moduleName] = M;
 
 require ( "util" );
 
+local ds18b20 = require ( "ds18b20" );
+
 -------------------------------------------------------------------------------
 --  Settings
 
@@ -24,30 +26,52 @@ local SOCKET_ON = activeHigh and gpio.HIGH or gpio.LOW;
 local SOCKET_OFF = activeHigh and gpio.LOW or gpio.HIGH;
 
 local retain = nodeConfig.mqtt.retain;
-local NO_RATIN = 0;
+local NO_RETAIN = 0;
+local qos = nodeConfig.mqtt.qos or 1;
 
 ----------------------------------------------------------------------------------------
 -- private
+
+local function printSensors ()
+
+    if ( ds18b20.sens ) then
+        print  ( "[APP] number of sensors=" .. #ds18b20.sens );
+        for i, s  in ipairs ( ds18b20.sens ) do
+            local addr = ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X'):format ( s:byte ( 1, 8 ) );
+            local parasitic = s:byte ( 9 ) == 1 and " (parasite)" or "";
+            print ( string.format ( "[APP] sensor #%d address: %s%s",  i, addr, parasitic ) );
+        end
+    end
+
+end
 
 local function readAndPublishTemperature ( client, topic )
 
     if ( dsPin ) then
 
-        ds18b20.read (
-            function ( index, address, resolution, brewTemperature, tempinteger, parasitic )
-                local addr = string.format ( "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X", string.match ( address, "(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+):(%d+)" ) );
-                print ( "[APP] readAndPublishTemperature: index=" .. index .. " address=" .. addr .. " resolution=" .. resolution .. " temperature=" .. brewTemperature .. " parasitic=" .. parasitic );
-                -- only first sensor
-                if ( index == 1 ) then
-                    print ( string.format ( "[APP] readAndPublishTemperature: temp=%f", brewTemperature ) );
-                    local payload = string.format ( '{"value":%f,"unit":"°C"}', brewTemperature );
-                    client:publish ( topic .. "/value/temperature", payload, 0, NO_RATIN, -- qos, retain
-                        function ( client )
-                        end
-                    );
+        ds18b20:read_temp (
+            function ( sensorValues )
+                --printSensors ();
+                local i = 0;
+                for address, brewTemperature in pairs ( sensorValues ) do
+                    i = i + 1;
+                    if ( i == 1 ) then -- only first sensor
+                        --local addr = ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X'):format ( address:byte ( 1, 8 ) );
+                        --print ( ("[APP] Sensor %s -> %s°C %s"):format ( addr, temperature, address:byte ( 9 ) == 1 and "(parasite)" or "-" ) );
+                        print ( ("[APP] readAndPublishTemperature: temp=%f"):format ( brewTemperature ) );
+                        local payload = ('{"value":%f,"unit":"°C"}'):format ( brewTemperature );
+                        client:publish ( topic .. "/value/temperature", payload, qos, NO_RETAIN,
+                            function ( client )
+                            end
+                        );
+                    end
                 end
+      
             end,
-            {}
+            dsPin,
+            ds18b20.C,          -- °C
+            nil,                -- no search
+            "save"
         );
 
     end
@@ -62,8 +86,6 @@ function M.start ( client, topic )
 
     print ( "[APP] start" );
     
-    ds18b20.setup ( dsPin );
-
 end
 
 function M.connect ( client, topic )
