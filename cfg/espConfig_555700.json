@@ -1,0 +1,21 @@
+{
+    "chipid": 555700,
+    "app": "poolNode",
+    "class": "sensor",
+    "type": "ds18b20",
+    "location": "test",
+    "appCfg": {
+        "useAdc": false,
+        "timeBetweenSensorReadings": 1800000,
+        "dsPin": 3
+    },
+    "timer": {
+        "deepSleepDelay": 5000
+    },
+    "wifi": {
+        "ip": "192.168.2.62"
+    },
+    "trace": {
+        "onStartup": true
+    }
+}
