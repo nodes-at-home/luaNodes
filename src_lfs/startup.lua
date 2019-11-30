@@ -138,8 +138,7 @@ function M.init ( startTelnet)
         -- 6, external reset
         local rawcode, bootreason = node.bootreason ();
         print ( "[STARTUP] init: rawcode=" .. rawcode .. " reason=" .. bootreason );
-        --if ( nodeConfig.appCfg.useQuickStartupAfterDeepSleep and bootreason == 5 ) then
-        if ( nodeConfig.appCfg.useQuickStartupAfterDeepSleep and file.exists ( "boot2_after_ds" ) ) then
+        if ( nodeConfig.appCfg.useQuickStartupAfterDeepSleep and bootreason == 5 ) then
             print ( "[STARTUP] quick start" );
     --        startApp ();
             startupTimer:alarm ( 10, tmr.ALARM_SINGLE, startApp )

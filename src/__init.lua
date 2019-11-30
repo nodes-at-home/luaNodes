@@ -16,8 +16,6 @@ local DELAY = 2000;
 local LFS_FILENAME = "lfs.img";
 local LFS_TS_FILENAME = "lfs.img.ts";
 local LFS_RELOAD_FILE = "lfs_reload";
-local BOOTREASON_DEEPSLEEP_1 = "boot1_after_ds";
-local BOOTREASON_DEEPSLEEP_2 = "boot2_after_ds";
 
 ----------------------------------------------------------------------------------------
 -- private
@@ -27,26 +25,6 @@ local expectedLfsts;
 
 --------------------------------------------------------------------
 -- public
-
--- we coming fron deepsleep - problems with dns
-local rawcode, bootreason = node.bootreason ();
-if ( bootreason == 5 ) then -- 5 = wake from deep sleep
-    if ( file.open ( BOOTREASON_DEEPSLEEP_1, "w" ) ) then
-        file.close ();
-    end
-    print ( "[INIT] REBOOT after deepsleep" );
-    node.restart ();
-    return;
-end
-if ( file.exists ( BOOTREASON_DEEPSLEEP_2 ) ) then
-    file.remove ( BOOTREASON_DEEPSLEEP_2 );
-end
-if ( file.exists ( BOOTREASON_DEEPSLEEP_1 ) ) then
-    file.remove ( BOOTREASON_DEEPSLEEP_1 );
-    if ( file.open ( BOOTREASON_DEEPSLEEP_2, "w" ) ) then
-        file.close ();
-    end
-end
 
 if ( lfsts ) then
     if ( file.open ( LFS_TS_FILENAME ) ) then

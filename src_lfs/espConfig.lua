@@ -40,7 +40,6 @@ local DEFAULT_CONFIG = {
     },
     mqtt = {
         broker = HOST,
-        dnsretries = 1,
         qos = 1,
         retain = 1,
         keepAliveTime = 5 * 60, -- in seconds
@@ -136,7 +135,7 @@ function M.init ()
 --    print ( "[CONFIG] default config" );
 --    printTable ( result );
 
-    local files = { "default", tostring ( node.chipid () ), "mqtt", "local" };
+    local files = { "default", tostring ( node.chipid () ), "fixip", "mqtt", "local" };
     
     for _, f in ipairs ( files ) do
         local loadFile = "espConfig_" .. f .. ".json";

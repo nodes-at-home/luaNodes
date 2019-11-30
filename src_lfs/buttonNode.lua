@@ -32,9 +32,8 @@ function M.connect ( client, baseTopic )
 
     print ( "[APP] connect" );
     
---    local rawcode, bootreason = node.bootreason ();
---    if ( bootreason == 5 ) then -- 5 = wake from deep sleep
-      if ( file.exists ( "boot2_after_ds" ) ) then
+    local rawcode, bootreason = node.bootreason ();
+    if ( bootreason == 5 ) then -- 5 = wake from deep sleep
         print ( "[APP] publish button press ON" );
         client:publish ( baseTopic .. "/value/state", "ON", 0, retain, -- qos, NO retain!!!
             function ( client )
