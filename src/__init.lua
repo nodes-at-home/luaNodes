@@ -46,9 +46,9 @@ if ( not ( lfsts and expectedLfsts and lfsts == expectedLfsts ) ) then
             file.close ();
         end
         file.remove ( LFS_TS_FILENAME );
-        node.flashreload ( LFS_FILENAME );
+        msg = node.flashreload ( LFS_FILENAME );
         -- after reload a reboot occurs
-        print ( "[INIT] image not reloaded, exiting" );
+        print ( "[INIT] image not reloaded: " .. msg .." --> exiting" );
         return;
     else
         print ( "[INIT] no image found, exiting" );
