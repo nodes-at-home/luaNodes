@@ -47,6 +47,8 @@ local POSITION_TEXT = {
 local movingPersistCount = 0;
 local positionPersistCount = 0;
 
+local stateTimer = tmr.create ();
+
 ----------------------------------------------------------------------------------------
 -- private
 
@@ -171,7 +173,7 @@ function M.start ( client, topic )
     print ( "[APP] start: initial position=" .. POSITION_TEXT [position] );
 
     -- register timer function when door is moving
-    tmr.register ( nodeConfig.timer.state, nodeConfig.timer.statePeriod, tmr.ALARM_AUTO, 
+    stateTimer:register ( nodeConfig.timer.statePeriod, tmr.ALARM_AUTO, 
         function ()
             checkSwitches ( client, topic )
         end 
@@ -185,7 +187,7 @@ function M.connect ( client, topic )
     
     publishState ( client, nodeConfig.topic, position,
         function ()
-            tmr.start ( nodeConfig.timer.state );
+            stateTimer:start ();
         end
     );
     
@@ -271,7 +273,7 @@ function M.offline ( client )
 
     print ( "[APP] offline" );
     
-    tmr.stop ( nodeConfig.timer.state );
+    stateTimer:stop ();
     
     return true; -- restart mqtt connection
     
