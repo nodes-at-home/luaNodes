@@ -13,7 +13,6 @@
         "positionPersist": 2
     },
     "timer": {
-        "state": 3,
         "statePeriod": 1000,
         "triggerDelay": 300
     },
