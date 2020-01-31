@@ -41,7 +41,7 @@ function M.start ( message )
 
     print ( "[MQTT] connecting to " .. nodeConfig.mqtt.broker );
     
-    local result = mqttClient:connect( nodeConfig.mqtt.broker , 1883, 0, 0, -- broker, port, secure, autoreconnect
+    local result = mqttClient:connect( nodeConfig.mqtt.broker , 1883, false, -- broker, port, secure
         function ( client )
             print ( "[MQTT] connected to MQTT Broker" );
             print ( "[MQTT] node=" .. nodeConfig.topic );
