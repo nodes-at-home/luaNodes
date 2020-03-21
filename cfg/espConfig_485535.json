@@ -13,7 +13,6 @@
         "flashLowPulseLength": 200000
     },
     "timer": {
-        "debounce": 3,
         "debounceDelay": 500
     },
     "wifi": {
