@@ -262,12 +262,19 @@ local function startMqtt ()
     
     mqttClient:lwt ( mqttTopic, "offline", qos, retain );
 
+    print ( "[MQTT] before gc heap=" .. node.heap() );
+    collectgarbage ();
+    collectgarbage ();
+    print ( "[MQTT] after gc heap=" .. node.heap() );
+
     local result;
+    local broker = nodeConfig.mqtt.broker;
+    local tls = nodeConfig.mqtt.tls;
+    local port = tls and 8883 or 1883;
+    print ( "[MQTT] startMqtt: connect to broker=" .. broker .. " port=" .. port .. " tls=" .. tostring ( tls ) );
     while not pcall (
-        function ()       
-            local broker = nodeConfig.mqtt.broker;
-            print ( "[MQTT] startMqtt: connect to broker=" .. broker );
-            result = mqttClient:connect( broker, 1883, false, -- broker, port, secure
+        function ()
+            result = mqttClient:connect ( broker, port, tls,
                 function ( client )
                     periodicTimer:start (); 
                     connect ( client );

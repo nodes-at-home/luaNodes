@@ -20,7 +20,8 @@
         "broker": "nodesathome1",
         "qos": 1,
         "retain": 1,
-        "keepAliveTime": 300
+        "keepAliveTime": 300,
+        "tls": false
     },
     "trace": {
         "ip": "nodesathome1",

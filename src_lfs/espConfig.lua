@@ -43,6 +43,7 @@ local DEFAULT_CONFIG = {
         qos = 1,
         retain = 1,
         keepAliveTime = 5 * 60, -- in seconds
+        tls = false,
     },
     trace = {
         ip = HOST,
@@ -142,7 +143,7 @@ function M.init ()
         print ( "[CONFIG] try to load config: " .. loadFile );
         if ( file.exists ( loadFile ) ) then
             if ( file.open ( loadFile, "r" ) ) then
-                print ( "[CONFIG] open config file: " .. loadFile );
+                print ( "[CONFIG] opened config file: " .. loadFile );
                 local jsonStr = file.read ();
                 if ( jsonStr ) then
                     local ok, json = pcall ( sjson.decode, jsonStr );

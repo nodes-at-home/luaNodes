@@ -121,6 +121,34 @@ function M.init ( startTelnet)
         end
     end
     
+
+    -- handle certificate
+    if ( nodeConfig.mqtt.tls ) then
+        print ( "[STARTUP] init: load certificate" );
+        local certfile = "ca-root-nodesathome.pem";
+        if ( not file.exists ( certfile ) ) then
+            print ( "[STARTUP] init: certificate file NOT FOUND: " .. certfile );
+            tls.cert.verify ( false );
+        else
+            if ( file.open ( certfile, "r" ) ) then
+                print ( "[STARTUP] init: opened certificate file: " .. certfile );
+                local cert = "";
+                repeat
+                    local content = file.read (); -- is rading max., 1024 bytes
+                    if ( content ) then cert = cert .. content end
+                until not content
+                if ( cert ) then
+                    print ( "[STARTUP] init: certificate=\n" .. cert );
+                    local ok, err = pcall ( tls.cert.verify, cert );
+                    if ( not ok ) then
+                        print ( "[STARTUP] init: certificate not loaded err=" .. err );
+                    end
+                end
+                file.close ();
+            end
+        end
+    end
+        
     print ( "[STARTUP] init: version=" .. nodeConfig.version );
     print ( "[STARTUP] init: waiting for application start" );
 
