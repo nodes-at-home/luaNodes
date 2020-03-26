@@ -4,3 +4,5 @@
 credential.*
 //*.lc
 //update_files.json
+
+*.pem
