@@ -68,9 +68,9 @@ function M.on ()
             
             traceSocket:on ( "disconnection",
                 function ( socket, errorCode )
-                    print ( "[TRACE] disconnection errorCode= " .. tostring ( errorCode ) );
-                    traceSocket = nil;
                     node.output ( nil );
+                    traceSocket = nil;
+                    print ( "[TRACE] disconnection errorCode= " .. tostring ( errorCode ) );
                     starting = false;
                     -- TODO reconnect here?
                 end
