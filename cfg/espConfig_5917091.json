@@ -7,7 +7,7 @@
     "appCfg": {
         "useAdc": true,
         "useQuickStartupAfterDeepSleep": true,
-        "timeBetweenSensorReadings": 1200000,
+        "timeBetweenSensorReadings": 3600000,
         "sampleNumber": 10,
         "dsPin": 3,
         "sdaPin": 5,
