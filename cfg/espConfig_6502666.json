@@ -1,11 +1,19 @@
 {
     "chipid": 6502666,
-    "app": "brewNode",
+    "app": "spargeNode",
     "class": "sensor",
     "type": "ds18b20",
     "location": "brewery",
     "appCfg": {
-        "useAdc": true,
+        "resolution": {
+            "width": 128,
+            "height": 64
+        },
+        "spi": {
+            "csPin": 8,
+            "dcPin": 4,
+            "resetPin": 0 
+        },
         "dsPin": 3,
         "numSensors": 2
     },
