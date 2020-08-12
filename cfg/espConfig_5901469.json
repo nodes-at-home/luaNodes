@@ -1,25 +1,17 @@
 {
     "chipid": 5901469,
-    "app": "breweryNode",
-    "class": "control",
-    "type": "ssr",
-    "location": "brewery",
+    "app": "tempNode",
+    "class": "sensor",
+    "type": "DHT22",
+    "location": "office",
     "appCfg": {
-        "dsPin": 3,
-        "activeHigh": false,
-        "sockets": [
-            {
-                "device": "socket1",
-                "pin": 1
-            },
-            {
-                "device": "socket2",
-                "pin": 2
-            }
-        ]
+        "dhtPin": 7,
+        "powerPin": 8,
+        "timeBetweenSensorReadings": 900000
     },
     "timer": {
-        "periodicPeriod": 5000
+        "deepSleepDelay": 5000,
+        "periodicPeriod": 60000
     },
     "wifi": {
         "ip": "192.168.2.47"
