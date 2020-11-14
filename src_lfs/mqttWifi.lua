@@ -303,7 +303,8 @@ local function wifiLoop ()
     
         wifiLoopTimer:stop ();
         
-        print ( "[WIFI] wifiLoop: dnsname=" .. wifi.sta.gethostname () );
+        local dnsname = wifi.sta.gethostname ();
+        print ( "[WIFI] wifiLoop: dnsname=" .. dnsname );
         print ( "[WIFI] wifiLoop: network=" .. (wifi.sta.getip () and wifi.sta.getip () or "NO_IP") );
         print ( "[WIFI] wifiLoop: mac=" .. wifi.sta.getmac () );
         local rssi = wifi.sta.getrssi ();
@@ -318,6 +319,7 @@ local function wifiLoop ()
         if ( nodeConfig.wifi ) then
             nodeConfig.wifi.rssi= rssi;
             nodeConfig.wifi.apmac = mac;
+            nodeConfig.wifi.dnsname = dnsname;
         end  
         
         if ( nodeConfig.trace and nodeConfig.trace.onStartup ) then
