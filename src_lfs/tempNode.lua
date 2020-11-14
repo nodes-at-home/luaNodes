@@ -17,6 +17,7 @@ _G [moduleName] = M;
 local restartConnection = true;
 
 local dhtPin = nodeConfig.appCfg.dhtPin;
+local dhtPowerPin = nodeConfig.appCfg.powerPin;
 
 local bme280SdaPin = nodeConfig.appCfg.bme280SdaPin;
 local bme280SclPin = nodeConfig.appCfg.bme280SclPin;
@@ -198,6 +199,11 @@ end
 -- main
 
 print ( "[MODULE] loaded: " .. moduleName )
+
+if ( dhtPowerPin ) then
+    gpio.mode ( dhtPowerPin, gpio.OUTPUT );
+    gpio.write ( dhtPowerPin, gpio.HIGH );
+end
 
 return M;
 
