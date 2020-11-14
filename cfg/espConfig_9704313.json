@@ -1,0 +1,22 @@
+{
+    "chipid": 9704313,
+    "app": "shellyNode",
+    "class": "switch",
+    "type": "shelly",
+    "location": "shower",
+    "appCfg": {
+        "device": "socket",
+        "buttonPin": 1,
+        "relayPin": 2
+    },
+    "timer": {
+        "debounceDelay": 100
+    },
+    "wifi": {
+        "ip": "192.168.2.58"
+    },
+    "trace": {
+        "onStartup": true
+    }
+
+}

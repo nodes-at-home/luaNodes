@@ -1,0 +1,22 @@
+{
+    "chipid": 9716918,
+    "app": "shellyNode",
+    "class": "switch",
+    "type": "shelly",
+    "location": "test",
+    "appCfg": {
+        "device": "socket",
+        "buttonPin": 1,
+        "relayPin": 2
+    },
+    "timer": {
+        "debounceDelay": 100
+    },
+    "wifi": {
+        "ip": "192.168.2.59"
+    },
+    "trace": {
+        "onStartup": true
+    }
+
+}
