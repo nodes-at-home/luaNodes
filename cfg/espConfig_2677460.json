@@ -1,0 +1,20 @@
+{
+    "chipid": 2677460,
+    "app": "rgbNode",
+    "class": "light",
+    "type": "ws2812",
+    "location": "xmasstar",
+    "appCfg": {
+        "device:": "led",
+        "ledCount": 5,
+        "order": "rgb",
+        "initialBrightness": 150,
+        "initialColor": { "red": 255, "green": 0, "blue": 191 },
+        "initialEffect": "rainbow",
+        "initialDelay": 1500,
+        "gndPin": 3
+    },
+    "wifi": {
+        "ip": "192.168.2.36"
+    }
+}
