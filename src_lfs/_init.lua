@@ -14,6 +14,7 @@
 
 local NO_BOOT_FILE = "no_boot";
 local LFS_RELOAD_FILE = "lfs_reload";
+local LFS_TS_FILE = "lfs.img.ts";
 
 ----------------------------------------------------------------------------------------
 -- private
@@ -43,6 +44,7 @@ print ( "[INIT] boot: rawcode=" .. rawcode .. " reason=" .. bootreason .. " caus
 
 if ( file.exists ( LFS_RELOAD_FILE ) ) then
     file.remove ( LFS_RELOAD_FILE );
+    file.remove ( "_" .. LFS_TS_FILE );
     node.restart ();
     print ( "[INIT] restart after lfs reload" );
     return;

@@ -14,7 +14,7 @@
 
 local DELAY = 2000;
 local LFS_FILENAME = "lfs.img";
-local LFS_TS_FILENAME = "lfs.img.ts";
+local LFS_TS_FILE = "lfs.img.ts";
 local LFS_RELOAD_FILE = "lfs_reload";
 
 ----------------------------------------------------------------------------------------
@@ -27,10 +27,10 @@ local expectedLfsts;
 -- public
 
 if ( lfsts ) then
-    if ( file.open ( LFS_TS_FILENAME ) ) then
+    if ( file.open ( LFS_TS_FILE ) ) then
         expectedLfsts = tonumber ( file.read () );
     else
-        file.open ( LFS_TS_FILENAME, "w" );
+        file.open ( LFS_TS_FILE, "w" );
         file.write ( lfsts );
         expectedLfsts = lfsts;
     end
@@ -45,10 +45,14 @@ if ( not ( lfsts and expectedLfsts and lfsts == expectedLfsts ) ) then
         if ( file.open ( LFS_RELOAD_FILE, "w" ) ) then
             file.close ();
         end
-        file.remove ( LFS_TS_FILENAME );
+        --file.remove ( LFS_TS_FILE );
+        file.rename ( LFS_TS_FILE, "_" .. LFS_TS_FILE );
         msg = node.flashreload ( LFS_FILENAME );
         -- after reload a reboot occurs
         print ( "[INIT] image not reloaded: " .. msg .." --> exiting" );
+        -- in case of error
+        file.rename ( "_" .. LFS_TS_FILE, LFS_TS_FILE );
+        file.remove ( LFS_RELOAD_FILE );
         return;
     else
         print ( "[INIT] no image found, exiting" );
