@@ -6,3 +6,6 @@ credential.*
 //update_files.json
 
 archive/
+playground/
+
+.vscode/settings.json
