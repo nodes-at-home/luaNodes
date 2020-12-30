@@ -143,7 +143,12 @@ function M.init ()
         if ( file.exists ( loadFile ) ) then
             if ( file.open ( loadFile, "r" ) ) then
                 print ( "[CONFIG] open config file: " .. loadFile );
-                local jsonStr = file.read ();
+                --local jsonStr = file.read ();
+                local jsonStr = "";
+                repeat
+                    local content = file.read (); -- is reading max. 1024 bytes
+                    if ( content ) then jsonStr = jsonStr .. content end
+                until not content                
                 if ( jsonStr ) then
                     local ok, json = pcall ( sjson.decode, jsonStr );
                     if ( ok ) then
