@@ -18,6 +18,11 @@ require ( "util" );
 
 local nodeDevice = nodeConfig.appCfg.device or "lamp";
 
+local relayPin = nodeConfig.appCfg.relayPin;
+local buttonPin = nodeConfig.appCfg.buttonPin;
+
+local debounceTmr = tmr.create ();
+
 ----------------------------------------------------------------------------------------
 -- private
 
@@ -36,7 +41,23 @@ end
 local function flashLed ( times )
 
     gpio.serout ( nodeConfig.appCfg.ledPin, 0, { nodeConfig.appCfg.flashLowPulseLength * 1000, nodeConfig.appCfg.flashHighPulseLength * 1000 }, times, function () end ); -- async
- 
+
+end
+
+local function initTrigger ( client, topic )
+
+    gpio.trig ( buttonPin, "up",
+        function ( level )
+            debounceTmr:alarm ( nodeConfig.timer.debounceDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
+                function ()
+                    local level = gpio.read ( relayPin );
+                    print ( "[APP] button trigger: level=" .. level );
+                    changeState ( client, topic, level == 0 and "ON" or "OFF" );
+                end
+            );
+        end
+    );
+
 end
 
 --------------------------------------------------------------------
@@ -46,23 +67,13 @@ end
 function M.connect ( client, topic )
 
     print ( "[APP] connected with topic=" .. topic );
-    
-    flashLed ( 2 );
-    
-    -- activate button only if pin is defined
-    if ( nodeConfig.appCfg.buttonPin ) then
 
-        gpio.trig ( nodeConfig.appCfg.buttonPin, "up",
-            function ( level )
-                tmr.create ():alarm ( nodeConfig.timer.debounceDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
-                    function ()
-                        local state = gpio.read ( nodeConfig.appCfg.relayPin );
-                        changeState ( client, topic .. "/" .. nodeDevice, state == 0 and "ON" or "OFF" );
-                    end
-                );
-            end 
-        );
-        
+    flashLed ( 2 );
+
+    -- activate button only if pin is defined
+    -- activate button only if pin is defined
+    if ( buttonPin ) then
+        initTrigger ( client, topic .. "/" .. nodeDevice );
     end
 
 end
@@ -70,13 +81,19 @@ end
 function M.message ( client, topic, payload )
 
     print ( "[APP] message: topic=" .. topic .. " ,payload=" .. payload );
-    
+
     local topicParts = util.splitTopic ( topic );
     local device = topicParts [#topicParts];
-    
+
     if ( device == nodeDevice ) then
         if ( payload == "ON" or payload == "OFF" ) then
-            changeState ( client, topic, payload ); 
+            if ( buttonPin ) then
+                gpio.trig ( buttonPin, "none" );
+            end
+            changeState ( client, topic, payload );
+            if ( buttonPin ) then
+                initTrigger ( client, topic );
+            end
         end
     end
 
@@ -85,9 +102,9 @@ end
 function M.offline ( client )
 
     print ( "[APP] offline" );
-    
+
     return true; -- restart mqtt connection
-    
+
 end
 
 -------------------------------------------------------------------------------
@@ -101,9 +118,9 @@ gpio.mode ( nodeConfig.appCfg.relayPin, gpio.OUTPUT );
 gpio.write ( nodeConfig.appCfg.relayPin, gpio.LOW );
 
 -- activate button only if pin is defined
-if ( nodeConfig.appCfg.buttonPin ) then 
+if ( nodeConfig.appCfg.buttonPin ) then
     gpio.mode ( nodeConfig.appCfg.buttonPin, gpio.INT, gpio.PULLUP );
-end    
+end
 
 return M;
 
