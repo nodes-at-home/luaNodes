@@ -100,6 +100,8 @@ local iTerm, dTerm;
 
 local abortAutotune = false;
 
+local verbose = false;
+
 ----------------------------------------------------------------------------------------
 -- private functions
 
@@ -406,13 +408,15 @@ local function pidcontrol ( t )
         iTerm = pid.Ki * d + iTerm;
         iTerm = constrain ( iTerm, 0, pid.PID_MAX_OUT );
 
-        local K1 = 0.75;
+        --local K1 = 0.75;
         --dTerm = (1 - K1) * pid.Kd * (t - lastPidTemp) + K1 * dTerm;
         dTerm = pid.Kd * (lastPidTemp - t);
 
         local out = pTerm + iTerm + dTerm;
 
-        --print ( "[APP] pid: target=" .. target .. " t=" .. t .. " d=" .. d .. " pTerm=" .. pTerm .. " iTerm=" .. iTerm .. " dTerm=" .. dTerm .. " out=" .. out );
+        if ( verbose ) then
+            print ( "[APP] pid: target=" .. target .. " t=" .. t .. " d=" .. d .. " pTerm=" .. pTerm .. " iTerm=" .. iTerm .. " dTerm=" .. dTerm .. " out=" .. out );
+        end
 
         setPwmDuty ( out );
 
@@ -547,6 +551,11 @@ function M.message ( client, topic, payload )
             if ( json.target ) then
                 target = json.target;
             end
+
+            if ( json.verbose ~= nil ) then
+                verbose = json.verbose;
+            end
+            
         end
 
     end
