@@ -26,36 +26,32 @@
         "pid": {
             "pwmScale": 1,
             "functionalrange": 60,
-            "Kp": 20,
-            "Ki": 0,
-            "Kd": 100
+            "Kp": 10,
+            "Ki": 0.1,
+            "Kd": 1
         },
-        "pid_classic": {
-            "comment": "classic -> Kp=611.15549769384 Ki=815.60913262333 Kd=114.48837053849",
-            "pwmScale": 1,
-            "functionalrange": 60,
-            "Kp": 611.1555,
-            "Ki": 815.6091,
-            "Kd": 114.4883 
-        },
-        "pid_no": {
-            "pwmScale": 1,
-            "functionalrange": 60,
-            "Kp": 8.1487,
-            "Ki": 0.8357,
-            "Kd": 52.9650
+        "process": {
+            "preheat": {
+                "target": 150,
+                "duration": 60
+            },
+            "reflow":{
+                "target": 240,
+                "duration": 1
+            }
         },
         "autotune": {
             "strategy": "classic",
             "strategy2": "some_overshoot",
             "strategy3": "no_overshoot",
             "timeout": 10,
-            "maxtempdiff": 30
+            "maxtempdiff": 30,
+            "loopPeriod": 2000
         },
         "activeHigh": false,
         "device": "ssr",
         "ssrPin": 4,
-        "target": 60
+        "target": 100
     },
     "timer": {
         "loopPeriod": 200

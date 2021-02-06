@@ -15,6 +15,7 @@ _G [moduleName] = M;
 
 -------------------------------------------------------------------------------
 --  Settings
+-- using tables to avoid reaching local variable limit (<50)
 
 local display = {};
 display.height = nodeConfig.appCfg.resolution.height;
@@ -72,10 +73,16 @@ temp.N = temp.mqttPeriod / loopPeriod;
 temp.series = {}; for i = 1, temp.N do temp.series [i] = 0 end
 temp.index = 1;
 
+local process = {};
+process = nodeConfig.appCfg.process;
+
 ----------------------------------------------------------------------------------------
 -- private
 
 local target = nodeConfig.appCfg.target;
+
+local lastTarget;
+local periodStarted;
 
 local hysteresis = 0.5;
 
@@ -86,6 +93,8 @@ local loopTimer = tmr.create ();
 STATE_IDLE = "idle";
 STATE_HEATING = "heating";
 STATE_AUTOTUNE = "autotune";
+STATE_PREHEAT = "preheat";
+STATE_REFLOW = "reflow";
 local state = STATE_IDLE;
 
 SSR_STATE_ON = "on";
@@ -100,6 +109,8 @@ local iTerm, dTerm;
 
 local abortAutotune = false;
 
+local ignoreClick = false;
+
 local verbose = false;
 
 ----------------------------------------------------------------------------------------
@@ -109,7 +120,7 @@ local function publishValue ( client, topic, temperature )
 
     --print ( "[APP] publish: t=" .. temperature .. " topic=" .. topic );
 
-    local payload = ('{"state":"%s","ssr":"%s","temperature":%.1f,"target":%d,"unit":"°C"}'):format ( state, ssrState, temperature, target ); 
+    local payload = ('{"state":"%s","ssr":"%s","temperature":%.1f,"target":%d,"unit":"°C"}'):format ( state, ssrState, temperature, target );
 
     --print ( "[APP] payload=" .. payload );
 
@@ -132,9 +143,6 @@ local function displayValue ( temperature )
 
     d:clearBuffer ();
 
-    -- display:drawFrame ( 1, 1, 64, 16 );
-    -- display:drawBox ( 64, 1, 64, 16 );
-
     d:setFont ( u8g2.font_fur20_tf );
     d:setFontPosTop ();
     local y = 8;
@@ -148,7 +156,8 @@ local function displayValue ( temperature )
     d:setFont ( u8g2.font_6x10_tf );
     d:drawStr ( x1, 0, state );
     d:drawStr ( 55, 0, ssrState );
-    d:drawStr ( x2, 0, "Target" );
+    --print ( display.width - d:getStrWidth ( "Target" ) ); --> 93
+    d:drawStr ( 93, 0, "Target" );
 
     d:sendBuffer ();
 
@@ -197,16 +206,6 @@ local function readIronTemp ()
 
     local t = bit.rshift ( bit.band ( word, 0x7FF8 ), 3 ) * 0.25;
 
-    --print ( "[APP] readIronTemp: t=" ..  t );
-
-    --temp.avg = temp.avg - (temp.series [temp.index] - t ) / temp.N;
-    --temp.series [temp.index] = t;
-    --temp.index = temp.index + 1;
-    --if ( temp.index > temp.N ) then
-    --    temp.index = 1;
-    --end
-    --return temp.avg;
-
     return t;
 
 end
@@ -238,7 +237,6 @@ local function autotune ( nCycles, target )
 
     local cycles = 0;
 
-    --local tsHeatingOff = tmr.time ();
     local tsHeatingOff = tmr.now (); -- us
     local tsHeatingOn = tsHeatingOff;
     local timeHeating = 0;
@@ -246,7 +244,8 @@ local function autotune ( nCycles, target )
 
     local min, max = 10000, 0;
 
-    tmr.create ():alarm ( loopPeriod, tmr.ALARM_AUTO,
+    --tmr.create ():alarm ( loopPeriod, tmr.ALARM_AUTO,
+    tmr.create ():alarm ( 5000, tmr.ALARM_AUTO,
         function ( timer )
 
             local t = readIronTemp ();
@@ -256,7 +255,6 @@ local function autotune ( nCycles, target )
             if ( heating == true and t > target ) then
                 heating = false;
                 setPwmDuty ( bias - d );
-                --tsHeatingOff = tmr.time (); -- sec
                 tsHeatingOff = tmr.now (); -- us
                 timeHeating = tsHeatingOff - tsHeatingOn;
                 if ( timeHeating < 0 ) then
@@ -266,7 +264,6 @@ local function autotune ( nCycles, target )
             end
             if ( heating == false and t < target ) then
                 heating = true;
-                --tsHeatingOn = tmr.time (); -- sec
                 tsHeatingOn = tmr.now (); -- us
                 timeCooling = (tsHeatingOn - tsHeatingOff);
                 if ( timeCooling < 0 ) then
@@ -300,7 +297,9 @@ local function autotune ( nCycles, target )
                 min = target;
             end
 
-            print ( "[APP] autotune: t=" .. t .. " @ " .. pwm.getduty ( ssrPin ) .. " cycles=" .. cycles .. " bias=" .. bias .. " d=" .. d .. " tsHeatingOff=" .. tsHeatingOff .. " tsHeatingOn=" .. tsHeatingOn .. " timeCooling=" .. timeCooling .. " timeHeating=" .. timeHeating );
+            if ( verbose ) then
+                print ( "[APP] autotune: t=" .. t .. " @ " .. pwm.getduty ( ssrPin ) .. " cycles=" .. cycles .. " bias=" .. bias .. " d=" .. d .. " tsHeatingOff=" .. tsHeatingOff .. " tsHeatingOn=" .. tsHeatingOn .. " timeCooling=" .. timeCooling .. " timeHeating=" .. timeHeating );
+            end
 
             if ( t > target + pid.AUTOTUNE_MAXTEMPDIFF ) then
                 print ( "[APP] autotune: PID Autotune failed! Temperature too high t=" .. t .. " target=" .. target );
@@ -311,7 +310,7 @@ local function autotune ( nCycles, target )
             end
 
             if ( (tmr.time () - tsHeatingOff / 1000000) + (tmr.time () - tsHeatingOn / 1000000) > pid.AUTOTUNE_TIMEOUT * 60 * 2 ) then -- sec
-                print ( "[APP] autotune: PID Autotune failed! timeout" );
+                print ( "[APP] autotune: PID Autotune failed! timeout tmr.time=" .. tmr.time () .. " tsHeatingOff=" .. tsHeatingOff .. " tsHeatingOn=" .. tsHeatingOn );
                 timer:unregister ();
                 pwm.close ( ssrPin );
                 state = STATE_IDLE;
@@ -344,31 +343,53 @@ local function rotaryon ( type, pos, when )
     --print ( "[APP] rotaryon: pos=" .. pos .. " event=" .. rotaryEventType [type] .. " time=" .. when );
 
     if ( type == rotary.LONGPRESS ) then
+        --if ( state == STATE_IDLE ) then
+        --    state = STATE_AUTOTUNE;
+        --elseif ( state == STATE_AUTOTUNE ) then
+        --    --state = STATE_IDLE;
+        --    abortAutotune = true;
+        --end
+        ----print ( "state=" .. state );
         if ( state == STATE_IDLE ) then
-            state = STATE_AUTOTUNE;
-        elseif ( state == STATE_AUTOTUNE ) then
-            --state = STATE_IDLE;
-            abortAutotune = true;
-        end
-        --print ( "state=" .. state );
-    elseif ( type == rotary.CLICK ) then
-        if ( state == STATE_IDLE ) then
-            state = STATE_HEATING;
-            -- init pid
-        elseif ( state == STATE_HEATING ) then
+            lastTarget = target;
+            target = process.preheat.target;
+            state = STATE_PREHEAT;
+        elseif ( state == STATE_PREHEAT ) then
+            target = lastTarget;
             state = STATE_IDLE;
+        elseif ( state == STATE_REFLOW) then
+            target = lastTarget;
+            state = STATE_IDLE;
+        end
+        ignoreClick = true;
+    elseif ( type == rotary.CLICK ) then
+        if ( ignoreClick ) then
+            ignoreClick = false;
+        else
+            if ( state == STATE_IDLE ) then
+                state = STATE_HEATING;
+                -- init pid
+            elseif ( state == STATE_HEATING ) then
+                state = STATE_IDLE;
+            elseif ( state == STATE_PREHEAT ) then
+                target = process.reflow.target;
+                state = STATE_REFLOW;
+            elseif ( state == STATE_REFLOW) then
+                target = lastTarget;
+                state = STATE_IDLE;
+            end
         end
         --print ( "state=" .. state );
     elseif ( type == rotary.TURN ) then
         local d = pos - lastRotaryPos;
         if ( d < -3 or d > 3 ) then -- every rotation step creates 4 on events
             -- for bettr pcb layout the rotation direction seems inverted
-            target = target + ( d < 0 and 1 or -1 ); 
+            target = target + ( d < 0 and 1 or -1 );
             lastRotaryPos = pos;
         end
         --print ( "target=" .. target );
     end
-    
+
 end
 
 local function bangbang ( t )
@@ -389,7 +410,6 @@ end
 
 --https://www.youtube.com/watch?v=zOByx3Izf5U https://github.com/pms67/PID
 --https://courses.cs.washington.edu/courses/csep567/10wi/lectures/Lecture9.pdf
-
 
 local function pidcontrol ( t )
 
@@ -428,9 +448,17 @@ end
 
 local function initPwm ()
 
-    pwm.setup ( ssrPin, 500, activeHigh and 0 or 1023  ); -- 10 Hz
+    pwm.setup ( ssrPin, 500, activeHigh and 0 or 1023  ); -- frequency in Hz
     pwm.start ( ssrPin );
     ssrState = SSR_STATE_PWM;
+
+end
+
+local function initPid ( t )
+
+    iTerm = 0;
+    dTerm = 0;
+    lastPidTemp = t;
 
 end
 
@@ -442,7 +470,7 @@ local function loop  ( client, topic )
 
         temp.series [temp.index] = t;
         temp.index = temp.index + 1;
-    
+
         --print ( "[APP] loop: t=" ..  t .. " target=" .. target .. " state=" .. state .. " ssr=" .. ssrState .. " count=" .. publishCount .. " heap=" .. node.heap () );
 
         if ( state == STATE_IDLE ) then
@@ -458,12 +486,38 @@ local function loop  ( client, topic )
         elseif ( state == STATE_HEATING ) then
             if ( ssrState ~= SSR_STATE_PWM ) then
                 initPwm ();
-                iTerm = 0;
-                dTerm = 0;
-                lastPidTemp = t;
+                initPid ( t );
             end
             pidcontrol ( t );
             --bangbang ( t );
+        elseif ( state == STATE_PREHEAT ) then
+            if ( ssrState ~= SSR_STATE_PWM ) then
+                --target = process.preheat.target;
+                initPwm ();
+                initPid ( t );
+            end
+            pidcontrol ( t );
+            if ( not periodStarted and ( t > target ) ) then
+                periodStarted = tmr.time ();
+            elseif ( periodStarted and ( ( tmr.time () - periodStarted ) > process.preheat.duration ) ) then
+                periodStarted = nil;
+                target = process.reflow.target;
+                state = STATE_REFLOW;
+            end
+        elseif ( state == STATE_REFLOW ) then
+            if ( ssrState ~= SSR_STATE_PWM ) then
+                target = process.reflow.target;
+                initPwm ();
+                initPid ( t );
+            end
+            pidcontrol ( t );
+            if ( not periodStarted and ( t > target ) ) then
+                periodStarted = tmr.time ();
+            elseif ( periodStarted and ( ( tmr.time () - periodStarted ) > process.reflow.duration ) ) then
+                periodStarted = nil;
+                target = lastTarget;
+                state = STATE_IDLE;
+            end
         elseif ( state == STATE_AUTOTUNE ) then
             if ( ssrState ~= SSR_STATE_PWM ) then
                 initPwm ();
@@ -555,7 +609,10 @@ function M.message ( client, topic, payload )
             if ( json.verbose ~= nil ) then
                 verbose = json.verbose;
             end
-            
+
+            if ( json.process ~= nil ) then
+                process = json.process;
+            end
         end
 
     end
