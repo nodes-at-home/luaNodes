@@ -1,0 +1,62 @@
+{
+    "chipid": 15556117,
+    "app": "ironNode",
+    "class": "control",
+    "type": "ssr",
+    "location": "iron",
+    "appCfg": {
+        "resolution": {
+            "width": 128,
+            "height": 64
+        },
+        "display": {
+            "sdaPin": 2,
+            "sclPin": 1
+        },
+        "max6675": {
+            "sckPin": 3,
+            "misoPin": 0,
+            "csPin": 8
+        },
+        "rotary": {
+            "switchPin": 5,
+            "outAPin": 6,
+            "outBPin": 7
+        },
+        "pid": {
+            "pwmScale": 1,
+            "functionalrange": 60,
+            "Kp": 10,
+            "Ki": 0.1,
+            "Kd": 1
+        },
+        "process": {
+            "preheat": {
+                "target": 150,
+                "duration": 60
+            },
+            "reflow":{
+                "target": 240,
+                "duration": 1
+            }
+        },
+        "autotune": {
+            "strategy": "classic",
+            "strategy2": "some_overshoot",
+            "strategy3": "no_overshoot",
+            "timeout": 10,
+            "maxtempdiff": 30,
+            "loopPeriod": 2000
+        },
+        "activeHigh": false,
+        "device": "ssr",
+        "ssrPin": 4,
+        "target": 100
+    },
+    "timer": {
+        "loopPeriod": 200
+    },
+    "wifi": {
+        "ip": "192.168.2.41"
+    }
+}
