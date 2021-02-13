@@ -1,0 +1,19 @@
+{
+    "chipid": 15537712,
+    "app": "rgb2Node",
+    "class": "light",
+    "type": "led",
+    "location": "corridor",
+    "appCfg": {
+        "device:": "led",
+        "pin": {
+            "red": 7,
+            "green": 6,
+            "blue": 5
+        },
+        "initialBrightness": 128
+    },
+    "wifi": {
+        "ip": "192.168.2.60"
+    }
+}
