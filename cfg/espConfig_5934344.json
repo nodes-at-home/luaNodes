@@ -1,0 +1,21 @@
+{
+    "chipid": 5934344,
+    "class": "switch",
+    "app": "sonoffNode",
+    "type": "relay",
+    "location": "garden",
+    "appCfg": {
+        "device": "valve",
+        "activeHigh": true,
+        "relayPin": 1,
+        "_flashHighPulseLength": 50000,
+        "_flashLowPulseLength": 200000,
+        "useLedForState": false
+    },
+    "timer": {
+        "debounceDelay": 500
+    },
+    "wifi": {
+        "ip": "192.168.2.38"
+    }
+}

@@ -20,6 +20,16 @@ local nodeDevice = nodeConfig.appCfg.device or "lamp";
 
 local relayPin = nodeConfig.appCfg.relayPin;
 local buttonPin = nodeConfig.appCfg.buttonPin;
+local ledPin = nodeConfig.appCfg.ledPin;
+
+local flashLowPulseLength = nodeConfig.appCfg.flashLowPulseLength;
+local flashHighPulseLength = nodeConfig.appCfg.flashHighPulseLength;
+local useLedForState = nodeConfig.appCfg.useLedForState; -- on S20 there are two leds and the blue is switched with relay
+
+local activeHigh = nodeConfig.appCfg.activeHigh;
+if ( activeHigh == nil ) then activeHigh = true end;
+local RELAY_ON = activeHigh and gpio.HIGH or gpio.LOW;
+local RELAY_OFF = activeHigh and gpio.LOW or gpio.HIGH;
 
 local debounceTmr = tmr.create ();
 
@@ -28,10 +38,11 @@ local debounceTmr = tmr.create ();
 
 local function changeState ( client, topic, payload )
 
-    local useLedForState = nodeConfig.appCfg.useLedForState; -- on S20 there are two leds and the blue is switched with relay
-    if ( useLedForState == nil or useLedForState ) then gpio.write ( nodeConfig.appCfg.ledPin, payload == "ON" and gpio.LOW or gpio.HIGH ); end
+    if ( ledPin and ( useLedForState == nil or useLedForState ) ) then
+        gpio.write ( ledPin, payload == "ON" and gpio.LOW or gpio.HIGH );
+    end
 
-    gpio.write ( nodeConfig.appCfg.relayPin, payload == "ON" and gpio.HIGH or gpio.LOW );
+    gpio.write ( relayPin, payload == "ON" and RELAY_ON or RELAY_OFF );
 
     print ( "[APP] publish state=" .. payload .. " to " .. topic );
     client:publish ( topic .. "/state", payload, 0, nodeConfig.mqtt.retain, function () end ); -- qos, retain
@@ -40,7 +51,7 @@ end
 
 local function flashLed ( times )
 
-    gpio.serout ( nodeConfig.appCfg.ledPin, 0, { nodeConfig.appCfg.flashLowPulseLength * 1000, nodeConfig.appCfg.flashHighPulseLength * 1000 }, times, function () end ); -- async
+    gpio.serout ( ledPin, 0, { flashLowPulseLength * 1000, flashHighPulseLength * 1000 }, times, function () end ); -- async
 
 end
 
@@ -68,9 +79,10 @@ function M.connect ( client, topic )
 
     print ( "[APP] connected with topic=" .. topic );
 
-    flashLed ( 2 );
+    if ( ledPin ) then
+        flashLed ( 2 );
+    end
 
-    -- activate button only if pin is defined
     -- activate button only if pin is defined
     if ( buttonPin ) then
         initTrigger ( client, topic .. "/" .. nodeDevice );
@@ -112,14 +124,16 @@ end
 
 print ( "[MODULE] loaded: " .. moduleName )
 
-gpio.mode ( nodeConfig.appCfg.ledPin, gpio.OUTPUT );
+if ( ledPin ) then
+    gpio.mode ( ledPin, gpio.OUTPUT );
+end
 
-gpio.mode ( nodeConfig.appCfg.relayPin, gpio.OUTPUT );
-gpio.write ( nodeConfig.appCfg.relayPin, gpio.LOW );
+gpio.mode ( relayPin, gpio.OUTPUT );
+gpio.write ( relayPin, RELAY_OFF );
 
 -- activate button only if pin is defined
-if ( nodeConfig.appCfg.buttonPin ) then
-    gpio.mode ( nodeConfig.appCfg.buttonPin, gpio.INT, gpio.PULLUP );
+if ( buttonPin ) then
+    gpio.mode ( buttonPin, gpio.INT, gpio.PULLUP );
 end
 
 return M;
