@@ -1,0 +1,22 @@
+{
+    "chipid": 5971865,
+    "app": "rainNode",
+    "class": "sensor",
+    "type": "rain",
+    "location": "garden",
+    "appCfg": {
+        "i2c": {
+            "sclPin": 1,
+            "sdaPin": 2
+        },
+        "tickPin": 4,
+        "rainPerTick": 0.37
+    },
+    "timer": {
+        "periodicPeriod": 900000,
+        "suspendPeriod": 300
+    },
+    "wifi": {
+        "ip": "192.168.2.62"
+    }
+}
