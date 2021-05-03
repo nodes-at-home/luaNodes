@@ -65,7 +65,7 @@ local function displayValues ( rain, ticks )
     display:setFont ( u8g2.font_6x10_tf );
     display:setFontPosTop ();
     display:drawStr ( 1,  0, "Rain" );
-    display:drawStr ( 1, 12, ('%.1f ml'):format ( rain or 0.0 ) );
+    display:drawStr ( 1, 12, ('%.2f ml'):format ( rain or 0.0 ) );
     display:drawStr ( 1, 24, ('%d ticks'):format ( ticks or 0 ) );
 
     display:sendBuffer ();
@@ -74,12 +74,13 @@ end
 
 local function tick ( level, when, eventcount )
 
-    --print ( "[APP] level=" .. level .. " when=" .. when ..  " eventcount=" .. eventcount );
+    print ( "[APP] level=" .. level .. " when=" .. when ..  " eventcount=" .. eventcount );
 
     if ( (when - lastTick) > suspendPeriod ) then
         lastTick = when;
         rain = rain + rainPerTick;
         ticks = ticks + 1;
+        node.task.post ( function () displayValues ( rain, ticks ) end );
     end
 
 end
