@@ -11,6 +11,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" );
+
 -------------------------------------------------------------------------------
 -- Settings
 
@@ -34,11 +36,11 @@ local buffer = ws2812.newBuffer ( ledCount, 3 ); -- 3 bytes for grb
 
 local function changeState ( client, topic )
 
-    print ( "[APP] changeState: topic=" .. topic );
+    logger.info ( moduleName, "changeState: topic=" .. topic );
 
     -- prepare led
     if ( state == "ON" ) then
-        print ( "[APP] changeState: red=" .. red .. " green=" .. green .. " blue=" .. blue .. " brightness=" .. brightness .. " effect=" .. effect );
+        logger.debug ( moduleName, "changeState: red=" .. red .. " green=" .. green .. " blue=" .. blue .. " brightness=" .. brightness .. " effect=" .. effect );
         ws2812_effects.stop ();
         ws2812_effects.set_brightness ( brightness );
         ws2812_effects.set_brightness ( brightness );
@@ -56,15 +58,15 @@ local function changeState ( client, topic )
         ws2812_effects.set_mode ( "static" );
         ws2812_effects.start ();
     end
-    
+
     -- send state messages
     local jsonReply = '{"state":"' .. state .. '"}';
     if ( state == "ON" ) then
         jsonReply = '{"state":"' .. state .. '","effect":"' .. effect .. '","brightness":' .. brightness .. ',"color":{"r":' .. red .. ',"g":' .. green .. ',"b":' .. blue .. '}}';
     end
-    print ( "[APP] changeState: reply=" ..  jsonReply );        
-    client:publish ( topic .. "/state", jsonReply, 0, nodeConfig.mqtt.retain, -- qos, retain 
-        function () 
+    logger.debug ( moduleName, "changeState: reply=" ..  jsonReply );
+    client:publish ( topic .. "/state", jsonReply, 0, nodeConfig.mqtt.retain, -- qos, retain
+        function ()
         end
     );
 
@@ -76,21 +78,21 @@ end
 
 function M.start ( client, topic )
 
-    print ( "[APP] start: topic=" .. topic );
-    
+    logger.info ( moduleName, "start: topic=" .. topic );
+
     -- D4 is the ws2812 signal line pin (UART1)
     ws2812.init ( ws2812.MODE_SINGLE );
     ws2812_effects.init ( buffer );
-   
+
     -- init the effects module, set color ...
     changeState ( client, topic .. "/" .. nodeDevice );
-    
+
 end
 
 function M.connect ( client, topic )
 
-    print ( "[APP] connected: topic=" .. topic );
-    
+    logger.info ( moduleName, "connected: topic=" .. topic );
+
 end
 
 -- json structure
@@ -108,8 +110,8 @@ end
 
 function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=" .. topic .. " payload=" .. payload );
-    
+    logger.info ( moduleName, "message: topic=" .. topic .. " payload=" .. payload );
+
     local _, pos = topic:find ( nodeConfig.topic );
     if ( pos ) then
         local subtopic = topic:sub ( pos + 2 );
@@ -118,20 +120,20 @@ function M.message ( client, topic, payload )
             -- payload ist json
             local pcallOk, json = pcall ( sjson.decode, payload );
             if ( pcallOk and json.state ) then
-                print ( "[APP] changeState: state=" .. tostring ( json.state ) );
+                logger.info ( moduleName, "message: state=" .. tostring ( json.state ) );
                 -- prepare answer
                 state = json.state;
                 if ( state == "ON" ) then
                     if ( json.effect ) then
-                        print ( "[APP] effect=" .. json.effect );
+                        logger.debug ( moduleName, "message: effect=" .. json.effect );
                         effect = json.effect;
                     end
                     if ( json.brightness ) then
-                        print ( "[APP] brightness=" .. json.brightness );
+                        logger.debug ( moduleName, "message: brightness=" .. json.brightness );
                         brightness = json.brightness;
                     end
                     if ( json.color ) then
-                        print ( "[APP] color: r=" .. json.color.r .. " g=" .. json.color.g .. " b=" .. json.color.b );
+                        logger.debug ( moduleName, "message: color: r=" .. json.color.r .. " g=" .. json.color.g .. " b=" .. json.color.b );
                         red = json.color.r;
                         green = json.color.g;
                         blue = json.color.b;
@@ -145,7 +147,7 @@ function M.message ( client, topic, payload )
         elseif ( subtopic == "service/set" ) then
             local pcallOk, json = pcall ( sjson.decode, payload );
             if ( pcallOk and json.delay ) then
-                print ( "[APP] message: delay=" .. tostring ( json.delay ) );
+                logger.debug ( moduleName, "message: delay=" .. tostring ( json.delay ) );
                 delay = json.delay;
                 ws2812_effects.set_delay ( delay );
             end
@@ -156,22 +158,22 @@ end
 
 function M.offline ( client )
 
-    print ( "[APP] offline" );
-    
+    logger.info ( moduleName, "offline:" );
+
     return true; -- restart mqtt connection
-    
+
 end
 
 function M.periodic ( client, topic )
-	
-    print ( "[APP] periodic: topic=" .. topic );
+
+    logger.info ( moduleName, "periodic: topic=" .. topic );
 
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName )
+logger.debug ( moduleName, "loaded: " );
 
 -- helper GND for ws2812 signal line
 if ( gndPin ) then

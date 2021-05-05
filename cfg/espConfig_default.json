@@ -27,5 +27,10 @@
         "port": 10001,
         "onUpdate": true,
         "onStartup": false
+    },
+    "syslog": {
+        "ip": "nodesathome1",
+        "port": 524,
+        "level": 7
     }
 }

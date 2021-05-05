@@ -20,9 +20,9 @@ local HOST = "nodesathome1";
 
 local DEFAULT_CONFIG = {
     app = "noNode",
-    class = "nonode", 
-    type = "<chipid>", 
-    location = "anywhere",  
+    class = "nonode",
+    type = "<chipid>",
+    location = "anywhere",
     mode = "prod",
     appCfg = {
         useAdc = false,
@@ -49,6 +49,11 @@ local DEFAULT_CONFIG = {
         port = 10001,
         onUpdate = true,
         onStartup = false
+    },
+    syslog = {
+        ip = "192.168.2.11",
+        port = 514,
+        level = 7,
     },
 };
 
@@ -82,20 +87,20 @@ end
 --
 --    for k, v in pairs ( t ) do
 --        if ( type ( v ) == "table" ) then
---            print ( indentStr .. k .. "={" ); 
+--            print ( indentStr .. k .. "={" );
 --            printTable ( v, _indent + 1 );
---            print ( indentStr .. "}," ); 
+--            print ( indentStr .. "}," );
 --        else
 --            print ( indentStr .. k .. "=" .. tostring( v ) .. "," );
 --        end
 --    end
---    
+--
 --end
 
 local function replaceNil ( t )
 
     if ( type ( t ) ~= "table" ) then return; end
-    
+
     for k, v in pairs ( t ) do
         if ( type ( v ) == "table" ) then
             replaceNil ( v );
@@ -112,11 +117,11 @@ end
 -- public
 
 -- loading config
--- order: 
+-- order:
 --  1) inline default
 --  2) file default
 --  3) chipid file
---  5) local file 
+--  5) local file
 
 
 function M.init ()
@@ -136,7 +141,7 @@ function M.init ()
 --    printTable ( result );
 
     local files = { "default", tostring ( node.chipid () ), "fixip", "mqtt", "local" };
-    
+
     for _, f in ipairs ( files ) do
         local loadFile = "espConfig_" .. f .. ".json";
         print ( "[CONFIG] try to load config: " .. loadFile );
@@ -148,7 +153,7 @@ function M.init ()
                 repeat
                     local content = file.read (); -- is reading max. 1024 bytes
                     if ( content ) then jsonStr = jsonStr .. content end
-                until not content                
+                until not content
                 if ( jsonStr ) then
                     local ok, json = pcall ( sjson.decode, jsonStr );
                     if ( ok ) then
@@ -164,26 +169,26 @@ function M.init ()
 
     -- inject chipid
     if ( result.type == "<chipid>" ) then result.type = node.chipid (); end
-    
+
     -- node base topic
     result.topic = table.concat ( { "nodes@home/", result.class, "/", result.type, "/", result.location } );
-    
+
     -- result.version = VERSION .. " (" .. result.app .. ")";
     local swversion = node.info ( "sw_version" );
-    local major, minor, patch = swversion.node_version_major, swversion.node_version_minor, swversion.node_version_revision; 
+    local major, minor, patch = swversion.node_version_major, swversion.node_version_minor, swversion.node_version_revision;
     local sdk = table.concat ( { major, ".", minor, ".", patch } );
     local app = result.app;
     local pos = app:find ( "Node" );
     local nodeName = pos and app:sub ( 1, pos - 1 ) or app;
     result.version = table.concat ( { sdk, "-", nodeName, "-", version } );
-    
+
     replaceNil ( result );
-    
+
 --    print ( "[CONFIG] final config" );
 --    printTable ( result );
 
     return result;
-    
+
 end
 
 --------------------------------------------------------------------
