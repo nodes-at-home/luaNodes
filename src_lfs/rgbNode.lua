@@ -115,7 +115,7 @@ function M.message ( client, topic, payload )
     local _, pos = topic:find ( nodeConfig.topic );
     if ( pos ) then
         local subtopic = topic:sub ( pos + 2 );
-        print ( "[MQTT] subtopic=" .. subtopic );
+        logger.debug ( "message: subtopic=" .. subtopic );
         if ( subtopic == nodeDevice ) then
             -- payload ist json
             local pcallOk, json = pcall ( sjson.decode, payload );

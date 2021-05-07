@@ -13,6 +13,8 @@ _G [moduleName] = M;
 
 local pixel = require ( "pixel" );
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
 -------------------------------------------------------------------------------
 --  Settings
 
@@ -65,21 +67,21 @@ local function correctTimezone ( utc )
             end
         end
     end
-    
-    return utc + ( isCest and 2 * 60 * 60 or 60 * 60 ); -- +2h (cest) or +1h (cet) 
-    
+
+    return utc + ( isCest and 2 * 60 * 60 or 60 * 60 ); -- +2h (cest) or +1h (cet)
+
 end
 
 local loop;
 
 local function handleCategory ( category, clear, text, printFunc, insertCol )
 
-    --print ( "[APP] handleCategory: category=" .. category .. " text=" .. tostring ( text ) .. " enabled=" .. tostring ( displayEnabled [category] ) .. " heap=" .. node.heap () );
+    --trigger.debug ( "handleCategory: category=" .. category .. " text=" .. tostring ( text ) .. " enabled=" .. tostring ( displayEnabled [category] ) .. " heap=" .. node.heap () );
 
     if ( text ~= nil and ( displayEnabled [category] == nil or displayEnabled [category] ) ) then
         if ( clear ) then
             pixel.clear ();
-        end            
+        end
         if ( printFunc ) then
             printFunc ( text, insertCol );
         else
@@ -87,7 +89,7 @@ local function handleCategory ( category, clear, text, printFunc, insertCol )
             local ticks = standardDisplayCategoryPeriod * 1000 / shakePeriod;
             if ( (len - cols) > ticks ) then
                 local period = math.floor ( (len - cols) * shakePeriod / 1000 + 1 );
-                --print ( "[APP] handleCategory: category=" .. category .. " text=" .. tostring ( text ) .. " enabled=" .. tostring ( displayEnabled [category] ) .. " heap=" .. node.heap () );
+                --trigger.debug ( "handleCategory: category=" .. category .. " text=" .. tostring ( text ) .. " enabled=" .. tostring ( displayEnabled [category] ) .. " heap=" .. node.heap () );
                 displayCategoryPeriod = period;
             end
         end
@@ -102,21 +104,21 @@ end
 
 loop = function () -- every 1sec
 
-    --print ( "[APP] loop: category=" .. tostring ( displayCategory ) ..  " heap=" .. node.heap () );
+    --logger.debug ( " loop: category=" .. tostring ( displayCategory ) ..  " heap=" .. node.heap () );
 
     if ( displayCategory == "time" and not dev ) then -- toggle colon
         local tm = rtctime.epoch2cal ( correctTimezone ( rtctime.get () ) );
         local sign = tm ["sec"] % 2 == 0 and ":" or " ";
         handleCategory ( displayCategory, false, string.format ( "%02d%s%02d", tm ["hour"], sign, tm ["min"] ), pixel.printDateTimeString, timeInsertCol );
     end
-    
+
     displayCategoryPeriodCounter = displayCategoryPeriodCounter + 1;
-    
+
     if ( displayCategoryPeriodCounter > displayCategoryPeriod ) then
 
         displayCategoryPeriodCounter = 1;
         displayCategoryPeriod = standardDisplayCategoryPeriod;
-        
+
         -- split between state transitions and display routines, so displayCategory is every time the current category !
 
         if ( displayCategory == "time" ) then
@@ -158,37 +160,37 @@ end
 
 function M.start ( client, topic )
 
-    print ( "[APP] start" );
-    
+    logger.info ( "start: topic=" .. topic );
+
     pixel.init ( csPin, numberOfModules, shakePeriod, displayBrightness );
-    
+
 end
 
 function M.connect ( client, topic )
 
-    print ( "[APP] connect: topic=" .. topic );
-    
+    logger.info ( "connect: topic=" .. topic );
+
     -- subscribe to .../message/#
     -- subscription to .../command and .../alert is not necessary
-    
+
     local t = topic .. "/message/#";
-    --print ( "[APP] subscripe to topic=" .. t );
+    --logger.debug ( " subscripe to topic=" .. t );
     client:subscribe ( t, 0, -- ..., qos
         function ( client )
-            print ( "[APP] syncing to server=" .. SNTP );
-            sntp.sync ( SNTP, 
+            logger.debug ( " syncing to server=" .. SNTP );
+            sntp.sync ( SNTP,
                 function ( sec, usec )
-                    print ( "[APP] setting time to sec=" .. sec .. " usec=" .. usec );
+                    logger.debug ( " setting time to sec=" .. sec .. " usec=" .. usec );
                     rtctime.set ( sec, usec );
                     if ( not loopTimer ) then
                         loopTimer = tmr.create ()
                         loopTimer:alarm ( 1000, tmr.ALARM_AUTO, loop );
                     end
-                end,                
+                end,
                 function ()
-                    print ( "[APP] sntp sync failed" );
+                    logger.debug ( " sntp sync failed" );
                     --node.task.post ( function () M.connect ( client, topic ) end );
-                end,                        
+                end,
                 1       -- autorepeat
             );
         end
@@ -198,57 +200,56 @@ end
 
 function M.offline ( client )
 
-    print ( "[APP] offline" );
+    logger.info ( " offline:" );
 
-    return true; -- restart mqtt 
+    return true; -- restart mqtt
 
 end
 
 function M.message ( client, topic, payload )
 
-    --print ( "[APP] message: topic=" .. topic .. " payload=" .. payload );
-    
-    print ( "[APP] message: heap=" .. node.heap () );
-    
+    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger.debug ( "message: heap=" .. node.heap () );
+
     local detailTopic = topic:sub ( nodeConfig.topic:len () + 1 );
 
     if ( detailTopic == "/command" or detailTopic:sub ( 1, 8 ) == "/message" ) then
-    
+
         local ok, json = pcall ( sjson.decode, payload );
         if ( ok ) then
-        
+
             if ( json.display ) then
                 if ( json.display.duration ) then
-                    print ( "[APP] duration=" .. json.display.duration ); 
+                    logger.debug ( "message: duration=" .. json.display.duration );
                     standardDisplayCategoryPeriod = json.display.duration;
                 end
                 if ( json.display.brightness ) then
-                    print ( "[APP] brightness=" .. json.display.brightness ); 
+                    logger.debug ( "message: brightness=" .. json.display.brightness );
                     displayBrightness = json.display.brightness;
                     pixel.setBrightness ( displayBrightness );
                 end
                 if ( json.display.shakeperiod ) then
-                    print ( "[APP] shakeperiod=" .. json.display.shakeperiod ); 
+                    logger.debug ( "message: shakeperiod=" .. json.display.shakeperiod );
                     shakePeriod = json.display.shakeperiod;
                     pixel.setShakeperiod ( shakePeriod );
                 end
                 if ( json.display.time ) then
-                    --print ( "[APP] time=" .. json.display.time );
+                    --logger.debug ( "message: message: time=" .. json.display.time );
                     displayEnabled.time = (json.display.time == "on") and nil;
                 end
                 if ( json.display.date ) then
-                    --print ( "[APP] date=" .. json.display.date ); 
+                    --logger.debug ( "message: date=" .. json.display.date );
                     displayEnabled.date = (json.display.date == "on") and nil;
                 end
                 if ( json.display.enabled ) then
-                    --print ( "[APP] enabled" ); 
+                    --logger.debug ( "message: enabled" );
                     for i, v in ipairs ( json.display.enabled ) do
-                        --print ( "[APP] enabled i=" .. i .. " value=" .. v ); 
+                        --logger.debug ( "message: enabled i=" .. i .. " value=" .. v );
                         displayEnabled ["msg" .. i] = (v == "on") and nil;
                     end
                 end
-            end            
- 
+            end
+
             if ( json.messages ) then
                 for i, m in ipairs ( json.messages ) do
                     local l = m.line + 1;
@@ -262,25 +263,25 @@ function M.message ( client, topic, payload )
                     end
                 end
             end
-            
+
         end
-        
+
         json = nil;
-        
-    end 
+
+    end
 
 end
 
 --function M.periodic ( client, topic )
 --
---    print ( "[APP] periodic call topic=" .. topic );
---    
+--    logger.debug ( "periodic: topic=" .. topic );
+--
 --end
 
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName )
+logger.debug ( " loaded:" )
 
 return M;
 

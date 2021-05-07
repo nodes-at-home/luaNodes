@@ -13,6 +13,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
 -------------------------------------------------------------------------------
 --  Settings
 
@@ -42,11 +44,11 @@ local lastTick = 0;
 
 local function publishRain ( client, topic, rain, ticks )
 
-    --print ( "[APP] publishRain: rain=" .. rain );
+    logger.info ( "publishRain: topic=" .. topic .. " rain=" .. rain .. " ticks=" .. ticks );
 
     local payload = ('{"rain":%.1f,"unit":"ml","ticks":%d}'):format ( rain, ticks );
 
-    print ( "[APP] publishRain: payload=" .. payload );
+    logger.debug ( "publishRain: payload=" .. payload );
 
     client:publish ( topic .. "/value/rain", payload, qos, retain,
         function ()
@@ -57,7 +59,7 @@ end
 
 local function displayValues ( rain, ticks )
 
-    print ( "[APP] displayValues: rain=" .. rain .. " ticks=" .. ticks );
+    logger.info ( "displayValues: rain=" .. rain .. " ticks=" .. ticks );
 
     display:clearBuffer ();
 
@@ -74,7 +76,7 @@ end
 
 local function tick ( level, when, eventcount )
 
-    print ( "[APP] level=" .. level .. " when=" .. when ..  " eventcount=" .. eventcount );
+    --logger.info ( "tick: level=" .. level .. " when=" .. when ..  " eventcount=" .. eventcount );
 
     if ( (when - lastTick) > suspendPeriod ) then
         lastTick = when;
@@ -89,9 +91,9 @@ end
 -- public
 -- mqtt callbacks
 
-function M.start ( client, baseTopic )
+function M.start ( client, topic )
 
-    print ( "[APP] start:" );
+    logger.info ( "start: topic=" .. topic );
 
     gpio.mode ( tickPin, gpio.INT, gpio.PULLUP );
     gpio.trig ( tickPin, "down", tick );
@@ -105,19 +107,19 @@ end
 
 function M.connect ( client, topic )
 
-    print ( "[APP] connect:" );
+    logger.info ( "connect: topic=" .. topic );
 
 end
 
 function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=" .. topic .. " ,payload=" .. payload );
+    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
 
 end
 
 function M.periodic ( client, topic )
 
-    print ( "[APP] periodic: topic=" .. topic );
+    logger.info ( "periodic: topic=" .. topic );
 
     --displayValues ( rain, ticks );
     publishRain ( client, topic, rain, ticks );
@@ -128,7 +130,7 @@ end
 
 function M.offline ( client )
 
-    print ( "[APP] offline:" );
+    logger.info ( "offline:" );
 
     return true;
 
@@ -137,7 +139,7 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName )
+logger.debug ( "loaded: " );
 
 return M;
 

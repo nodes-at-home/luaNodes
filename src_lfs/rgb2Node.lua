@@ -11,6 +11,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
 -------------------------------------------------------------------------------
 -- Settings
 
@@ -33,6 +35,8 @@ local bluePin = nodeConfig.appCfg.pin and nodeConfig.appCfg.pin.blue;
 
 local function initPwm ( pin )
 
+    logger.info ( "initPwm: pin=" .. pin );
+
     gpio.mode ( pin, gpio.OUTPUT );
     gpio.write ( pin, gpio.LOW );
     pwm.setup ( pin, 500, 0 ); -- pwm frequency, duty cycle
@@ -42,7 +46,7 @@ end
 
 local function setLedPwm ( pin, brightness )
 
-    print ( "[APP] set pwm pin=" .. pin .. " brightness=" .. brightness );
+    logger.info ( "setLedPwm: pin=" .. pin .. " brightness=" .. brightness );
 
     if ( brightness > 0 ) then
         -- in ha the slider is from 0 to 255
@@ -56,11 +60,11 @@ end
 
 local function changeState ( client, topic )
 
-    print ( "[APP] changeState: topic=" .. topic );
+    logger.info ( "changeState: topic=" .. topic );
 
     -- prepare led
     if ( state == "ON" ) then
-        print ( "[APP] changeState: red=" .. red .. " green=" .. green .. " blue=" .. blue .. " brightness=" .. brightness );
+        logger.debug ( "changeState: red=" .. red .. " green=" .. green .. " blue=" .. blue .. " brightness=" .. brightness );
         local p = 4 * brightness / 255;
         setLedPwm ( redPin, p * red );
         setLedPwm ( greenPin, p * green );
@@ -76,7 +80,7 @@ local function changeState ( client, topic )
     if ( state == "ON" ) then
         jsonReply = '{"state":"' .. state .. '","brightness":' .. brightness .. ',"color":{"r":' .. red .. ',"g":' .. green .. ',"b":' .. blue .. '}}';
     end
-    print ( "[APP] changeState: reply=" ..  jsonReply );
+    logger.debug ( "changeState: reply=" ..  jsonReply );
     client:publish ( topic .. "/state", jsonReply, 0, nodeConfig.mqtt.retain, -- qos, retain
         function ()
         end
@@ -90,7 +94,7 @@ end
 
 function M.start ( client, topic )
 
-    print ( "[APP] start: topic=" .. topic );
+    logger.info ( "start: topic=" .. topic );
 
     -- set color ...
     changeState ( client, topic .. "/" .. nodeDevice );
@@ -99,7 +103,7 @@ end
 
 function M.connect ( client, topic )
 
-    print ( "[APP] connected: topic=" .. topic );
+    logger.info ( "connect: topic=" .. topic );
 
 end
 
@@ -118,26 +122,26 @@ end
 
 function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=" .. topic .. " payload=" .. payload );
+    logger.debug ( "message: topic=" .. topic .. " payload=" .. payload );
 
     local _, pos = topic:find ( nodeConfig.topic );
     if ( pos ) then
         local subtopic = topic:sub ( pos + 2 );
-        print ( "[MQTT] subtopic=" .. subtopic );
+        logger.debug ( "message: subtopic=" .. subtopic );
         if ( subtopic == nodeDevice ) then
             -- payload ist json
             local pcallOk, json = pcall ( sjson.decode, payload );
             if ( pcallOk and json.state ) then
-                print ( "[APP] changeState: state=" .. tostring ( json.state ) );
+                logger.debug ( "message: changeState: state=" .. tostring ( json.state ) );
                 -- prepare answer
                 state = json.state;
                 if ( state == "ON" ) then
                     if ( json.brightness ) then
-                        print ( "[APP] brightness=" .. json.brightness );
+                        logger.debug ( "message: brightness=" .. json.brightness );
                         brightness = json.brightness;
                     end
                     if ( json.color ) then
-                        print ( "[APP] color: r=" .. json.color.r .. " g=" .. json.color.g .. " b=" .. json.color.b );
+                        logger.debug ( "message: color: r=" .. json.color.r .. " g=" .. json.color.g .. " b=" .. json.color.b );
                         red = json.color.r;
                         green = json.color.g;
                         blue = json.color.b;
@@ -155,7 +159,7 @@ end
 
 function M.offline ( client )
 
-    print ( "[APP] offline" );
+    logger.info ( "offline:" );
 
     return true; -- restart mqtt connection
 
@@ -163,18 +167,18 @@ end
 
 function M.periodic ( client, topic )
 
-    print ( "[APP] periodic: topic=" .. topic );
+    logger.debug ( "periodic: topic=" .. topic );
 
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName )
-
 initPwm ( redPin );
 initPwm ( greenPin );
 initPwm ( bluePin );
+
+logger.debug ( "loaded: " );
 
 return M;
 

@@ -11,6 +11,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
 --------------------------------------------------------------------------------
 -- spi pins
 --
@@ -32,7 +34,7 @@ local CLK_DIVIDER = 800; -- 80 -> 1MHz, 800 -> 100kHz
 
 local csPin;
 
-local numberOfModules; 
+local numberOfModules;
 local numberOfDisplayColumns;
 local numberOfBufferColumns;
 
@@ -57,7 +59,7 @@ local function setCommand ( command, value )
 
     -- enable sending data
     gpio.write ( csPin, gpio.LOW );
-    
+
     local data = 256 * command + value;
     for i = 1, numberOfModules do
         spi.send ( 1, data );
@@ -70,25 +72,25 @@ end
 
 local function display ( startColumn )
 
-    --print ( "[MAX7219] display: startColumn=" ..  startColumn );
-    
+    --logger.debug ( "display: startColumn=" ..  startColumn );
+
     startColumn = startColumn or 1;
-    
+
     for col = 1, 8 do
 
         -- enable sending data
         gpio.write ( csPin, gpio.LOW );
-        
+
         for m = 1, numberOfModules do
             local c = startColumn + 8 * ( m - 1 ) + col - 1;
             spi.send ( 1, 256 * col + (pixelBuffer [c] or 0x00) );
         end
-        
+
         -- make the chip latch data into the registers
         gpio.write ( csPin, gpio.HIGH );
 
     end
-    
+
 end
 
 local umlaute = {
@@ -104,20 +106,20 @@ local umlaute = {
 
 local function printChar ( char, startCol )
 
-    --print ( "[MAX7219] printChar: char=" .. tostring ( char ) .. " startCol=" .. tostring ( startCol ) );
+    --logger.debug ( "printChar: char=" .. tostring ( char ) .. " startCol=" .. tostring ( startCol ) );
 
     --assert ( startCol, "printChar: at not set" );
-    
+
     local insertCol = startCol;
 
     if ( startCol > 0 and startCol <= numberOfBufferColumns ) then
         local offset;
         if ( umlaute [char] ) then
-            offset = 1 + 6 * umlaute [char]; 
+            offset = 1 + 6 * umlaute [char];
         else
             offset = 1 + 6 * (tonumber ( char, 16 ) - 32 );
         end
-        
+
         local len = sprites:byte ( offset );
 
         for i = 1, len do
@@ -127,7 +129,7 @@ local function printChar ( char, startCol )
             insertCol = insertCol + 1;
         end
        insertCol = insertCol + M.printEmptyColumn ( insertCol );
-       
+
     end
 
     return insertCol - startCol;
@@ -139,23 +141,23 @@ end
 
 function M.init ( pin, modules, period, ledBrightness )
 
-    --print ( "[MAX7219] init: pin=" .. tostring ( pin ) .. " modules=" .. modules .. " period=" .. tostring ( period ) .. " brightness=" .. tostring ( brightness ) );
-    
+    --logger.debug ( "init: pin=" .. tostring ( pin ) .. " modules=" .. modules .. " period=" .. tostring ( period ) .. " brightness=" .. tostring ( brightness ) );
+
     csPin = pin;
-    
+
     numberOfModules = modules;
     numberOfDisplayColumns = 8 * numberOfModules;
     --numberOfBufferColumns = 3 * numberOfDisplayColumns + (numberOfModules == 1 and (128 - numberOfDisplayColumns) or 0);
     numberOfBufferColumns = 10 * numberOfDisplayColumns;
-    
+
     brightness = ledBrightness;
-    
-    --print ( "[MAX7219] init: modules=" .. numberOfModules .. " displayCols=" .. numberOfDisplayColumns .. " bufferCols=" .. numberOfBufferColumns );
-    
+
+    --logger.debug ( "init: modules=" .. numberOfModules .. " displayCols=" .. numberOfDisplayColumns .. " bufferCols=" .. numberOfBufferColumns );
+
     if ( not shakeTimer ) then
         shakeTimer = tmr.create ();
     end
-    
+
     shakeFrom = 1;
     shakeTo = 1;
     displayColumn = 1;
@@ -170,23 +172,23 @@ function M.init ( pin, modules, period, ledBrightness )
             end
         end
     );
-    
+
     spi.setup ( 1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 16, CLK_DIVIDER );
-    
-    --print ( "[MAX7219] init: set gpio mode");
+
+    --logger.debug ( "init: set gpio mode");
     -- Must NOT be done _before_ spi.setup() because that function configures all HSPI* pins for SPI. Hence,
     -- if you want to use one of the HSPI* pins for slave select spi.setup() would overwrite that.
     gpio.mode ( csPin, gpio.OUTPUT );
 
     -- empty registers, turn all LEDs off
     M.clear ();
-    
+
 end
 
 function M.clear ()
 
-    --print ( "[MAX7219] clear:");
-    
+    --logger.debug ( "clear:");
+
     gpio.write ( csPin, gpio.HIGH );
 
 --    local MAX7219_REG_DECODEMODE = 0x09;
@@ -195,7 +197,7 @@ function M.clear ()
 --    local MAX7219_REG_DISPLAYTEST = 0x0F;
 --    local MAX7219_REG_INTENSITY = 0x0A;
 
-    --print ( "[MAX7219] init: set registers");
+    --logger.debug ( "init: set registers");
     setCommand ( 0x09, 0x00 );          -- using an led matrix (not digits)
     setCommand ( 0x0C, 0x01 );          -- not in shutdown mode
     setCommand ( 0x0B, 0x07 );          -- all 8 digits
@@ -206,48 +208,48 @@ function M.clear ()
         pixelBuffer [i] = nil;
     end
     display ( 1 );
-    
+
 end
 
 function M.setBrightness ( ledBrightness )
 
     assert ( brightness, "brightness not set" );
-    
+
     brightness = ledBrightness;
-    
+
     if ( brightness >= 0 and brightness < 20 ) then
         setCommand ( 0x0A, brightness );    -- intensity
     end
-    
+
 end
 
 function M.setShakeperiod ( shakeperiod )
 
     assert ( shakeperiod, "shakeperiod not set" );
 
-    shakeTimer:stop ();    
+    shakeTimer:stop ();
     shakeTimer:interval ( shakeperiod );
-    shakeTimer:start ();    
-     
+    shakeTimer:start ();
+
 end
 
 function M.printEmptyColumn ( startCol )
 
-    --print ( "[MAX7219] printEmptyColumn: at=" .. at );
+    --logger.debug ( "printEmptyColumn: at=" .. at );
 
     if ( not startCol ) then startCol = 1 end
 
     if ( startCol > 0 and startCol <= numberOfBufferColumns ) then
         pixelBuffer [startCol] = nil;
     end
-    
+
     return 1;
-    
+
 end
 
 function M.printString ( s, startCol )
 
-    --print ( "[MAX7219] printString: s=" ..  s .. " at=" .. tostring ( at ) );
+    --logger.debug ( "printString: s=" ..  s .. " at=" .. tostring ( at ) );
 
     startCol = startCol or 1;
     local insertCol = startCol;
@@ -259,27 +261,27 @@ function M.printString ( s, startCol )
             local c = s:byte ( i );
             local char = tohex ( c );
             if ( c == 0xC3 or c == 0xC2 ) then -- german umlaut and ß and °
-                skip = true 
+                skip = true
                 char = char .. "_" .. tohex ( s:byte ( i + 1 ) );
             end
             insertCol = insertCol + printChar ( char, insertCol or 1 );
         end
     end
-    
+
     M.static ( startCol );
-     
+
     return insertCol - startCol;
-            
+
 end
 
 function M.printDateTimeString ( s, insertCol )
 
-    --print ( "[MAX7219] printDateTimeString: s=" ..  s .. " insertCol=" .. tostring ( insertCol ) );
-    
+    --logger.debug ( "printDateTimeString: s=" ..  s .. " insertCol=" .. tostring ( insertCol ) );
+
     insertCol = insertCol or 1;
-    
+
     for i = 1, s:len () do
-        local c = s:sub ( i, i ); 
+        local c = s:sub ( i, i );
         if ( c == "1" ) then
             insertCol = insertCol + M.printEmptyColumn ( insertCol );
         end
@@ -291,28 +293,28 @@ function M.printDateTimeString ( s, insertCol )
             insertCol = insertCol + printChar ( tohex ( c:byte ( 1 ) ), insertCol );
         end
     end
-    
+
     local len = insertCol - 1;
-    
+
     if ( len > numberOfDisplayColumns ) then
         M.shake ( 1, len - numberOfDisplayColumns ); -- cut last empty column
     else
         M.static ( 1 );
     end
-    
+
     return len;
-    
+
 end
 
 function M.shake ( from, to )
 
-    --print ( "[MAX7219] shake: from=" .. from .. " to=" .. to );
-    
+    --logger.debug ( "shake: from=" .. from .. " to=" .. to );
+
 --    assert ( type ( from ) == "number", "shake: from is not a number from=" .. from );
 --    assert ( type ( to ) == "number", "shake: to is not a number to=" .. to );
 --    assert ( from > 0 and from < numberOfBufferColumns, "shake: from is not in range from=" .. from );
 --    assert ( to > 0 and to < numberOfBufferColumns, "shake: to is not in range to=" .. to );
-    
+
     if ( from ~= to ) then
 
         shakeTimer:stop ();
@@ -321,64 +323,63 @@ function M.shake ( from, to )
         shakeDelta = from < to and 1 or from > to and -1 or 0;
         displayColumn = from;
         shakeTimer:start ();
-        
+
     end
-    
+
 end
 
 function M.static ( at )
 
-    --print ( "[MAX7219] static: at=" .. at );
+    --logger.debug ( "static: at=" .. at );
 
 --    assert ( type ( at ) == "number", "static: at is not a number at=" .. at );
 --    assert ( at > 0 and at < numberOfBufferColumns, "static: at is not in range at=" .. at );
-    
+
     shakeTimer:stop ();
     shakeFrom = 1;
     shakeTo = 1;
     shakeDelta = 0;
     displayColumn = at;
     shakeTimer:start ();
-    
+
 end
 
 function M.printAndShakeString ( s )
 
-    --print ( "[MAX7219] printAndShakeString: s=" .. s );
+    --logger.debug ( "printAndShakeString: s=" .. s );
 
     local len = M.printString ( s );
-    
+
     if ( len > numberOfDisplayColumns ) then
         M.shake ( 1, len - numberOfDisplayColumns ); -- cut last empty column
     else
         M.static ( 1 );
     end
-    
+
     return len, numberOfDisplayColumns;
-    
+
 end
 
 --------------------------------------------------------------------------------
 -- main
-
-print ( "[MODULE] loaded: " .. moduleName )
 
 if ( file.open ( "pixel.dat", "r" ) ) then
 
     local line = "";
     repeat
         local content = file.read (); -- is rading max., 1024 bytes
-        if ( content ) then line = line .. content end 
-    until not content        
-    
+        if ( content ) then line = line .. content end
+    until not content
+
     file.close ();
-    
+
     sprites = line;
-    
-    print ( "[MODULE] len=" .. line:len () );
+
+    logger.debug ( "len=" .. line:len () );
 
 end
 
+logger.debug ( "loaded: " );
 
 return M;
 

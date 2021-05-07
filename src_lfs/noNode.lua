@@ -11,6 +11,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
 -------------------------------------------------------------------------------
 --  Settings
 
@@ -23,34 +25,34 @@ _G [moduleName] = M;
 
 function M.connect ( client, topic )
 
-    print ( "[APP] connected: topic=" .. topic );
-    
+    logger.info ( "connect: topic=" .. topic );
+
 end
 
 function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=" .. topic .. " payload=" .. payload );
-    
+    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+
 end
 
 function M.offline ( client )
 
-    print ( "[APP] offline" );
-    
+    logger.info ( "offline:" );
+
     return true; -- restart mqtt connection
-    
+
 end
 
 function M.periodic ( client, topic )
-	
-    print ( "[APP] periodic: topic=" .. topic );
+
+    logger.info ( "periodic: topic=" .. topic );
 
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName )
+logger.debug ( "loaded: " );
 
 return M;
 

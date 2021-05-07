@@ -11,6 +11,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
 --local gpio, tmr, bit, rotary, u8g2, pwm = gpio, tmr, bit, rotary, u8g2, pwm;
 
 -------------------------------------------------------------------------------
@@ -118,11 +120,11 @@ local verbose = false;
 
 local function publishValue ( client, topic, temperature )
 
-    --print ( "[APP] publish: t=" .. temperature .. " topic=" .. topic );
+    --logger.info ( "publishValue: t=" .. temperature .. " topic=" .. topic );
 
     local payload = ('{"state":"%s","ssr":"%s","temperature":%.1f,"target":%d,"unit":"°C"}'):format ( state, ssrState, temperature, target );
 
-    --print ( "[APP] payload=" .. payload );
+    --logger.debug ( "publishValue: payload=" .. payload );
 
     client:publish ( topic .. "/value/temperature", payload, NO_RETAIN, retain,
         function ( client )
@@ -133,7 +135,7 @@ end
 
 local function displayValue ( temperature )
 
-    --print ( "[APP] displayValue: t=" .. temperature .. " target=" .. target );
+    --logger.info ( "displayValue: t=" .. temperature .. " target=" .. target );
 
     local d = display.display;
 
@@ -156,7 +158,7 @@ local function displayValue ( temperature )
     d:setFont ( u8g2.font_6x10_tf );
     d:drawStr ( x1, 0, state );
     d:drawStr ( 55, 0, ssrState );
-    --print ( display.width - d:getStrWidth ( "Target" ) ); --> 93
+    --logger.debug ( "displayValue: ( display.width - d:getStrWidth ( "Target" ) ); --> 93
     d:drawStr ( 93, 0, "Target" );
 
     d:sendBuffer ();
@@ -183,7 +185,7 @@ local function readIronTemp ()
     for i = 15, 0, -1 do
 
         local b = gpio.read ( max6675.misoPin );
-        -- print ( "[APP] readIronTemp: i=" .. i .. " b=" .. b .. " word=" .. tohex ( word, 4 ) );
+        -- logger.debug ( "readIronTemp: i=" .. i .. " b=" .. b .. " word=" .. tohex ( word, 4 ) );
         if ( b == 1 ) then
             word = bit.set ( word, i );
         end
@@ -197,10 +199,10 @@ local function readIronTemp ()
 
     gpio.write ( max6675.csPin, gpio.HIGH );
 
-    --print ( "[APP] readIronTemp: word=" .. tohex ( word, 4 ) );
+    --logger.debug ( "readIronTemp: word=" .. tohex ( word, 4 ) );
 
     if ( bit.isset ( word, 2 ) ) then                      -- refer MAX6675 Datasheet
-        print ( "[APP] readIronTemp: Sensor not connected" )
+        logger.warning ( "readIronTemp: Sensor not connected" )
         return nil;
     end
 
@@ -227,7 +229,7 @@ end
 
 local function autotune ( nCycles, target )
 
-    print ( "[APP] autotune: start" );
+    logger.info ( "autotune: nCycles=" .. nCycles .. " target=" .. target );
 
     local bias = pid.PID_MAX_OUT / 2;
     local d = pid.PID_MAX_OUT / 2;
@@ -277,11 +279,11 @@ local function autotune ( nCycles, target )
                     else
                         d = bias;
                     end
-                    print ( "[APP] autotune: bias=" .. bias .. " d=" .. d .. " min=" .. min .. " max=" .. max );
+                    logger.debug ( "autotune: bias=" .. bias .. " d=" .. d .. " min=" .. min .. " max=" .. max );
                     if ( cycles > 2 ) then
                         Ku = (4 * d) / (3.14159 * (max - min)/2);
                         Tu = (timeCooling - timeHeating) / 1000000; -- sec
-                        print ( "[APP] autotune: Ku=" .. Ku .. " Tu=" .. Tu );
+                        logger.debug ( "autotune: Ku=" .. Ku .. " Tu=" .. Tu );
                         if ( pid.AUTOTUNE_STRATEGY == "classic" ) then
                             Kp = 6 * Ku; Ki = 2 * Kp / Tu; Kd = Kp * Tu / 8;
                         elseif ( pid.AUTOTUNE_STRATEGY == "some_overshoot" ) then
@@ -289,7 +291,7 @@ local function autotune ( nCycles, target )
                         elseif ( pid.AUTOTUNE_STRATEGY == "no_overshoot" ) then
                             Kp = 0.2 * Ku; Ki = 2 * Kp / Tu; Kd = Kp * Tu / 3;
                         end
-                        print ( "[APP] autotune: " .. pid.AUTOTUNE_STRATEGY .. " -> Kp=" .. Kp .. " Ki=" .. Ki .. " Kd=" .. Kd );
+                        logger.debug ( "autotune: " .. pid.AUTOTUNE_STRATEGY .. " -> Kp=" .. Kp .. " Ki=" .. Ki .. " Kd=" .. Kd );
                     end
                 end
                 setPwmDuty ( bias + d );
@@ -298,11 +300,11 @@ local function autotune ( nCycles, target )
             end
 
             if ( verbose ) then
-                print ( "[APP] autotune: t=" .. t .. " @ " .. pwm.getduty ( ssrPin ) .. " cycles=" .. cycles .. " bias=" .. bias .. " d=" .. d .. " tsHeatingOff=" .. tsHeatingOff .. " tsHeatingOn=" .. tsHeatingOn .. " timeCooling=" .. timeCooling .. " timeHeating=" .. timeHeating );
+                logger.debug ( "autotune: t=" .. t .. " @ " .. pwm.getduty ( ssrPin ) .. " cycles=" .. cycles .. " bias=" .. bias .. " d=" .. d .. " tsHeatingOff=" .. tsHeatingOff .. " tsHeatingOn=" .. tsHeatingOn .. " timeCooling=" .. timeCooling .. " timeHeating=" .. timeHeating );
             end
 
             if ( t > target + pid.AUTOTUNE_MAXTEMPDIFF ) then
-                print ( "[APP] autotune: PID Autotune failed! Temperature too high t=" .. t .. " target=" .. target );
+                logger.debug ( "autotune: PID Autotune failed! Temperature too high t=" .. t .. " target=" .. target );
                 timer:unregister ();
                 pwm.close ( ssrPin );
                 state = STATE_IDLE;
@@ -310,7 +312,7 @@ local function autotune ( nCycles, target )
             end
 
             if ( (tmr.time () - tsHeatingOff / 1000000) + (tmr.time () - tsHeatingOn / 1000000) > pid.AUTOTUNE_TIMEOUT * 60 * 2 ) then -- sec
-                print ( "[APP] autotune: PID Autotune failed! timeout tmr.time=" .. tmr.time () .. " tsHeatingOff=" .. tsHeatingOff .. " tsHeatingOn=" .. tsHeatingOn );
+                logger.debug ( "autotune: PID Autotune failed! timeout tmr.time=" .. tmr.time () .. " tsHeatingOff=" .. tsHeatingOff .. " tsHeatingOn=" .. tsHeatingOn );
                 timer:unregister ();
                 pwm.close ( ssrPin );
                 state = STATE_IDLE;
@@ -318,7 +320,7 @@ local function autotune ( nCycles, target )
             end
 
             if ( cycles > nCycles ) then
-                print ( "[APP] autotune: PID Autotune finished! Put the last Kp, Ki and Kd constants from above into configuration" );
+                logger.debug ( "autotune: PID Autotune finished! Put the last Kp, Ki and Kd constants from above into configuration" );
                 timer:unregister ();
                 pwm.close ( ssrPin );
                 state = STATE_IDLE;
@@ -327,7 +329,7 @@ local function autotune ( nCycles, target )
 
             if ( abortAutotune ) then
                 abortAutotune = false;
-                print ( "[APP] autotune: aborted" );
+                logger.debug ( "autotune: aborted" );
                 timer:unregister ();
                 pwm.close ( ssrPin );
                 state = STATE_IDLE;
@@ -340,7 +342,7 @@ end
 
 local function rotaryon ( type, pos, when )
 
-    --print ( "[APP] rotaryon: pos=" .. pos .. " event=" .. rotaryEventType [type] .. " time=" .. when );
+    --logger.info ( "rotaryon: pos=" .. pos .. " event=" .. rotaryEventType [type] .. " time=" .. when );
 
     if ( type == rotary.LONGPRESS ) then
         --if ( state == STATE_IDLE ) then
@@ -349,7 +351,7 @@ local function rotaryon ( type, pos, when )
         --    --state = STATE_IDLE;
         --    abortAutotune = true;
         --end
-        ----print ( "state=" .. state );
+        ----logger.debug ( "rotaryon: state=" .. state );
         if ( state == STATE_IDLE ) then
             lastTarget = target;
             target = process.preheat.target;
@@ -379,7 +381,7 @@ local function rotaryon ( type, pos, when )
                 state = STATE_IDLE;
             end
         end
-        --print ( "state=" .. state );
+        --logger.debug ( "rotaryon: state=" .. state );
     elseif ( type == rotary.TURN ) then
         local d = pos - lastRotaryPos;
         if ( d < -3 or d > 3 ) then -- every rotation step creates 4 on events
@@ -387,7 +389,7 @@ local function rotaryon ( type, pos, when )
             target = target + ( d < 0 and 1 or -1 );
             lastRotaryPos = pos;
         end
-        --print ( "target=" .. target );
+        --logger.debug ( "rotaryon: target=" .. target );
     end
 
 end
@@ -417,9 +419,9 @@ local function pidcontrol ( t )
 
     if ( d > pid.PID_RANGE ) then
         bangbang ( t );
-        --print ( "[APP] pid: out of functional range t=" .. t .. " target=" .. target );
+        --logger.debug ( "pidcontrol: out of functional range t=" .. t .. " target=" .. target );
     elseif ( d < -pid.PID_RANGE ) then
-        print ( "[APP] pid: target to low t=" .. t .. " target=" .. target );
+        logger.debug ( "pidcontrol: target to low t=" .. t .. " target=" .. target );
         state = STATE_IDLE;
     else
 
@@ -435,7 +437,7 @@ local function pidcontrol ( t )
         local out = pTerm + iTerm + dTerm;
 
         if ( verbose ) then
-            print ( "[APP] pid: target=" .. target .. " t=" .. t .. " d=" .. d .. " pTerm=" .. pTerm .. " iTerm=" .. iTerm .. " dTerm=" .. dTerm .. " out=" .. out );
+            logger.debug ( "pidcontrol: target=" .. target .. " t=" .. t .. " d=" .. d .. " pTerm=" .. pTerm .. " iTerm=" .. iTerm .. " dTerm=" .. dTerm .. " out=" .. out );
         end
 
         setPwmDuty ( out );
@@ -471,7 +473,7 @@ local function loop  ( client, topic )
         temp.series [temp.index] = t;
         temp.index = temp.index + 1;
 
-        --print ( "[APP] loop: t=" ..  t .. " target=" .. target .. " state=" .. state .. " ssr=" .. ssrState .. " count=" .. publishCount .. " heap=" .. node.heap () );
+        --logger.debug ( "loop: t=" ..  t .. " target=" .. target .. " state=" .. state .. " ssr=" .. ssrState .. " count=" .. publishCount .. " heap=" .. node.heap () );
 
         if ( state == STATE_IDLE ) then
             if ( ssrState ~= SSR_STATE_OFF ) then
@@ -545,13 +547,13 @@ end
 
 function M.start ( client, topic )
 
-    print ( "[APP] start" );
+    logger.info ( "start: topic=" .. topic );
 
     local speed = i2c.setup ( 0, display.sdaPin, display.sclPin, i2c.SLOW );
-    print ( "[APP] i2c intialized with speed=" .. speed );
+    logger.debug ( "start: i2c intialized with speed=" .. speed );
 
     local resolution = display.width .. "x" .. display.height;
-    print ( "[APP] intialize display with sda=" .. display.sdaPin .. " scl=" .. display.sclPin .. " res=" .. resolution );
+    logger.debug ( "start: intialize display with sda=" .. display.sdaPin .. " scl=" .. display.sclPin .. " res=" .. resolution );
     display.display = u8g2 ["ssd1306_i2c_" .. resolution .. "_noname"] ( 0, 0x3C );
     -- https://www.amazon.de/gp/product/B01L9GC470/ref=ppx_yo_dt_b_asin_title_o03_s00?ie=UTF8&th=1
 
@@ -573,13 +575,13 @@ end
 
 function M.connect ( client, topic )
 
-    print ( "[APP] connect" );
+    logger.info ( "connect: topic=" .. topic );
 
 end
 
 function M.offline ( client )
 
-    print ( "[APP] offline" );
+    logger.info ( "offline:" );
 
     return true; -- restart mqtt
 
@@ -587,7 +589,7 @@ end
 
 function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=" .. topic .. " payload=" .. payload );
+    logger.debug ( "message: topic=" .. topic .. " payload=" .. payload );
 
     local detailTopic = topic:sub ( nodeConfig.topic:len () + 1 );
 
@@ -621,14 +623,14 @@ end
 
 function M.periodic ( client, topic )
 
-    print ( "[APP] periodic: topic=" .. topic );
+    logger.debug ( "periodic: topic=" .. topic );
 
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName )
+logger.debug ( "loaded: " );
 
 return M;
 

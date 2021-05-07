@@ -1,10 +1,9 @@
 {
-	"mode": "surface",
-    "wifi": "nil",
     "mqtt": {
-        "broker": "192.168.137.1"
+        "broker": "nodesathome2"
     },
-    "trace": {
-        "ip": "192.168.137.1"
+    "syslog": {
+        "ip": "192.168.2.12",
+        "level": "DEBUG"
     }
 }

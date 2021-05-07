@@ -11,6 +11,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
 local i2ctool = require ( "i2ctool" );
 local mpu6050 = require ( "mpu6050" );
 local ds18b20 = require ( "ds18b20" );
@@ -43,11 +45,11 @@ local qos = nodeConfig.mqtt.qos or 1;
 local function printSensors ()
 
     if ( ds18b20.sens ) then
-        print  ( "[APP] number of sensors=" .. #ds18b20.sens );
+        logger.debug ( "printSensors: number of sensors=" .. #ds18b20.sens );
         for i, s  in ipairs ( ds18b20.sens ) do
             local addr = ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X'):format ( s:byte ( 1, 8 ) );
             local parasitic = s:byte ( 9 ) == 1 and " (parasite)" or "";
-            print ( string.format ( "[APP] sensor #%d address: %s%s",  i, addr, parasitic ) );
+            logger.debug ( string.format ( "printSensors: sensor #%d address: %s%s",  i, addr, parasitic ) );
         end
     end
 
@@ -55,8 +57,8 @@ end
 
 local function readAndPublishTemperature ( client, topic )
 
-    print ( "[APP] readAndPublishTemperature: topic=" .. topic );
-    
+    logger.info ( "readAndPublishTemperature: topic=" .. topic );
+
     -- temperature
     ds18b20:read_temp (
         function ( sensorValues )
@@ -66,8 +68,8 @@ local function readAndPublishTemperature ( client, topic )
                 i = i + 1;
                 if ( i == 1 ) then -- only first sensor
                     local addr = ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X'):format ( address:byte ( 1, 8 ) );
-                    print ( ("[APP] Sensor %s -> %s°C %s"):format ( addr, temperature, address:byte ( 9 ) == 1 and "(parasite)" or "-" ) );
-                    print ( "[APP] publish temperature t=" .. temperature );
+                    logger.debug ( ( "readAndPublishTemperature: Sensor %s -> %s°C %s"):format ( addr, temperature, address:byte ( 9 ) == 1 and "(parasite)" or "-" ) );
+                    logger.debug ( "readAndPublishTemperature: temperature=" .. temperature );
                     local payload = ('{"value":%f,"unit":"°C"}'):format ( temperature );
                     client:publish ( topic .. "/value/temperature", payload, qos, retain,
                         function ( client )
@@ -76,21 +78,21 @@ local function readAndPublishTemperature ( client, topic )
                     );
                 end
             end
-  
+
         end,
         dsPin,
         ds18b20.C,          -- °C
         nil,                -- no search
         "save"
     );
-    
+
 
 end
 
 local function publishAcceleration ( client, topic, samples )
 
-    print ( "[APP] publishAcceleration" );
-    
+    logger.info ( "publishAcceleration: topic=" .. topic .. " count=" .. #samples );
+
     local json = {"["};
     local first = true;
     for i = 1, #samples do
@@ -101,7 +103,7 @@ local function publishAcceleration ( client, topic, samples )
     end
     table.insert ( json, "]" );
     local s = table.concat ( json );
-    print ( "[APP] publishAcceleration: json=" .. s );
+    logger.debug ( "publishAcceleration: json=" .. s );
     client:publish ( topic .. "/value/acceleration", s, qos, retain,
         function ( client )
             readAndPublishTemperature ( client, topic );
@@ -116,12 +118,12 @@ end
 
 function M.start ( client, topic )
 
-    print ( "[APP] start: topic=" .. topic );
-    
+    logger.info ( "start: topic=" .. topic );
+
     -- initialize acceleration sensor
     mpu6050.init ( sdaPin, sclPin );
     local id = readByte ( mpu6050.REG.WHO_AM_I );
-    print ( "[APP] start: chipId=" .. tohex ( id ) );
+    logger.debug ( "start: chipId=" .. tohex ( id ) );
 
     -- power managemnt 1
     --  7: reset, 6: sleep, 5: cycle, see reg 108 for wake up frequency, 3: temperature disabled
@@ -130,7 +132,7 @@ function M.start ( client, topic )
     -- 0x01: no sleep, x gyroscope as clock source
     -- 0x21: no sleep, cycle, x gyroscope as clock source
     writeByte ( mpu6050.REG.PWR_MGMT_1, 0x01 );
-    
+
     -- power management 2
     --  [7:6]: wake up frequency, 0: 1.25Hz, 1: 5Hz, 2: 20Hz, 3: 40Hz
     --  5: standby accelerometer x axis, 4: y axis, 3: z axis
@@ -140,8 +142,8 @@ function M.start ( client, topic )
     -- 0x47: 5Hz sample rate and all gyroscopes in standby
     -- 0x43: 5Hz sample rate and only x gyroscope working
     -- 0x03: 1.25Hz sample rate and only x gyroscope working
-    writeByte ( mpu6050.REG.PWR_MGMT_2, 0x03 ); 
-    
+    writeByte ( mpu6050.REG.PWR_MGMT_2, 0x03 );
+
     -- sample rate divider
     --  gyroscope output rate ( ( 1 + SMPLRT_DIV )
     --  where gyroscope output rate is 8kHz if DLPF is disabled (DLPF_CFG = 0 or 7) and 1kHz when DLPF is enabled (reg 26)
@@ -149,16 +151,16 @@ function M.start ( client, topic )
     -- 0x00: 8 or 1kHz, depending on DLPF
     -- n: Gyroscope Output Rate / (1 + SMPLRT_DIV) = 40Hz, where output rate is 8kHz
     writeByte ( mpu6050.REG.SMPLRT_DIV, 199 );
-    
+
     -- configuration
     --  [5:3]: external frame sync
-    --  [2:0]: DLPF  
+    --  [2:0]: DLPF
     -- 0x06: bandwith 5Hz, delay 19ms
-    writeByte ( mpu6050.REG.CONFIG, 0x06 ); 
+    writeByte ( mpu6050.REG.CONFIG, 0x06 );
 
-    setBits ( mpu6050.REG.GYRO_CONFIG, 4, 3, 0 );       -- gyroscope configuration, 0: +-250°/s     
+    setBits ( mpu6050.REG.GYRO_CONFIG, 4, 3, 0 );       -- gyroscope configuration, 0: +-250°/s
     setBits ( mpu6050.REG.ACCEL_CONFIG, 4, 3, 0 )       -- accelorometer configuration, 0: +-2g
-    
+
     local sampleCount = 1;
     local samples = {};
 
@@ -172,7 +174,7 @@ function M.start ( client, topic )
             if ( sampleCount >= sampleNumber ) then
                 writeByte ( mpu6050.REG.INT_ENABLE, 0x00 ); -- stop interrupt
                 publishAcceleration ( client, topic, samples );
-                setBit ( mpu6050.REG.PWR_MGMT_1, 6, 1 ); -- sleep 
+                setBit ( mpu6050.REG.PWR_MGMT_1, 6, 1 ); -- sleep
                 unrequire ( "mpu6050" );
                 unrequire ( "i2ctool" );
                 samples = nil;
@@ -180,13 +182,13 @@ function M.start ( client, topic )
             end
         end
     );
-    
+
 end
 
 function M.connect ( client, topic )
 
-    print ( "[APP] connect: topic=" .. topic );
-    
+    logger.info ( "connect: topic=" .. topic );
+
     -- interrupt enable: Data Ready interrupt
     writeByte ( mpu6050.REG.INT_ENABLE, 0x01 );
 
@@ -194,22 +196,22 @@ end
 
 function M.offline ( client )
 
-    print ( "[APP] offline (local)" );
+    logger.info ( "offline:" );
 
-    return restartConnection; 
+    return restartConnection;
 
 end
 
 function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=" .. topic .. " ,payload=", payload );
+    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
 
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName )
+logger.debug ( "loaded: " );
 
 return M;
 

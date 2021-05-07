@@ -11,6 +11,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
 -------------------------------------------------------------------------------
 --  Settings
 
@@ -54,39 +56,39 @@ local stateTimer = tmr.create ();
 
 local function getSensorData ( pin )
 
-    print ( "[DHT] pin=" .. pin );
+    logger.info ( "getSensorData: pin=" .. pin );
 
     local status, temperature, humidity, temp_decimial, humi_decimial = dht.read ( pin );
-    
+
     if( status == dht.OK ) then
 
-        print ( "[DHT] Temperature: " .. temperature .. " C" );
-        print ( "[DHT] Humidity: " .. humidity .. "%" );
-        
+        logger.debug ( "getSensorData: Temperature: " .. temperature .. " C" );
+        logger.debug ( "getSensorData: Humidity: " .. humidity .. "%" );
+
     elseif( status == dht.ERROR_CHECKSUM ) then
-    
-        print ( "[DHT] Checksum error" );
+
+        logger.notice ( "getSensorData: Checksum error" );
         temperature = nil;
         humidity = nil;
-        
+
     elseif( status == dht.ERROR_TIMEOUT ) then
-    
-        print ( "[DHT] Time out" );
+
+        logger.critical ( "getSensorData: Time out" );
         temperature = nil;
         humidity = nil;
-        
+
     end
-    
-    local result = status == dht.OK; 
-    
+
+    local result = status == dht.OK;
+
     return result, temperature, humidity;
-    
+
 end
 
 local function triggerCover ( count )
 
-    print ( "[APP] triggerCover: count=" .. count );
-    
+    logger.info ( "triggerCover: count=" .. count );
+
     local delay = nodeConfig.timer.triggerDelay * 1000;
 
     local delays = {
@@ -94,16 +96,16 @@ local function triggerCover ( count )
         [2] = { delay, delay, delay, delay },
     };
 
-    gpio.serout ( nodeConfig.appCfg.relayPin, 1, delays [count], 1, function () end ); 
+    gpio.serout ( nodeConfig.appCfg.relayPin, 1, delays [count], 1, function () end );
 
 end
 
 local function publishState ( client, topic, state, callback )
 
-    print ( "[APP] publishState: topic=" .. topic .. " state=" .. state );
+    logger.info ( "publishState: topic=" .. topic .. " state=" .. state );
 
-    local s = POSITION_TEXT [state] or "unknown"; 
-    print ( "[APP] publishState: state=" .. s );
+    local s = POSITION_TEXT [state] or "unknown";
+    logger.debug ( "publishState: state=" .. s );
     client:publish ( topic .. "/value/position", s, 0, nodeConfig.mqtt.retain, callback ); -- qos, retain
 
 end
@@ -112,13 +114,13 @@ local function checkSwitches ( client, topic )
 
     local openSwitch = gpio.read ( nodeConfig.appCfg.openPositionPin );
     local closeSwitch = gpio.read ( nodeConfig.appCfg.closedPositionPin );
-    
+
 --    if ( openSwitch ~= closeSwitch ) then
---        print ( "[APP] position=" .. position .." openSwitch=" .. openSwitch .. " closeSwitch=" .. closeSwitch );
+--        logger.debug ( "checkSwitches: position=" .. position .." openSwitch=" .. openSwitch .. " closeSwitch=" .. closeSwitch );
 --    end
-    
-    local newPosition = nil; 
-    
+
+    local newPosition = nil;
+
     if ( openSwitch == 1 and closeSwitch == 1 ) then
         if ( position == POSITION_OPEN or position == POSITION_CLOSED ) then
             if ( movingPersistCount > MOVING_PERSIST ) then
@@ -145,13 +147,13 @@ local function checkSwitches ( client, topic )
             positionPersistCount = positionPersistCount + 1;
         end
     end
-    
+
     if ( newPosition ) then
-        print ( "[APP] checkSwitches: position=" .. POSITION_TEXT [position] .. " newPosition=" .. POSITION_TEXT [newPosition] );
+        logger.debug ( "checkSwitches: position=" .. POSITION_TEXT [position] .. " newPosition=" .. POSITION_TEXT [newPosition] );
         publishState ( client, topic, newPosition );
         position = newPosition;
     end
-    
+
 end
 
 --------------------------------------------------------------------
@@ -159,8 +161,8 @@ end
 
 function M.start ( client, topic )
 
-    print ( "[APP] start: topic=" .. topic );
-    
+    logger.info ( "start: topic=" .. topic );
+
     -- initial door position
     local openSwitch = gpio.read ( nodeConfig.appCfg.openPositionPin );
     local closeSwitch = gpio.read ( nodeConfig.appCfg.closedPositionPin );
@@ -168,54 +170,54 @@ function M.start ( client, topic )
         position = POSITION_CLOSED;
     else
         position = POSITION_OPEN; -- default
-    end    
+    end
 
-    print ( "[APP] start: initial position=" .. POSITION_TEXT [position] );
+    logger.debug ( "start: initial position=" .. POSITION_TEXT [position] );
 
     -- register timer function when door is moving
-    stateTimer:register ( nodeConfig.timer.statePeriod, tmr.ALARM_AUTO, 
+    stateTimer:register ( nodeConfig.timer.statePeriod, tmr.ALARM_AUTO,
         function ()
             checkSwitches ( client, topic )
-        end 
+        end
     );
 
 end
 
 function M.connect ( client, topic )
 
-    print ( "[APP] connect: topic=" .. topic );
-    
+    logger.info ( "connect: topic=" .. topic );
+
     publishState ( client, nodeConfig.topic, position,
         function ()
             stateTimer:start ();
         end
     );
-    
+
 end
 
 function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=" .. topic .. " payload=" .. payload );
-    
+    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+
     local topicParts = require ( "util" ).splitTopic ( topic );
     unrequire ( "util" );
     local command = topicParts [#topicParts];
-    
+
     if ( command == "command" ) then
-    
+
         -- OPEN only possible if door is in motion down (2x triggerCover) or if closed (1x triggerCover)
         -- STOP only possibly if door is in motion
         -- CLOSE only possible if door is in motion up (2x triggerCover) or if opened (1x triggerCover)
-        
+
         local action = payload;
-        print ( "[APP] message: action=" .. action .. " position=" .. POSITION_TEXT [position] );
-        
+        logger.debug ( "message: action=" .. action .. " position=" .. POSITION_TEXT [position] );
+
         local newPosition = nil;
 
         if ( position == POSITION_MOVING ) then
             -- only trigger cover and wait for a switch is triggering
             triggerCover ( 1 );
-        else        
+        else
             if ( action == "OPEN" ) then
                 if ( position == POSITION_MOVE_DOWN ) then
                     newPosition = POSITION_MOVE_UP;
@@ -227,7 +229,7 @@ function M.message ( client, topic, payload )
                     newPosition = POSITION_MOVE_UP
                     triggerCover ( 1 );
                 else
-                    print ( "[APP] message: forbidden action" );
+                    logger.notice ( "message: forbidden action OPEN" );
                 end
             elseif ( action == "STOP" ) then
                 if ( position == POSITION_MOVE_UP ) then
@@ -237,7 +239,7 @@ function M.message ( client, topic, payload )
                     newPosition = POSITION_STOPPED_FROM_MOVE_DOWN;
                     triggerCover ( 1 );
                 else
-                    print ( "[APP] message: forbidden action" );
+                    logger.notice ( "message: forbidden action STOP" );
                 end
             elseif ( action == "CLOSE" ) then
                 if ( position == POSITION_MOVE_UP ) then
@@ -250,66 +252,65 @@ function M.message ( client, topic, payload )
                     newPosition = POSITION_MOVE_DOWN;
                     triggerCover ( 1 );
                 else
-                    print ( "[APP] message: forbidden action" );
+                    logger.notice ( "message: forbidden action CLOSE" );
                 end
             else
-                print ( "[APP] message: unknown action=" .. action );
+                logger.notice ( "message: unknown action=" .. action );
             end
         end
-        
-        print ( "[APP] message: action=" .. action .. " position=" .. POSITION_TEXT [position] .. 
-                " newPosition=" .. (newPosition and POSITION_TEXT [newPosition] or "---") );
-        
+
+        logger.debug ( "message: action=" .. action .. " position=" .. POSITION_TEXT [position] .. " newPosition=" .. (newPosition and POSITION_TEXT [newPosition] or "---") );
+
         if ( newPosition ) then
             publishState ( client, nodeConfig.topic, newPosition );
             position = newPosition;
         end
-        
+
     end
 
 end
 
 function M.offline ( client )
 
-    print ( "[APP] offline" );
-    
+    logger.info ( "offline:" );
+
     stateTimer:stop ();
-    
+
     return true; -- restart mqtt connection
-    
+
 end
 
 function M.periodic ( client, topic )
 
-    print ( "[APP] periodic: topic=" .. topic );
-    
+    logger.info ( "periodic: topic=" .. topic );
+
     local success, t, h = getSensorData ( nodeConfig.appCfg.dhtPin );
-    
+
     if ( success ) then
-        print ( "[APP] periodic: temperature t=" .. t );
+        logger.debug ( "periodic: temperature t=" .. t );
         client:publish ( topic .. "/value/temperature", [[{"value":]] .. t .. [[,"unit":"°C"}]], 0, nodeConfig.mqtt.retain, -- qos, retain
             function ( client )
-                print ( "[APP] periodic: humidity h=" .. h );
-                client:publish ( topic .. "/value/humidity", [[{"value":]] .. h .. [[,"unit":"%"}]], 0, nodeConfig.mqtt.retain, -- qos, retain 
-                function () 
-                end 
+                logger.debug ( "periodic: humidity h=" .. h );
+                client:publish ( topic .. "/value/humidity", [[{"value":]] .. h .. [[,"unit":"%"}]], 0, nodeConfig.mqtt.retain, -- qos, retain
+                function ()
+                end
             );
             end
         );
     end
-    
+
 end
 
 -------------------------------------------------------------------------------
 -- main
-
-print ( "[MODULE] loaded: " .. moduleName )
 
 gpio.mode ( nodeConfig.appCfg.relayPin, gpio.OUTPUT );
 gpio.write ( nodeConfig.appCfg.relayPin, gpio.LOW );
 
 gpio.mode ( nodeConfig.appCfg.openPositionPin, gpio.INPUT, gpio.PULLUP );
 gpio.mode ( nodeConfig.appCfg.closedPositionPin, gpio.INPUT, gpio.PULLUP );
+
+logger.debug ( "loaded: " );
 
 return M;
 

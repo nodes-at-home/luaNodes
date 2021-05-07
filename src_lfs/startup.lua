@@ -157,7 +157,7 @@ end
 --------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName ) -- syslog not yet redy
+print ( "[MODULE] loaded: " .. moduleName ) -- syslog not yet ready
 
 return M;
 

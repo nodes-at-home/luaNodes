@@ -11,6 +11,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
 -------------------------------------------------------------------------------
 --  Settings
 
@@ -28,20 +30,20 @@ local restartConnection = true;
 -- public
 -- mqtt callbacks
 
-function M.connect ( client, baseTopic )
+function M.connect ( client, topic )
 
-    print ( "[APP] connect" );
-    
+    logger.info ( "connect: topic=" .. topic );
+
     local rawcode, bootreason = node.bootreason ();
     if ( bootreason == 5 ) then -- 5 = wake from deep sleep
-        print ( "[APP] publish button press ON" );
-        client:publish ( baseTopic .. "/value/state", "ON", 0, retain, -- qos, NO retain!!!
+        logger.debug ( "connect: publish button press ON" );
+        client:publish ( topic .. "/value/state", "ON", 0, retain, -- qos, NO retain!!!
             function ( client )
                 tmr.create ():alarm ( offDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
-                    function () 
+                    function ()
                         -- publishing OFF is not harmful
-                        print ( "[APP] publish button press OFF" );
-                        client:publish ( baseTopic .. "/value/state", "OFF", 0, retain, -- qos, NO retain!!!
+                        logger.debug ( "connect: publish button press OFF" );
+                        client:publish ( topic .. "/value/state", "OFF", 0, retain, -- qos, NO retain!!!
                             function ( client )
                                 require ( "deepsleep").go ( client, deepSleepDelay, 0 ); -- sleep forever
                             end
@@ -58,22 +60,22 @@ end
 
 function M.offline ( client )
 
-    print ( "[APP] offline (local)" );
+    logger.info ( "offline (local)" );
 
-    return restartConnection; 
+    return restartConnection;
 
 end
 
-local function message ( client, topic, payload )
+function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=" .. topic .. " ,payload=" .. payload );
+    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
 
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName )
+logger.debug ( "loaded: " );
 
 return M;
 

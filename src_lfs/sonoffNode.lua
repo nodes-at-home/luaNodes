@@ -11,6 +11,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
 require ( "util" );
 
 -------------------------------------------------------------------------------
@@ -38,13 +40,15 @@ local debounceTmr = tmr.create ();
 
 local function changeState ( client, topic, payload )
 
+    logger.info ( "changeState: topic=" .. topic .. " payload=" .. payload );
+
     if ( ledPin and ( useLedForState == nil or useLedForState ) ) then
         gpio.write ( ledPin, payload == "ON" and gpio.LOW or gpio.HIGH );
     end
 
     gpio.write ( relayPin, payload == "ON" and RELAY_ON or RELAY_OFF );
 
-    print ( "[APP] publish state=" .. payload .. " to " .. topic );
+    logger.debug ( "changeState: state=" .. payload .. " to " .. topic );
     client:publish ( topic .. "/state", payload, 0, nodeConfig.mqtt.retain, function () end ); -- qos, retain
 
 end
@@ -62,7 +66,7 @@ local function initTrigger ( client, topic )
             debounceTmr:alarm ( nodeConfig.timer.debounceDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
                 function ()
                     local level = gpio.read ( relayPin );
-                    print ( "[APP] button trigger: level=" .. level );
+                    logger.debug ( "initTrigger: level=" .. level );
                     changeState ( client, topic, level == 0 and "ON" or "OFF" );
                 end
             );
@@ -77,7 +81,7 @@ end
 
 function M.connect ( client, topic )
 
-    print ( "[APP] connected with topic=" .. topic );
+    logger.init ( "connect: topic=" .. topic );
 
     if ( ledPin ) then
         flashLed ( 2 );
@@ -92,7 +96,7 @@ end
 
 function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=" .. topic .. " ,payload=" .. payload );
+    logger.init ( "message: topic=" .. topic .. " payload=" .. payload );
 
     local topicParts = util.splitTopic ( topic );
     local device = topicParts [#topicParts];
@@ -113,7 +117,7 @@ end
 
 function M.offline ( client )
 
-    print ( "[APP] offline" );
+    logger.info ( "offline:" );
 
     return true; -- restart mqtt connection
 
@@ -121,8 +125,6 @@ end
 
 -------------------------------------------------------------------------------
 -- main
-
-print ( "[MODULE] loaded: " .. moduleName )
 
 if ( ledPin ) then
     gpio.mode ( ledPin, gpio.OUTPUT );
@@ -135,6 +137,8 @@ gpio.write ( relayPin, RELAY_OFF );
 if ( buttonPin ) then
     gpio.mode ( buttonPin, gpio.INT, gpio.PULLUP );
 end
+
+logger.debug ( "loaded: " );
 
 return M;
 

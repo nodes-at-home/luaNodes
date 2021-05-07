@@ -13,6 +13,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
 local ds18b20 = require ( "ds18b20" );
 
 local ads1115, i2c, tmr = ads1115, i2c, tmr;
@@ -48,11 +50,11 @@ local voltage = {};
 local function printSensors ()
 
     if ( ds18b20.sens ) then
-        print ( "[APP] printSensors: number of sensors=" .. #ds18b20.sens );
+        logger.debug ( "printSensors: number of sensors=" .. #ds18b20.sens );
         for i, s  in ipairs ( ds18b20.sens ) do
             local addr = ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X'):format ( s:byte ( 1, 8 ) );
             local parasitic = s:byte ( 9 ) == 1 and " (parasite)" or "";
-            print ( string.format ( "[APP] printSensors: sensor #%d address: %s%s",  i, addr, parasitic ) );
+            logger.debug ( string.format ( "printSensors: printSensors: sensor #%d address: %s%s",  i, addr, parasitic ) );
         end
     end
 
@@ -60,7 +62,7 @@ end
 
 local function publishTemperatures ( client, topic, temperatures, callback )
 
-    --print ( "[APP] publishTemperatures: count=" .. #temperatures );
+    logger.info ( "publishTemperatures: count=" .. #temperatures );
 
     local payload = '{';
 
@@ -70,7 +72,7 @@ local function publishTemperatures ( client, topic, temperatures, callback )
 
     payload = payload .. '"unit":"°C"}';
 
-    print ( "[APP] publishTemperatures: payload=" .. payload );
+    logger.debug ( "publishTemperatures: payload=" .. payload );
 
     client:publish ( topic .. "/value/temperature", payload, qos, retain,
         function ( client )
@@ -84,7 +86,7 @@ end
 
 local function publishVoltages ( client, topic, voltages, callback )
 
-    --print ( "[APP] publishVoltages: count=" .. #voltages );
+    logger.info ( "publishVoltages: count=" .. #voltages );
 
     local payload = '{';
 
@@ -93,7 +95,7 @@ local function publishVoltages ( client, topic, voltages, callback )
     end
     payload = payload .. '"unit":"mV"}';
 
-    print ( "[APP] publishVoltages: payload=" .. payload );
+    logger.debug ( "publishVoltages: payload=" .. payload );
 
     client:publish ( topic .. "/value/soil", payload, qos, retain,
         function ( client )
@@ -107,7 +109,7 @@ end
 
 local function displayValues ( value, unit )
 
-    --print ( "[APP] displayValues:" );
+    logger.info ( "displayValues: count=" .. #value .. " unit=" .. unit );
 
     display:clearBuffer ();
 
@@ -125,7 +127,7 @@ end
 
 local function readAndPublish ( client, topic, callback )
 
-    --print ( "[APP] readAndPublish:" );
+    logger.debug ( "readAninfodPublish: topic=" .. topic );
 
     if ( dsPin ) then
 
@@ -133,7 +135,7 @@ local function readAndPublish ( client, topic, callback )
 
         ds18b20:read_temp (
             function ( sensorValues )
-                --print ( "[APP] readAndPublish: #sensorValues=" .. #sensorValues );
+                logger.debug ( "readAndPublish: #sensorValues=" .. #sensorValues );
                 --printSensors ();
                 local i = 0;
                 if ( #ds18b20.sens > 0 ) then
@@ -141,7 +143,7 @@ local function readAndPublish ( client, topic, callback )
                         i = i + 1;
                         local addr = ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X'):format ( address:byte ( 1, 8 ) );
                         local parasitic = address:byte ( 9 ) == 1 and "(parasite)" or "-";
-                        --print ( "[APP] readAndPublish: index=" .. i .. " address=" .. addr .. " temperature=" .. temperature .. " parasitic=" .. parasitic );
+                        logger.debug ( "readAndPublish: index=" .. i .. " address=" .. addr .. " temperature=" .. temperature .. " parasitic=" .. parasitic );
                         temps [#temps + 1] = temperature;
                         if ( i == #ds18b20.sens ) then
                             displayValues ( temps, GRAD );
@@ -166,7 +168,7 @@ end
 
 local function initAdc ( channel )
 
-    --print ( "[APP] initAdc: channel=" .. channel );
+    logger.info ( "initAdc: channel=" .. channel );
 
     ads1115.reset ();
     local adc = ads1115.ads1115 ( 0, ads1115.ADDR_GND );
@@ -178,19 +180,18 @@ end
 
 local function readAdc ( client, topic )
 
-    --print ( "[APP] readAdc: channel=" .. channel );
+    logger.info ( "readAdc: channel=" .. channel );
 
     local adc = initAdc ( channel );
 
     gpio.trig ( alertPin, "down",
         function ()
             if ( adc == nil ) then
-                print ( "XYZ" );
                 return;
             end
 
             local u, _, raw = adc:read ();
-            --print ( "[APP] readadc: channel=" .. channel .. " u=" .. u .." raw=" .. tohex ( raw ) );
+            logger.debug ( "readadc: channel=" .. channel .. " u=" .. u .." raw=" .. tohex ( raw ) );
             voltage [channel + 1] = u;
             channel = channel + 1;
 
@@ -202,7 +203,7 @@ local function readAdc ( client, topic )
                 for i = 1, #voltage do
                     s = s .. "|" .. voltage [i];
                 end
-                --print ( "[APP] readAdc: voltage=" .. s .. "|" );
+                logger.debug ( "readAdc: voltage=" .. s .. "|" );
                 displayValues ( voltage, "mV" );
                 publishVoltages ( client, topic, voltage );
                 channel = 0;
@@ -219,9 +220,9 @@ end
 -- public
 -- mqtt callbacks
 
-function M.start ( client, baseTopic )
+function M.start ( client, topic )
 
-    print ( "[APP] start:" );
+    logger.info ( "start: topic=" .. topic );
 
     gpio.mode ( alertPin, gpio.INT );
     --gpio.trig ( alertPin, "down", readadc );
@@ -235,7 +236,7 @@ end
 
 function M.connect ( client, topic )
 
-    print ( "[APP] connect:" );
+    logger.info ( "connect: topic=" .. topic );
 
     readAndPublish ( client, topic, readAdc );
 
@@ -243,13 +244,13 @@ end
 
 function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=" .. topic .. " ,payload=" .. payload );
+    logger.info ( "message: topic=" .. topic .. " ,payload=" .. payload );
 
 end
 
 function M.periodic ( client, topic )
 
-    print ( "[APP] periodic: topic=" .. topic );
+    logger.info ( "periodic: topic=" .. topic );
 
     readAndPublish ( client, topic, readAdc );
 
@@ -257,7 +258,7 @@ end
 
 function M.offline ( client )
 
-    print ( "[APP] offline:" );
+    logger.info ( "offline:" );
 
     return true;
 
@@ -266,7 +267,7 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName )
+logger.debug ( "loaded: " );
 
 return M;
 

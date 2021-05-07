@@ -11,8 +11,10 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
-require ( "i2ctool" );
-require ( "apds9960" );
+local logger = require ( "syslog" ).logger ( moduleName );
+
+local i2ctool = require ( "i2ctool" );
+local apds9960 = require ( "apds9960" );
 
 -------------------------------------------------------------------------------
 --  settings
@@ -38,6 +40,8 @@ local proximityThreshold = nodeConfig.appCfg.proximityThreshold or 20;
 
 local function publishAmbientJson ( client, topic )
 
+    logger.info ( "publishAmbientJson: topic=" .. topic );
+
     -- sensing ambient light
     local cdata = readWord ( apds9960.REG.CDATAH, apds9960.REG.CDATAL );
     local rdata = readWord ( apds9960.REG.RDATAH, apds9960.REG.RDATAL );
@@ -54,8 +58,8 @@ local function publishAmbientJson ( client, topic )
             "}"
         }
     );
-    print ( "[APP] json=" .. json );
-    
+    logger.debug ( "publishAmbientJson: json=" .. json );
+
     client:publish ( topic .. "/value/ambient", json, 0, 0,  -- qos, NO retain!!!
         function ( client )
         end
@@ -69,19 +73,20 @@ end
 
 function M.start ( client, topic )
 
-    print ( "[APP] started with topic=" .. topic );
-    
+    logger.info ( "start: topic=" .. topic );
+
     apds9960.init ( sdaPin, sclPin );
-    
+
     gpio.mode ( intPin, gpio.INT );
     gpio.trig ( intPin, "down",
-    
+
         function ( level, when ) -- when is in us
-    
---            print (
+
+--            logger.debug (
 --                table.concat (
---                    { 
---                        "interrupt: level=", level, 
+--                    {
+--                        "start: "
+--                        "interrupt: level=", level,
 --                        "when=", when,
 --                        "proximity=", readByte ( apds9960.REG.PDATA ),
 --                        "cdate=", readWord ( apds9960.REG.CDATAH, apds9960.REG.CDATAL );
@@ -95,12 +100,12 @@ function M.start ( client, topic )
 --                )
 --            );
 
-            print ( "[APP] publish button press ON" );
+            logger.debug ( "start: publish button press ON" );
             client:publish ( topic .. "/value/state", "ON", 0, 0,  -- qos, NO retain!!!
-                function ( client ) 
+                function ( client )
                     tmr:create ():alarm ( offDelay, tmr.ALARM_SINGLE,
                         function ()
-                            print ( "[APP] publish button press OFF" );
+                            logger.debug ( "start: publish button press OFF" );
                             client:publish ( topic .. "/value/state", "OFF", 0, 0, -- qos, NO retain!!!
                                 function ( client )
                                     -- clear all interrupts
@@ -109,9 +114,9 @@ function M.start ( client, topic )
                             );
                         end
                     );
-                end 
+                end
             );
-            
+
         end
     );
 
@@ -123,8 +128,8 @@ end
 
 function M.connect ( client, topic )
 
-    print ( "[APP] connected: topic=" .. topic );
-    
+    logger.info ( "connect: topic=" .. topic );
+
     setBit ( apds9960.REG.ENABLE, 3 );                                      -- wait enable, only usefull, when ALS is activated?
     setBit ( apds9960.REG.ENABLE, 5 );                                      -- ENABLE<5> proximity interrupt enable
     setBit ( apds9960.REG.ENABLE, 0 );                                      -- ENABLE<0> power on
@@ -139,30 +144,30 @@ end
 
 function M.message ( client, topic, payload )
 
-    print ( "[APP] message: topic=" .. topic .. " ,payload=", payload );
-    
+    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+
 end
 
 function M.offline ( client )
 
-    print ( "[APP] offline" );
-    
+    logger.debug ( "offline:" );
+
     return true; -- restart mqtt connection
-    
+
 end
 
 function M.periodic ( client, topic )
-	
-    print ( "[APP] periodic: topic=" .. topic );
-    
+
+    logger.info ( "periodic: topic=" .. topic );
+
     publishAmbientJson ( client, topic );
-    
+
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName );
+logger.debug ( "loaded: " );
 
 return M;
 

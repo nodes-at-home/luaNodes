@@ -11,6 +11,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
 --------------------------------------------------------------------
 -- settings
 
@@ -26,7 +28,7 @@ local DEVICE_ADDRESS = 0x39;
 -- 0x00 .. 0x7F -> RAM                                                                  0x00
 M.REG = {
     ENABLE         = 0x80;     -- rw   enable states and interrupts                0x00
-    ATIME          = 0x81;     -- rw   adc integration time                        0xFF 
+    ATIME          = 0x81;     -- rw   adc integration time                        0xFF
     WTIME          = 0x83;     -- rw   wait time (non-gesture)                     0xFF
     AILTL          = 0x84;     -- rw   als interrupt low threshold low byte        --
     AILTH          = 0x85;     -- rw   als interrupt low threshold high byte       --
@@ -35,7 +37,7 @@ M.REG = {
     PILT           = 0x89;     -- rw   proximity interrupt low threshold           0x00
     PIHT           = 0x8B;     -- rw   proximity interrupt high threshold          0x00
     PERS           = 0x8C;     -- rw   interrupt persistence filter (non gesture)  0x00
-    CONFIG1        = 0x8D;     -- rw   configuration register one                  0x40         
+    CONFIG1        = 0x8D;     -- rw   configuration register one                  0x40
     PPULSE         = 0x8E;     -- rw   proximity pulse count and length            0x40
     CONTROL        = 0x8F;     -- rw   gain control                                0x00
     CONFIG2        = 0x90;     -- rw   configuration register two                  0x01
@@ -104,7 +106,7 @@ M.REG = {
 --M.LED_BOOST_100           = 0;
 --M.LED_BOOST_150           = 1;
 --M.LED_BOOST_200           = 2;
---M.LED_BOOST_300           = 3;   
+--M.LED_BOOST_300           = 3;
 
 -- Gesture wait time values
 --M.GWTIME_0MS              = 0;
@@ -143,29 +145,29 @@ local DEFAULT = {
     [M.REG.GCONF2]       = 0x47,     -- gesture gain 4x, led drive 100mA, gesture wait time 7*2.8ms
     [M.REG.GOFFSET_U]    = 0,        -- No offset scaling for gesture mode
     [M.REG.GOFFSET_D]    = 0,        -- No offset scaling for gesture mode
-    [M.REG.GOFFSET_L]    = 0,        -- No offset scaling for gesture mode 
+    [M.REG.GOFFSET_L]    = 0,        -- No offset scaling for gesture mode
     [M.REG.GOFFSET_R]    = 0,        -- No offset scaling for gesture mode
     [M.REG.GPULSE]       = 0xC9,     -- 32us, 10 pulses
     [M.REG.GCONF3]       = 0,        -- sll photodiodes active during gesture
-    [M.REG.GCONF4]       = 0,        -- reset gesture interrupt and gesture mode 
+    [M.REG.GCONF4]       = 0,        -- reset gesture interrupt and gesture mode
 };
 
 -------------------------------------------------------------------------------
 -- public functions
 
-function M.init ( sda, scl, verbose )
+function M.init ( sda, scl )
 
-    if ( verbose ) then print ( "[MPU6050] init: sda=" .. sda .. " scl=" .. scl .. " verbose=" .. tostring ( verbose ) ) end
+    logger.debug ( "init: sda=" .. sda .. " scl=" .. scl .. " verbose=" .. tostring ( verbose ) )
 
     local speed = i2ctool.init ( DEVICE_ADDRESS, sda, scl, DEFAULT, verbose ); -- 100 kHz
-    print ( "[MPU6050] init: speed=" .. speed );
+    logger.debug ( "init: speed=" .. speed );
 
 end
 
 --------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName )
+logger.debug ( "loaded: " );
 
 return M;
 

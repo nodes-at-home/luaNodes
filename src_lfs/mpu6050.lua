@@ -11,7 +11,9 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
-require ( "i2ctool" );
+local logger = require ( "syslog" ).logger ( moduleName );
+
+local i2ctool = require ( "i2ctool" );
 
 --------------------------------------------------------------------
 -- settings
@@ -42,7 +44,7 @@ M.REG = {
 --    YG_OFFS_L        = 0x16,
 --    ZG_OFFS_H        = 0x17,                --[15:0] ZG_OFFS_USR
 --    ZG_OFFS_L        = 0x18,
-    
+
     SMPLRT_DIV       = 0x19,                -- 25
     CONFIG           = 0x1A,                -- 26
     GYRO_CONFIG      = 0x1B,                -- 27
@@ -146,7 +148,7 @@ M.REG = {
 
 --------------------------------------------------------------------
 -- public
--- 
+--
 function M.readAcceleration ()
 
     local function getField ( data, index )
@@ -157,40 +159,40 @@ function M.readAcceleration ()
         local result = 256 * string.byte ( data,  index ) + string.byte ( data,  index + 1 );
         if ( result > 0x7FFF ) then result = result - 0x10000 end
         return result;
-    end 
+    end
 
     local data = i2ctool.readBytes ( 59, 8 );
-      
+
     local ax = getField ( data, 1 );
     local ay = getField ( data, 3 );
     local az = getField ( data, 5 );
-    --print ( string.format ( "Ax=%5d Ay=%5d Az=%5d", ax, ay, az ) );
-    
+    --logger.debug ( string.format ( "readAcceleration: Ax=%5d Ay=%5d Az=%5d", ax, ay, az ) );
+
     local t = getField ( data, 7 );
     local temp = 36.53 + t / 340;
-    --print ( string.format ( "temp=%.1f", temp ) );
-    
+    --logger.debug ( string.format ( "readAcceleration: temp=%.1f", temp ) );
+
     return ax, ay, az, temp;
-  
+
 end
 
-function M.init ( sda, scl, verbose )
+function M.init ( sda, scl )
 
-    if ( verbose ) then print ( "[MPU6050] init: sda=" .. sda .. " scl=" .. scl .. " verbose=" .. tostring ( verbose ) ) end
+    logger.debug ( "init: sda=" .. sda .. " scl=" .. scl )
 
-    local speed = i2ctool.init ( DEVICE_ADDRESS, sda, scl, nil, verbose ); -- 100 kHz
-    print ( "[MPU6050] init: speed=" .. speed );
+    local speed = i2ctool.init ( DEVICE_ADDRESS, sda, scl, nil ); -- 100 kHz
+    logger.debug ( "init: speed=" .. speed );
 
 --    for register, value in pairs ( DEFAULT ) do
 --        M.writeByte ( register, value );
 --    end
-    
+
 end
 
 --------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName )
+logger.debug ( "loaded: " );
 
 return M;
 
