@@ -11,6 +11,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
 -------------------------------------------------------------------------------
 --  Settings
 
@@ -38,21 +40,21 @@ function M.split ( str, pattern )
         cap = str:sub ( last_end );
         table.insert ( t, cap );
     end
-    
+
     return t;
-   
+
 end
 
 function M.splitTopic ( str )
 
    return M.split ( str, '[\\/]+' );
-   
+
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName )
+logger.debug ( "loaded: " );
 
 return M;
 

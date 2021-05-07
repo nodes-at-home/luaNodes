@@ -30,7 +30,7 @@
     },
     "syslog": {
         "ip": "nodesathome1",
-        "port": 524,
-        "level": 7
+        "port": 514,
+        "level": "NOTICE"
     }
 }

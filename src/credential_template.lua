@@ -11,6 +11,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
 --------------------------------------------------------------------
 -- vars
 
@@ -19,7 +21,7 @@ local CREDENTIALS = {
     prod = { ssid = "ssid", password = "pw"},
     dev = { ssid = "ssid", password = "pw"},
     -- some more configs
-    
+
 };
 
 --------------------------------------------------------------------
@@ -31,17 +33,14 @@ local CREDENTIALS = {
 function M.init ( mode )
 
     if ( mode and type ( mode ) == "string" ) then
-        M.ssid = CREDENTIALS [mode].ssid;
-        M. password = CREDENTIALS [mode]. password;
+        return ( { ssid = CREDENTIALS [mode].ssid, password = CREDENTIALS [mode]. password } );
     end
-    
+
 end
 
 --------------------------------------------------------------------
 
-print ( "[MODULE] loaded: " .. moduleName )
-
--- M.init ( "prod" );
+logger.debug ( moduleName, "loaded: " );
 
 return M;
 

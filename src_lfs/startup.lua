@@ -23,17 +23,17 @@ local startupTimer = tmr.create ();
 function unrequire ( module )
 
     local m = package.loaded [module];
-    if ( m and m.subunrequire ) then m.subunrequire (); end 
+    if ( m and m.subunrequire ) then m.subunrequire (); end
 
     package.loaded [module] = nil
     _G [module] = nil
-    
+
 end
 
 function tohex ( byte, len )
 
     return "0x" .. string.format( "%0" .. (len or 2) .. "X", byte );
-    
+
 end
 
 --------------------------------------------------------------------
@@ -42,7 +42,7 @@ end
 local function startApp ()
 
     print ( "[STARTUP] startApp: " .. nodeConfig.app .. " is starting" );
-    
+
     if ( file.exists ( "update.url" ) ) then
         print ( "[STARTUP] startApp: update file found" );
         require ( "update" ).update ();
@@ -61,27 +61,27 @@ end
 local function startup ()
 
     print ( "[STARTUP] press ENTER to abort" );
-    
+
     -- if <CR> is pressed, abort startup
-    uart.on ( "data", "\r", 
+    uart.on ( "data", "\r",
         function ()
             startupTimer:unregister ();   -- disable the start up timer
             uart.on ( "data" );                 -- stop capturing the uart
             print ( "[STARTUP] aborted" );
-        end, 
+        end,
         0 );
 
     -- startup timer to execute startup function in 5 seconds
-    startupTimer:alarm ( nodeConfig.timer.startupDelay2, tmr.ALARM_SINGLE, 
-        function () 
+    startupTimer:alarm ( nodeConfig.timer.startupDelay2, tmr.ALARM_SINGLE,
+        function ()
             -- stop capturing the uart
             uart.on ( "data" );
             startApp ();
-        end 
+        end
     );
 
 end
-    
+
 --------------------------------------------------------------------
 -- public
 
@@ -91,43 +91,46 @@ function M.init ( startTelnet)
 
     require ( "espConfig" );
     nodeConfig = espConfig.init ();
-    
+
     if ( nodeConfig == nil ) then
         print ( "[STARTUP] #########" );
         print ( "[STARTUP] NO CONFIG" );
         print ( "[STARTUP] #########" );
         return;
     end
-    
+
+    local logger = require ( "syslog" ).logger ( moduleName );
+    logger.notice ( "init: config loaded telnet=" .. tostring ( startTelnet ) );
+
     require ( "credential" ); -- is called  from lc file
     wifiCredential = credential.init ( nodeConfig.mode );
     unrequire ( "credential" );
     collectgarbage ();
-    
+
     local lfsTimestamp = node.flashindex ( nil );
     nodeConfig.lfsts = lfsTimestamp;
 
     if ( nodeConfig.appCfg.useAdc ) then
         if ( adc.force_init_mode ( adc.INIT_ADC ) ) then
-            print ( "[STARTUP] init: force_init_adc" );
+            logger.debug ( "init: force_init_adc" );
             node.restart ();
             return; -- don't bother continuing, the restart is scheduled
-        end        
+        end
     else
         if ( adc.force_init_mode ( adc.INIT_VDD33 ) ) then
-            print ( "[STARTUP] init: force_init_vdd33" );
+            logger.debug ( "init: force_init_vdd33" );
             node.restart ();
             return; -- don't bother continuing, the restart is scheduled
         end
     end
-    
-    print ( "[STARTUP] init: version=" .. nodeConfig.version );
-    print ( "[STARTUP] init: waiting for application start" );
 
-    if ( startTelnet ) then    
+    logger.info ( "init: version=" .. nodeConfig.version );
+    logger.debug ( "init: waiting for application start" );
+
+    if ( startTelnet ) then
         require ( "telnet" ):open ( wifiCredential.ssid, wifiCredential.password );
     else
-    
+
         -- boot reason https://nodemcu.readthedocs.io/en/master/en/modules/node/#nodebootreason
         -- 0, power-on
         -- 1, hardware watchdog reset
@@ -137,24 +140,24 @@ function M.init ( startTelnet)
         -- 5, wake from deep sleep
         -- 6, external reset
         local rawcode, bootreason = node.bootreason ();
-        print ( "[STARTUP] init: rawcode=" .. rawcode .. " reason=" .. bootreason );
+        logger.debug ( "init: rawcode=" .. rawcode .. " reason=" .. bootreason );
         if ( nodeConfig.appCfg.useQuickStartupAfterDeepSleep and bootreason == 5 ) then
-            print ( "[STARTUP] quick start" );
+            logger.notice ( "quick start" );
     --        startApp ();
             startupTimer:alarm ( 10, tmr.ALARM_SINGLE, startApp )
-        else 
-            print ( "[STARTUP] classic start" );
+        else
+            logger.notice ( "classic start" );
             startupTimer:alarm ( nodeConfig.timer.startupDelay1, tmr.ALARM_SINGLE, startup )
         end
-        
+
     end
-    
+
 end
 
 --------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName )
+print ( "[MODULE] loaded: " .. moduleName ) -- syslog not yet redy
 
 return M;
 

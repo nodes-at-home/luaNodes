@@ -53,7 +53,7 @@ local DEFAULT_CONFIG = {
     syslog = {
         ip = "192.168.2.11",
         port = 514,
-        level = 7,
+        level = "NOTICE",
     },
 };
 

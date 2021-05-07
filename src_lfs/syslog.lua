@@ -25,10 +25,9 @@ local SEVERITY = {
     ["DEBUG"]       = 7;
 };
 
--- TODO in espConfig und default config anpassen
 -- TODO Rückbau trace
--- TODO Puffer für offline Phasen
 -- TODO Aufrufe sicher machen gegen nil
+-- udp server auflösen per dns
 local ip = nodeConfig.syslog and nodeConfig.syslog.ip;
 local port = nodeConfig.syslog and nodeConfig.syslog.port or 514;
 local level =  nodeConfig.syslog and nodeConfig.syslog.level or M.SEVERITY.DEBUG;
@@ -41,16 +40,16 @@ end
 ----------------------------------------------------------------------------------------
 -- private
 
-local syslogclient = net.createUDPSocket ();
+local syslogclient;
 
 -- < prival > version space timestamp space hostname space appname space procid space msgid space structureddata space msg
-local hostname =nodeConfig.class .. "/" .. nodeConfig.type .."/" .. nodeConfig.location;
+local hostname = nodeConfig.class .. "/" .. nodeConfig.type .."/" .. nodeConfig.location;
 local appname = nodeConfig.app;
 local procid = nodeConfig.version;
 local msgid = "-";
 local syslogpattern = ("<%s>1 - %s %s %s %s - %s"):format ( "%d", hostname, appname, procid, msgid, "%s" );
 
-local function send ( severity, module, msg )
+local function _send ( severity, module, msg )
 
     --print ( "send: severity=" .. severity .. " module=" .. tostring ( module ) .. " msg=" .. tostring ( msg ) );
 
@@ -63,67 +62,83 @@ local function send ( severity, module, msg )
         end
 
         local txt = { "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFO", "DEBUG" }
-        print ( "[" .. txt [severity + 1] .. "] " .. syslogmsg );
+        print ( "<" .. txt [severity + 1] .. "> " .. syslogmsg );
 
     end
+
+end
+
+local q = require ( "fifo" ).new ();
+
+local function k ( a, islast )
+
+    if ( syslogclient ) then
+        _send ( a.severity, a.module, a. msg );
+        return nil, true; -- dequeue until queue is empty
+    else
+        return a; -- dont dequeue
+    end
+
+end
+
+local function send ( severity, module, msg )
+
+    q:queue ( {severity = severity, module = module, msg = msg }, k );
 
 end
 
 --------------------------------------------------------------------
 -- public
 
-function M.emergency ( module, msg )
+function M.logger ( module )
 
-    send ( SEVERITY.EMERGENCY, module, msg );
+    local L = {};
 
-end
+    function L.setOnline ()
+        syslogclient = net.createUDPSocket ();
+        q._go = true;
+    end
 
-function M.alert ( module, msg )
+    function L.emergency ( msg )
+        send ( SEVERITY.EMERGENCY, module, msg );
+    end
 
-    send ( SEVERITY.ALERT, module, msg );
+    function L.alert ( msg )
+        send ( SEVERITY.ALERT, module, msg );
+    end
 
-end
+    function L.critical (  msg )
+        send ( SEVERITY.CRITICAL, module, msg );
+    end
 
-function M.critical ( module, msg )
+    function L.error ( msg )
+        send ( SEVERITY.ERROR, module, msg );
+    end
 
-    send ( SEVERITY.CRITICAL, module, msg );
+    function L.warning ( msg )
+        send ( SEVERITY.WARNING, module, msg );
+    end
 
-end
+    function L.notice ( msg )
+        send ( SEVERITY.NOTICE, module, msg );
+    end
 
-function M.error ( module, msg )
+    function L.info ( msg )
+        send ( SEVERITY.INFO, module, msg );
+    end
 
-    send ( SEVERITY.ERROR, module, msg );
+    function L.debug ( msg )
+        send ( SEVERITY.DEBUG, module, msg );
+    end
 
-end
-
-function M.warning ( module, msg )
-
-    send ( SEVERITY.WARNING, module, msg );
-
-end
-
-function M.notice ( module, msg )
-
-    send ( SEVERITY.NOTICE, module, msg );
-
-end
-
-function M.info ( module, msg )
-
-    send ( SEVERITY.INFO, module, msg );
-
-end
-
-function M.debug ( module, msg )
-
-    send ( SEVERITY.DEBUG, module, msg );
+    return L;
 
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-M.debug ( moduleName, "loaded:" );
+M.logger ( moduleName ).debug ( "loaded: ip=" .. ip .. " port=" .. port .. " level=" .. level );
 
 return M;
 
