@@ -8,13 +8,17 @@
 --------------------------------------------------------------------
 -- junand 25.10.2016
 
-local moduleName = ...; 
+local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
+-------------------------------------------------------------------------------
+
 function M.download ( host, port, url, path, callback )
 
---    print ( "[DL] host=", host, "port=", port, "url=", url, "path=", path );
+    logger.info ( "download: host=", host, "port=", port, "url=", url, "path=", path );
 
 	file.remove ( path );
 	file.open ( path, "w+" );
@@ -22,31 +26,31 @@ function M.download ( host, port, url, path, callback )
     continueWrite = false;
     isHttpReponseOk = false;
     httpResponseCode = -1;
-    
+
 	local conn = net.createConnection ( net.TCP, 0 );
-	
+
     conn:on ( "connection",
-        -- request remote file 
+        -- request remote file
         function ( conn )
             conn:send (
-                table.concat ( { 
+                table.concat ( {
                     "GET ", url, " HTTP/1.0\r\n",
-                    "Host: ", host, "\r\n", 
+                    "Host: ", host, "\r\n",
                     "Connection: close\r\n",
                     "Accept-Charset: utf-8\r\n",
                     "Accept-Encoding: \r\n",
-                    "User-Agent: Mozilla/4.0 (compatible; esp8266 Lua; Windows NT 5.1)\r\n", 
+                    "User-Agent: Mozilla/4.0 (compatible; esp8266 Lua; Windows NT 5.1)\r\n",
                     "Accept: */*\r\n\r\n"
                 } )
             );
         end
     );
 
-	conn:on ( "receive", 
+	conn:on ( "receive",
         -- received one piece
         function ( conn, payload )
-            -- print ( "[HTTP] heap=" .. node.heap () );        
-            -- print ( "[HTTP] payload=" .. payload );        
+            -- logger.debug ( "download: heap=" .. node.heap () );
+            -- logger.debug ( "download: payload=" .. payload );
             if ( continueWrite ) then
                 file.write ( payload );
                 file.flush ();
@@ -63,7 +67,7 @@ function M.download ( host, port, url, path, callback )
                         continueWrite = true;
                     end
                 else
-                   httpResponseCode = code; 
+                   httpResponseCode = code;
                 end
             end
             payload = nil;
@@ -72,14 +76,14 @@ function M.download ( host, port, url, path, callback )
     );
 
 	conn:on ( "disconnection",
-        -- callback function called at closing 
+        -- callback function called at closing
         function ( conn )
             local response = isHttpReponseOk and "ok" or httpResponseCode;
-            print ( "[HTTP] disconnection with response=" .. response );        
+            logger.debug ( "download: disconnection with response=" .. response );
             conn = nil;
             file.close ()
             collectgarbage ();
-            
+
             callback ( response );
         end
     );
@@ -88,6 +92,11 @@ function M.download ( host, port, url, path, callback )
 
 end
 
-print ( "[MODULE] loaded: " .. moduleName )
+-------------------------------------------------------------------------------
+-- main
+
+logger.debug ( "loaded: " );
 
 return M;
+
+-------------------------------------------------------------------------------

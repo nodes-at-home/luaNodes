@@ -10,6 +10,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
 -------------------------------------------------------------------------------
 --  Settings
 
@@ -25,30 +27,30 @@ local function splitUrl ( url )
 
         -- http://<host>:<port>/<path>
         local urlSchemaStart = url:find ( "http://" );
-        
+
         local urlHostStart = urlSchemaStart and 8 or 1;
         local urlPathStart = url:find ( "/", urlHostStart );
         if ( urlPathStart ) then
-        
+
             local urlPortStart = url:sub ( urlHostStart, urlPathStart - 1 ):find ( ":" );
             if ( urlPortStart ) then
                 urlPortStart = urlPortStart + urlHostStart;
-            end 
-            
+            end
+
             local urlPort = urlPortStart and url:sub ( urlPortStart, urlPathStart - 1 ) or 80;
             local urlHost = url:sub ( urlHostStart, urlPortStart and urlPortStart - 2 or urlPathStart - 1 );
             local urlPath = url:sub ( urlPathStart );
-            
+
             if ( #urlHost > 0 ) then
                 return urlHost, urlPort, urlPath;
             end
-            
+
         end
-        
+
     end
-    
+
     return nil;
-        
+
 end
 
 local function wifiLoop ()
@@ -57,7 +59,7 @@ local function wifiLoop ()
 
         -- Stop the loop
         wifiLoopTimer:stop ();
-        
+
         -- trace on
         if ( nodeConfig.trace.onUpdate == nil ) then
             nodeConfig.trace.onUpdate = true;
@@ -65,31 +67,31 @@ local function wifiLoop ()
         if ( nodeConfig.trace.onUpdate ) then
             require ( "trace" ).on ();
         end
-        
+
         -- sdk version
         local major, minor, patch = node.info ();
-        print ( "[UPDATE] sdk=" .. major .. "." .. minor .. "." .. patch );
+        logger.debug ( "wifiLoop: sdk=" .. major .. "." .. minor .. "." .. patch );
 
         if ( file.open ( update.UPDATE_URL_FILENAME ) ) then
-        
+
             local url = file.readline ();
             file.close ();
             local host, port, path = splitUrl ( url );
-            print ( "[UPDATE] url=" .. tostring ( url ) .. " ,host=" .. tostring ( host ) .. " ,port=" .. tostring ( port ) .. " ,path=" .. tostring ( path ) );
-            
+            logger.notice ( "wifiLoop: url=" .. tostring ( url ) .. " ,host=" .. tostring ( host ) .. " ,port=" .. tostring ( port ) .. " ,path=" .. tostring ( path ) );
+
             if ( host and port and path ) then
-            
+
                 update.host = host;
                 update.port = port;
                 update.path = path;
-            
-                print ( "[UPDATE] downloading file list" );
-            
+
+                logger.debug ( "wifiLoop: downloading file list" );
+
                 require ( "httpDL" );
                 httpDL.download ( host, port, path .. "/" .. update.UPDATE_JSON_FILENAME, update.UPDATE_JSON_FILENAME,
-                
+
                     function ( response ) -- "ok" or http response code
-                        print ( "[UPDATE] response from httpDL is " .. response );
+                        logger.debug ( "wifiLoop: response from httpDL is " .. response );
                         if ( response == "ok" ) then
                             -- node.task.post ( startLoop );
                             update.unrequire ( "httpDL" );
@@ -99,20 +101,20 @@ local function wifiLoop ()
                             node.task.post ( function () update.next ( moduleName, "updateFailure", "httpRsponse=" .. response ) end );
                         end
                     end
-                    
+
                 );
                 return; -- control flow is now in callback of httpDL
-                
+
             end
-            
+
         end
 
-        print ( "[UPDATE] nothing happens, restart" );        
+        logger.warning ( "wifiLoop: nothing happens, restart" );
         -- updateFailure ( "file with update url not to open" );
         node.task.post ( function () update.next ( moduleName, "updateFailure", "file with update url not to open" ) end );
 
     else
-        print ( "[WIFI] Connecting..." );
+        logger.debug ( "wifiLoop: Connecting..." );
     end
 
 end
@@ -122,17 +124,17 @@ end
 
 function M.start ()
 
-    print ( "[" .. moduleName .. "] start" );
-    
+    logger.debug ( "start" );
+
     wifiLoopTimer = tmr.create ();
     wifiLoopTimer:alarm ( TIMER_WIFI_PERIOD * 1000, tmr.ALARM_AUTO, wifiLoop ); -- timer_id, interval_ms, mode
-    
+
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName )
+logger.debug ( "loaded: " );
 
 return M;
 

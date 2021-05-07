@@ -23,6 +23,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local logger = require ( "syslog" ).logger ( moduleName );
+
 -------------------------------------------------------------------------------
 --  Settings
 
@@ -51,14 +53,13 @@ function M.unrequire ( module )
 
     package.loaded [module] = nil
     _G [module] = nil
-    
+
 end
 
 function M.next ( fromModule, nextModule, optMessage )
 
-    print ( "[UPDATE] next: heap=" .. node.heap () ); 
-
-    print ( "[UPDATE] next: from=" .. tostring ( fromModule ) .. " to=" .. tostring ( nextModule ) .. " msg=" .. tostring ( optMessage ) );
+    logger.info ( "next: from=" .. tostring ( fromModule ) .. " to=" .. tostring ( nextModule ) .. " msg=" .. tostring ( optMessage ) );
+    logger.debug ( "next: heap=" .. node.heap () );
 
     if ( fromModule ) then
         M.unrequire ( fromModule );
@@ -72,22 +73,22 @@ function M.next ( fromModule, nextModule, optMessage )
             end
         end
     end
-    
+
 end
 
 function M.update ()
 
-    print ( "[UPDATE] second stage of update" );
-    
+    logger.info ( "update: second stage of update" );
+
     require ( "updateWifi" );
     updateWifi.start ();
-    
+
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-print ( "[MODULE] loaded: " .. moduleName )
+logger.debug ( "loaded: " );
 
 return M;
 
