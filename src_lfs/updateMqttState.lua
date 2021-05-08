@@ -20,16 +20,6 @@ local mqttClient = nil;     -- mqtt client
 ----------------------------------------------------------------------------------------
 -- private
 
-local function restart ()
-
-    if ( trace ) then
-        trace.off ( node.restart );
-    else
-        node.restart ();
-    end
-
-end
-
 --------------------------------------------------------------------
 -- public
 
@@ -42,6 +32,8 @@ function M.start ( message )
     end
 
     logger.debug ( "start: connecting to " .. nodeConfig.mqtt.broker );
+
+    logger.alert ( "start: " .. nodeConfig.app .. "@" .. nodeConfig.location .. " -> " .. message );
 
     local result = mqttClient:connect( nodeConfig.mqtt.broker , 1883, false, -- broker, port, secure
         function ( client )
@@ -62,8 +54,8 @@ function M.start ( message )
                             local topic = nodeConfig.topic .. "/service/update";
                             logger.debug ( "start: publish reset topic=" .. topic );
                             client:publish ( topic, "", 0, 1, -- ..., qos, retain
-                                -- 4( restart
-                                restart -- last step is restart node
+                                -- 4) restart
+                                syslog.restart -- last step is restart node
                             );
                         end
                     );

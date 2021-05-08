@@ -25,10 +25,8 @@ local SEVERITY = {
     DEBUG     = 7;
 };
 
--- TODO Rückbau trace
--- TODO Aufrufe sicher machen gegen nil
--- udp server auflösen per dns
-local ip = nodeConfig.syslog and nodeConfig.syslog.ip;
+local ip;
+local host = nodeConfig.syslog and nodeConfig.syslog.host;
 local port = nodeConfig.syslog and nodeConfig.syslog.port or 514;
 local level =  nodeConfig.syslog and nodeConfig.syslog.level or M.SEVERITY.DEBUG;
 if ( type ( level ) == "string" ) then
@@ -42,27 +40,25 @@ end
 
 local syslogclient;
 
+local restart = false;
+
 -- < prival > version space timestamp space hostname space appname space procid space msgid space structureddata space msg
 local hostname = nodeConfig.class .. "/" .. nodeConfig.type .."/" .. nodeConfig.location;
 local appname = nodeConfig.app;
 local procid = nodeConfig.version;
 local msgid = "-";
-local syslogpattern = ("<%s>1 - %s %s %s %s - %s"):format ( "%d", hostname, appname, procid, msgid, "%s" );
+local syslogpattern = ("<%s>1 - %s %s %s %s - %s.%s"):format ( "%d", hostname, appname, procid, msgid, "%s", "%s" );
 
 local function _send ( severity, module, msg )
 
-    --print ( "send: severity=" .. severity .. " module=" .. tostring ( module ) .. " msg=" .. tostring ( msg ) );
+    print ( "send: severity=" .. severity .. " module=" .. tostring ( module ) .. " msg=" .. tostring ( msg ) );
 
     if ( severity <= level ) then
 
-        local syslogmsg = module .. "." .. tostring ( msg );
+        syslogclient:send ( port, ip, syslogpattern:format ( severity, module, msg ) );
 
-        if ( syslogclient ) then
-            syslogclient:send ( port, ip, syslogpattern:format ( severity, syslogmsg ) );
-        end
-
-        local txt = { "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFO", "DEBUG" }
-        print ( "<" .. txt [severity + 1] .. "> " .. syslogmsg );
+        local txt = { "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFO", "DEBUG" };
+        print ( ("<%s>%s.%s"):format ( txt [severity + 1], module, msg ) );
 
     end
 
@@ -74,7 +70,8 @@ local function k ( a, islast )
 
     if ( syslogclient ) then
         _send ( a.severity, a.module, a. msg );
-        return nil, true; -- dequeue until queue is empty
+        --return nil, true; -- dequeue until queue is empty
+        return nil; -- stop dequeueing, next deque call is in callback of udpsockert.on
     else
         return a; -- dont dequeue
     end
@@ -90,13 +87,45 @@ end
 --------------------------------------------------------------------
 -- public
 
+function M.restart ()
+    restart = true;
+end
+
+function M.setLevel ( newLevel )
+
+    if ( type ( newLevel ) == "string" ) then
+        level = SEVERITY [newLevel];
+    end
+
+end
+
 function M.logger ( module )
 
     local L = {};
 
     function L.setOnline ()
+        print ( "------------------- syslog start -------------------" );
         syslogclient = net.createUDPSocket ();
-        q._go = true;
+        syslogclient:on ( "sent",
+            function ( s )
+                node.task.post (
+                    function ()
+                        local empty = not q:dequeue ( k ); -- dequeue next message
+                        if ( restart and empty  ) then
+                            print ( "### RESTART ###" );
+                            node.restart ();
+                        end
+                    end
+                );
+            end
+        );
+        syslogclient:dns ( host,
+            function ( s, ipaddr )
+                print ( "ipaddr=" .. tostring ( ipaddr ) );
+                ip = ipaddr;
+                _send ( SEVERITY.ALERT, moduleName, "start: goes online" ); -- dequeueing starts inudpsocket send callback
+            end
+        );
     end
 
     function L.emergency ( msg )
@@ -138,7 +167,7 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-M.logger ( moduleName ).debug ( "loaded: ip=" .. ip .. " port=" .. port .. " level=" .. level );
+M.logger ( moduleName ).debug ( "loaded: server=" .. host .. ":" .. port .. " level=" .. level );
 
 return M;
 

@@ -44,14 +44,8 @@ local DEFAULT_CONFIG = {
         retain = 1,
         keepAliveTime = 5 * 60, -- in seconds
     },
-    trace = {
-        ip = HOST,
-        port = 10001,
-        onUpdate = true,
-        onStartup = false
-    },
     syslog = {
-        ip = "192.168.2.11",
+        host = HOST,
         port = 514,
         level = "NOTICE",
     },

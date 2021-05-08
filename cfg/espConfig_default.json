@@ -22,14 +22,8 @@
         "retain": 1,
         "keepAliveTime": 300
     },
-    "trace": {
-        "ip": "nodesathome1",
-        "port": 10001,
-        "onUpdate": true,
-        "onStartup": false
-    },
     "syslog": {
-        "ip": "nodesathome1",
+        "host": "nodesathome1",
         "port": 514,
         "level": "NOTICE"
     }

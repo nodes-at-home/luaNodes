@@ -43,7 +43,7 @@ end
 
 local function renameUpdateFile ()
 
-    logger.debug ( "renameUpdateFile: index=" .. index .. " heap=" .. node.heap () );
+    logger.info ( "renameUpdateFile: index=" .. index .. " heap=" .. node.heap () );
 
     local fileName = update.filesList [index].name;
     logger.debug ( "renameUpdateFile: rename " .. fileName );

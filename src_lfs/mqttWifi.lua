@@ -1,3 +1,4 @@
+local syslog = require "src_lfs.syslog"
 --
 -- nodes@home/luaNodes/mqttNode
 -- author: andreas at jungierek dot de
@@ -35,8 +36,6 @@ local startTelnet;
 
 local periodicTimer = tmr.create ();
 local wifiLoopTimer = tmr.create ();
-
-local isWifiConnected = false;
 
 ----------------------------------------------------------------------------------------
 -- private
@@ -143,12 +142,8 @@ local function receiveConfig ( client, payload )
         if ( file.open ( "espConfig_mqtt.json", "w" ) ) then
             file.write ( payload );
             file.close ();
-            logger.debug ( "receiveConfig: restarting after config save")
-            if ( trace ) then
-                trace.off ( node.restart );
-            else
-                node.restart ();
-            end
+            logger.alert ( "receiveConfig: restarting after config save")
+            syslog.restart ();
         end
     end
 
@@ -178,12 +173,8 @@ local function update ( payload )
             file.close ();
             if ( success ) then
                 logger.notice ( "update:  restart for second step" );
-                if ( trace ) then
-                    logger.debug ( "update: ... wait ..." );
-                    trace.off ( node.restart );
-                else
-                    node.restart ();
-                end
+                print ( "RESTART")
+                syslog.restart ();
             end
         end
     end
@@ -191,6 +182,8 @@ local function update ( payload )
 end
 
 local function startMqtt ()
+
+    logger.info ( "start:" );
 
     -- Setup MQTT client and events
     if ( mqttClient == nil ) then
@@ -217,26 +210,16 @@ local function startMqtt ()
                         logger.debug ( "message: subtopic=" .. subtopic );
                         if ( subtopic == "/service/update" ) then
                             update ( payload );
-                        elseif ( subtopic == "/service/trace" ) then
-                            require ( "trace" );
-                            if ( payload == "ON" ) then
-                                trace.on ();
-                            else
-                                trace.off ();
-                            end
+                        elseif ( subtopic == "/service/sysloglevel" ) then
+                            syslog.setLevel ( payload );
                         elseif ( subtopic == "/service/config" ) then
                             subscribeConfig ( client );
                         elseif ( subtopic == "/service/telnet" ) then
                             startTelnet = true;
                             require ( "telnet" ):open ( wifiCredential.ssid, wifiCredential.password );
                         elseif ( subtopic == "/service/restart" ) then
-                            logger.notice ( "RESTARTING")
-                            if ( trace ) then
-                                logger.debug ( " ... wait ..." );
-                                trace.off ( node.restart );
-                            else
-                                node.restart ();
-                            end
+                            logger.notice ( "RESTARTING");
+                            syslog.restart ();
                         else
                             if ( appNode.message ) then
                                 appNode.message ( client, topic, payload );
@@ -326,22 +309,7 @@ local function wifiLoop ()
             nodeConfig.wifi.dnsname = dnsname;
         end
 
-        if ( nodeConfig.trace and nodeConfig.trace.onStartup ) then
-            logger.debug ( "wifiLoop: start with trace" );
-            require ( "trace" ).on ();
-            local pollingTimer = tmr.create (); -- interval_ms, mode
-            pollingTimer:alarm ( 200, tmr.ALARM_AUTO,
-                function ()
-                    if ( not trace.isStarting () ) then
-                        pollingTimer:unregister ();
-                        startMqtt ();
-                    end
-                end
-            );
-        else
-            logger.debug ( "wifiLoop: start with no trace" );
-            startMqtt ();
-        end
+        startMqtt ();
 
     else
 

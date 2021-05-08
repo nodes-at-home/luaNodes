@@ -80,8 +80,7 @@ function M.update ()
 
     logger.info ( "update: second stage of update" );
 
-    require ( "updateWifi" );
-    updateWifi.start ();
+    require ( "updateWifi" ).start ();
 
 end
 

@@ -18,7 +18,7 @@ local logger = require ( "syslog" ).logger ( moduleName );
 
 function M.download ( host, port, url, path, callback )
 
-    logger.info ( "download: host=", host, "port=", port, "url=", url, "path=", path );
+    logger.info ( "download: server=" .. host .. ":" .. port .. " url=" .. url .. " path=" .. path );
 
 	file.remove ( path );
 	file.open ( path, "w+" );

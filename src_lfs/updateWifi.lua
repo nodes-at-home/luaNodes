@@ -60,13 +60,7 @@ local function wifiLoop ()
         -- Stop the loop
         wifiLoopTimer:stop ();
 
-        -- trace on
-        if ( nodeConfig.trace.onUpdate == nil ) then
-            nodeConfig.trace.onUpdate = true;
-        end
-        if ( nodeConfig.trace.onUpdate ) then
-            require ( "trace" ).on ();
-        end
+        logger.setOnline ();
 
         -- sdk version
         local major, minor, patch = node.info ();
@@ -124,7 +118,7 @@ end
 
 function M.start ()
 
-    logger.debug ( "start" );
+    logger.info ( "start:" );
 
     wifiLoopTimer = tmr.create ();
     wifiLoopTimer:alarm ( TIMER_WIFI_PERIOD * 1000, tmr.ALARM_AUTO, wifiLoop ); -- timer_id, interval_ms, mode
