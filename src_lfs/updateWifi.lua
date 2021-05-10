@@ -71,7 +71,7 @@ local function wifiLoop ()
             local url = file.readline ();
             file.close ();
             local host, port, path = splitUrl ( url );
-            logger.notice ( "wifiLoop: url=" .. tostring ( url ) .. " ,host=" .. tostring ( host ) .. " ,port=" .. tostring ( port ) .. " ,path=" .. tostring ( path ) );
+            logger.notice ( "wifiLoop: url=" .. tostring ( url ) .. " server=" .. tostring ( host ) .. ":" .. tostring ( port ) .. " path=" .. tostring ( path ) );
 
             if ( host and port and path ) then
 

@@ -63,7 +63,7 @@ end
 
 local function publishValues ( client, topic, temperature, humidity, pressure, dhtstatus )
 
-    logger.info ( "publishValues: topic=" .. topic .. " temperature=" .. temperature .. " humidity=" .. humidity .. " pressure=" .. pressure .. " dhtstatus=" .. dhtstatus );
+    logger.info ( "publishValues: topic=" .. topic .. " temperature=" .. tostring ( temperature ) .. " humidity=" .. tostring ( humidity ) .. " pressure=" .. tostring ( pressure ) .. " dhtstatus=" .. tostring ( dhtstatus ) );
 
     -- all Values
     if ( temperature and humidity and pressure ) then

@@ -23,6 +23,13 @@ local mqttClient = nil;     -- mqtt client
 --------------------------------------------------------------------
 -- public
 
+local function restart ()
+
+    syslog.restart ();
+    logger.alert ( "RESTARTING" ); -- to resolve the restart flag in syslog
+
+end
+
 function M.start ( message )
 
     -- Setup MQTT client and events
@@ -55,7 +62,7 @@ function M.start ( message )
                             logger.debug ( "start: publish reset topic=" .. topic );
                             client:publish ( topic, "", 0, 1, -- ..., qos, retain
                                 -- 4) restart
-                                syslog.restart -- last step is restart node
+                                restart -- last step is restart node
                             );
                         end
                     );

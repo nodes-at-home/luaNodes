@@ -51,16 +51,12 @@ local syslogpattern = ("<%s>1 - %s %s %s %s - %s.%s"):format ( "%d", hostname, a
 
 local function _send ( severity, module, msg )
 
-    print ( "send: severity=" .. severity .. " module=" .. tostring ( module ) .. " msg=" .. tostring ( msg ) );
+    --print ( "send: severity=" .. severity .. " module=" .. tostring ( module ) .. " msg=" .. tostring ( msg ) );
 
-    if ( severity <= level ) then
+    syslogclient:send ( port, ip, syslogpattern:format ( severity, module, msg ) );
 
-        syslogclient:send ( port, ip, syslogpattern:format ( severity, module, msg ) );
-
-        local txt = { "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFO", "DEBUG" };
-        print ( ("<%s>%s.%s"):format ( txt [severity + 1], module, msg ) );
-
-    end
+    local txt = { "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFO", "DEBUG" };
+    print ( ("<%s>%s.%s"):format ( txt [severity + 1], module, msg ) );
 
 end
 
@@ -80,7 +76,9 @@ end
 
 local function send ( severity, module, msg )
 
-    q:queue ( {severity = severity, module = module, msg = msg }, k );
+    if ( severity <= level ) then
+        q:queue ( {severity = severity, module = module, msg = msg }, k );
+    end
 
 end
 
@@ -122,8 +120,13 @@ function M.logger ( module )
         syslogclient:dns ( host,
             function ( s, ipaddr )
                 print ( "ipaddr=" .. tostring ( ipaddr ) );
-                ip = ipaddr;
-                _send ( SEVERITY.ALERT, moduleName, "start: goes online" ); -- dequeueing starts inudpsocket send callback
+                if ( ipaddr ) then
+                    ip = ipaddr;
+                    _send ( SEVERITY.ALERT, moduleName, "start: goes online" ); -- dequeueing starts inudpsocket send callback
+                else
+                    print ( "### RESTART ###" );
+                    node.restart ();
+                end
             end
         );
     end

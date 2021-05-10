@@ -1,4 +1,3 @@
-local syslog = require "src_lfs.syslog"
 --
 -- nodes@home/luaNodes/mqttNode
 -- author: andreas at jungierek dot de
@@ -142,8 +141,8 @@ local function receiveConfig ( client, payload )
         if ( file.open ( "espConfig_mqtt.json", "w" ) ) then
             file.write ( payload );
             file.close ();
-            logger.alert ( "receiveConfig: restarting after config save")
             syslog.restart ();
+            logger.alert ( "receiveConfig: RESTARTING" ); -- to resolve the restart flag in syslog
         end
     end
 
@@ -172,9 +171,10 @@ local function update ( payload )
             logger.debug ( "update: url write success=" .. tostring ( success ) );
             file.close ();
             if ( success ) then
-                logger.notice ( "update:  restart for second step" );
+                logger.notice ( "update:  restart for second step url="  .. payload );
                 print ( "RESTART")
                 syslog.restart ();
+                logger.alert ( "update: RESTARTING" ); -- to resolve the restart flag in syslog
             end
         end
     end
@@ -218,8 +218,8 @@ local function startMqtt ()
                             startTelnet = true;
                             require ( "telnet" ):open ( wifiCredential.ssid, wifiCredential.password );
                         elseif ( subtopic == "/service/restart" ) then
-                            logger.notice ( "RESTARTING");
                             syslog.restart ();
+                            logger.alert ( "startMqtt: RESTARTING" ); -- to resolve the restart flag in syslog
                         else
                             if ( appNode.message ) then
                                 appNode.message ( client, topic, payload );
