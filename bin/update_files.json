@@ -1,5 +1,5 @@
 {
-    "tag": "V0.80.9",
+    "tag": "V0.81.1",
     "files": [
         {
             "name": "lfs.img.ts",
@@ -7,7 +7,7 @@
         },
         {
             "name": "lfs.img",
-            "size": 98354
+            "size": 101554
         }
     ]
 }
