@@ -109,14 +109,15 @@ end
 
 local function displayValues ( value, unit )
 
-    logger.info ( "displayValues: count=" .. #value .. " unit=" .. unit );
+    value = value or {};
+
+    logger.info ( "displayValues: count=" .. #value .. " unit=" .. tostring ( unit ) );
 
     display:clearBuffer ();
 
     --display:setFont ( u8g2.font_fur20_tf );
     display:setFont ( u8g2.font_6x10_tf );
     display:setFontPosTop ();
-    value = value or {};
     for i = 1, #value do
         display:drawStr ( 1, i * 12, ('%7.1f %s'):format ( value [i] or 0.0, unit or "" ) );
     end
