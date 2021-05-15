@@ -6,7 +6,7 @@
 --
 --------------------------------------------------------------------
 -- junand 27.10.2018
--- 
+--
 -- start from lfs
 
 -------------------------------------------------------------------------------
@@ -25,6 +25,12 @@ local expectedLfsts;
 
 --------------------------------------------------------------------
 -- public
+
+package.loaders [3] = function ( module ) -- loader_flash
+    local fn, ba = node.flashindex ( module );
+    --print ( "fn=" .. tostring ( fn ) .. " ba=" ..  tostring ( ba ) );
+    return ba and "Module not in LFS" or fn;
+end
 
 if ( lfsts ) then
     if ( file.open ( LFS_TS_FILE ) ) then
@@ -67,5 +73,6 @@ if ( id == 15892791 or id == 16061971 or id == 6130344 ) then
 end
 print ( "[INIT] start from lfs with " .. DELAY/1000 .. " seconds delay" );
 local init_from_lfs = node.flashindex ( "_init" );
-tmr.create ():alarm ( DELAY, tmr.ALARM_SINGLE, init_from_lfs ); 
+print ( "[INIT] init_from_lfs=" .. tostring ( init_from_lfs ) );
+tmr.create ():alarm ( DELAY, tmr.ALARM_SINGLE, init_from_lfs );
 

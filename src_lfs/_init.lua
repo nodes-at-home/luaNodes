@@ -34,13 +34,7 @@ local startTelnet;
 --------------------------------------------------------------------
 -- public
 
-package.loaders [3] = function ( module ) -- loader_flash
-    local fn, ba = node.flashindex ( module );
-    return ba and "Module not in LFS" or fn; 
-end
-
 print ( "[INIT] boot: rawcode=" .. rawcode .. " reason=" .. bootreason .. " cause=" .. tostring ( cause ) );
-
 
 if ( file.exists ( LFS_RELOAD_FILE ) ) then
     file.remove ( LFS_RELOAD_FILE );
@@ -58,14 +52,15 @@ else
             file.close ();
         end
     else
-        if ( file.exists ( NO_BOOT_FILE ) ) then 
-            file.remove ( NO_BOOT_FILE ); 
+        if ( file.exists ( NO_BOOT_FILE ) ) then
+            file.remove ( NO_BOOT_FILE );
         end
     end
-    
+
 end
 
 --require ( "_lfs" );
 
-require ( "startup" ).init ( startTelnet );
+local m = require ( "startup" );
+m.init ( startTelnet );
 

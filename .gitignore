@@ -1,9 +1,7 @@
-/.buildpath
-/.project
-
 credential.*
-//*.lc
-//update_files.json
+*.lst
+!core.lst
+!__all.lst
 
 archive/
 playground/
