@@ -175,6 +175,7 @@ function M.init ()
     local pos = app:find ( "Node" );
     local nodeName = pos and app:sub ( 1, pos - 1 ) or app;
     result.version = table.concat ( { sdk, "-", nodeName, "-", version } );
+    result.branch = swversion.git_branch;
 
     replaceNil ( result );
 

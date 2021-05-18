@@ -17,6 +17,7 @@ _G [moduleName] = M;
 
 local startupTimer = tmr.create ();
 
+local logger; -- syslog will be required after config load in init ()
 --------------------------------------------------------------------
 -- application global
 
@@ -41,18 +42,18 @@ end
 
 local function startApp ()
 
-    print ( "[STARTUP] startApp: " .. nodeConfig.app .. " is starting" );
+    logger.info ( "startApp: " .. nodeConfig.app .. " is starting" );
 
     if ( file.exists ( "update.url" ) ) then
-        print ( "[STARTUP] startApp: update file found" );
+        logger.debug ( "startApp: update file found" );
         require ( "update" ).update ();
     else
         if ( nodeConfig.appCfg.disablePrint ) then
-            print ( "[STARTUP] startApp: DISABLE PRINT" );
+            logger.debug ( "startApp: DISABLE PRINT" );
             oldprint = print;
             print = function ( ... ) end
         end
-        print ( "[STARTUP] startApp: starting mqttWifi heap=" .. node.heap () );
+        logger.debug ( "startApp: starting mqttWifi heap=" .. node.heap () );
         require ( "mqttWifi" ).start ();
     end
 
@@ -60,14 +61,14 @@ end
 
 local function startup ()
 
-    print ( "[STARTUP] press ENTER to abort" );
+    print ( "==> press ENTER to abort" );
 
     -- if <CR> is pressed, abort startup
     uart.on ( "data", "\r",
         function ()
             startupTimer:unregister ();   -- disable the start up timer
             uart.on ( "data" );                 -- stop capturing the uart
-            print ( "[STARTUP] aborted" );
+            logger.debug ( "startup: ABORTED" );
         end,
         0 );
 
@@ -99,7 +100,7 @@ function M.init ( startTelnet)
         return;
     end
 
-    local logger = require ( "syslog" ).logger ( moduleName );
+    logger = require ( "syslog" ).logger ( moduleName );
     logger.notice ( "init: config loaded telnet=" .. tostring ( startTelnet ) );
 
     require ( "credential" ); -- is called  from lc file
@@ -124,7 +125,7 @@ function M.init ( startTelnet)
         end
     end
 
-    logger.info ( "init: version=" .. nodeConfig.version );
+    logger.notice ( "init: version=" .. nodeConfig.version .. " branch=" .. nodeConfig.branch .. " lua=" .. _VERSION );
     logger.debug ( "init: waiting for application start" );
 
     if ( startTelnet ) then

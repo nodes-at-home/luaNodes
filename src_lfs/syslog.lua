@@ -76,6 +76,9 @@ end
 
 local function send ( severity, module, msg )
 
+    --local txt = { "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFO", "DEBUG" };
+    --print ( ("_<%s>%s.%s"):format ( txt [severity + 1], module, msg ) );
+
     if ( severity <= level ) then
         q:queue ( {severity = severity, module = module, msg = msg }, k );
     end
@@ -122,7 +125,7 @@ function M.logger ( module )
                 print ( "ipaddr=" .. tostring ( ipaddr ) );
                 if ( ipaddr ) then
                     ip = ipaddr;
-                    _send ( SEVERITY.ALERT, moduleName, "start: goes online" ); -- dequeueing starts inudpsocket send callback
+                    _send ( SEVERITY.ALERT, moduleName, "start: goes online" ); -- dequeueing starts in udpsocket send callback
                 else
                     print ( "### RESTART ###" );
                     node.restart ();

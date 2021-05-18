@@ -183,7 +183,7 @@ end
 
 local function startMqtt ()
 
-    logger.info ( "start:" );
+    logger.info ( "startMqtt:" );
 
     -- Setup MQTT client and events
     if ( mqttClient == nil ) then
@@ -207,7 +207,7 @@ local function startMqtt ()
                     local _, pos = topic:find ( baseTopic );
                     if ( pos ) then
                         local subtopic = topic:sub ( pos + 1 );
-                        logger.debug ( "message: subtopic=" .. subtopic );
+                        logger.debug ( "startMqtt: subtopic=" .. subtopic );
                         if ( subtopic == "/service/update" ) then
                             update ( payload );
                         elseif ( subtopic == "/service/sysloglevel" ) then
@@ -247,12 +247,11 @@ local function startMqtt ()
 
     mqttClient:lwt ( mqttTopic, "offline", qos, retain );
 
-    local result;
     while not pcall (
         function ()
             local broker = nodeConfig.mqtt.broker;
             logger.notice ( "startMqtt: connect to broker=" .. broker );
-            result = mqttClient:connect( broker, 1883, false, -- broker, port, secure
+            mqttClient:connect( broker, 1883, false, -- broker, port, secure
                 function ( client )
                     periodicTimer:start ();
                     connect ( client );
@@ -266,11 +265,6 @@ local function startMqtt ()
     )
     do
         logger.warning ( "startMqtt: retry connecting" );
-    end
-
-    logger.debug ( "startMqtt: connect result=" .. tostring ( result ) );
-    if ( not result ) then
-        wifiLoopTimer:start ();
     end
 
 end
