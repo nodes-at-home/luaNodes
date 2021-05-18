@@ -1,9 +1,10 @@
 {
     "mqtt": {
-        "broker": "nodesathome2"
+        "_broker": "nodesathome2"
     },
     "syslog": {
-        "ip": "192.168.2.12",
+        "_host": "nodesathome2",
+        "_ip": "192.168.2.12",
         "level": "DEBUG"
     }
 }

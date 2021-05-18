@@ -12,7 +12,7 @@
         "spi": {
             "csPin": 8,
             "dcPin": 4,
-            "resetPin": 0 
+            "resetPin": 0
         },
         "dsPin": 3,
         "numSensors": 2

@@ -118,14 +118,14 @@ SPRITE = {
 };
 
 --------------------------------------------------------------------------------
--- public 
+-- public
 
 function M.get ( index )
 
     assert ( index > 0 and index <= #SPRITE, "out of range index=" .. index );
 
     return SPRITE [index];
-    
+
 end
 
 --------------------------------------------------------------------------------
