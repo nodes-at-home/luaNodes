@@ -12,6 +12,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local node, tmr, file, uart, adc = node, tmr, file, uart, adc;
+
 --------------------------------------------------------------------
 -- vars
 
@@ -70,7 +72,8 @@ local function startup ()
             uart.on ( "data" );                 -- stop capturing the uart
             logger.debug ( "startup: ABORTED" );
         end,
-        0 );
+        0   -- go not into Lua interpreter
+    );
 
     -- startup timer to execute startup function in 5 seconds
     startupTimer:alarm ( nodeConfig.timer.startupDelay2, tmr.ALARM_SINGLE,
@@ -103,12 +106,21 @@ function M.init ( startTelnet)
     logger = require ( "syslog" ).logger ( moduleName );
     logger.notice ( "init: config loaded telnet=" .. tostring ( startTelnet ) );
 
+    --node.setonerror (
+    --    function ( s )
+    --        print ( "ONERROR => " .. s );
+    --        logger.emergency ( "init: ERROR occured ==> " .. s );
+    --        syslog.restart ();
+    --        logger.alert ( "initnodemcu-tool upload: RESTARTING" ); -- to resolve the restart flag in syslog
+    --    end
+    --)
+
     require ( "credential" ); -- is called  from lc file
     wifiCredential = credential.init ( nodeConfig.mode );
     unrequire ( "credential" );
     collectgarbage ();
 
-    local lfsTimestamp = node.flashindex ( nil );
+    local lfsTimestamp = node.LFS.time;
     nodeConfig.lfsts = lfsTimestamp;
 
     if ( nodeConfig.appCfg.useAdc ) then
