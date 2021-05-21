@@ -25,13 +25,13 @@ local nodeDevice = nodeConfig.appCfg.device or "lamp";
 
 local function changeState ( client, topic, payload )
 
-    logger.info ( "changeState: topic=" .. topic .. " payload=" .. payload)
+    logger:info ( "changeState: topic=" .. topic .. " payload=" .. payload)
 
     gpio.write ( nodeConfig.appCfg.ledPin, payload == "ON" and gpio.HIGH or gpio.LOW );
 
     local relayPin = payload == "ON" and nodeConfig.appCfg.relayPin2 or nodeConfig.appCfg.relayPin1;
-    logger.debug ( "changeState: relayPin=" .. relayPin );
-    logger.debug ( "changeState: publish state=" .. payload .. " to " .. topic );
+    logger:debug ( "changeState: relayPin=" .. relayPin );
+    logger:debug ( "changeState: publish state=" .. payload .. " to " .. topic );
 
     client:publish ( topic .. "/state", payload, 0, nodeConfig.mqtt.retain, -- qos, retain
         function ()
@@ -54,7 +54,7 @@ end
 
 function M.connect ( client, topic )
 
-    logger.info ( "connect: topic=" .. topic );
+    logger:info ( "connect: topic=" .. topic );
 
     flashLed ( 2 );
 --    changeState ( client, topic .. "/" .. nodeDevice, "OFF" ); -- default
@@ -64,7 +64,7 @@ function M.connect ( client, topic )
 --            tmr.alarm ( nodeConfig.timer.debounce, nodeConfig.timer.debounceDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
 --                function ()
 --                    local state = gpio.read ( relayPin );
---                    logger.debug ( "connect: state=", state );
+--                    logger:debug ( "connect: state=", state );
 --                    changeState ( client, topic .. "/lamp", state == 0 and "ON" or "OFF" );
 --                end
 --            );
@@ -75,7 +75,7 @@ end
 
 function M.message ( client, topic, payload )
 
-    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger:info ( "message: topic=" .. topic .. " payload=" .. payload );
 
     local topicParts = util.splitTopic ( topic );
     local device = topicParts [#topicParts];
@@ -90,7 +90,7 @@ end
 
 function M.offline ( client )
 
-    logger.info ( "offline:" );
+    logger:info ( "offline:" );
 
     return true; -- restart mqtt connection
 
@@ -109,7 +109,7 @@ gpio.write ( nodeConfig.appCfg.relayPin2, gpio.LOW );
 
 --gpio.mode ( nodeConfig.appCfg.buttonPin, gpio.INT, gpio.PULLUP );
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

@@ -166,11 +166,11 @@ function M.readAcceleration ()
     local ax = getField ( data, 1 );
     local ay = getField ( data, 3 );
     local az = getField ( data, 5 );
-    --logger.debug ( string.format ( "readAcceleration: Ax=%5d Ay=%5d Az=%5d", ax, ay, az ) );
+    --logger:debug ( string.format ( "readAcceleration: Ax=%5d Ay=%5d Az=%5d", ax, ay, az ) );
 
     local t = getField ( data, 7 );
     local temp = 36.53 + t / 340;
-    --logger.debug ( string.format ( "readAcceleration: temp=%.1f", temp ) );
+    --logger:debug ( string.format ( "readAcceleration: temp=%.1f", temp ) );
 
     return ax, ay, az, temp;
 
@@ -178,10 +178,10 @@ end
 
 function M.init ( sda, scl )
 
-    logger.debug ( "init: sda=" .. sda .. " scl=" .. scl )
+    logger:debug ( "init: sda=" .. sda .. " scl=" .. scl )
 
     local speed = i2ctool.init ( DEVICE_ADDRESS, sda, scl, nil ); -- 100 kHz
-    logger.debug ( "init: speed=" .. speed );
+    logger:debug ( "init: speed=" .. speed );
 
 --    for register, value in pairs ( DEFAULT ) do
 --        M.writeByte ( register, value );
@@ -192,7 +192,7 @@ end
 --------------------------------------------------------------------
 -- main
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

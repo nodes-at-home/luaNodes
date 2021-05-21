@@ -40,7 +40,7 @@ end
 
 --------------------------------------------------------------------
 
-logger.debug ( moduleName, "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

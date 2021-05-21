@@ -44,18 +44,18 @@ end
 
 local function startApp ()
 
-    logger.info ( "startApp: " .. nodeConfig.app .. " is starting" );
+    logger:info ( "startApp: " .. nodeConfig.app .. " is starting" );
 
     if ( file.exists ( "update.url" ) ) then
-        logger.debug ( "startApp: update file found" );
+        logger:debug ( "startApp: update file found" );
         require ( "update" ).update ();
     else
         if ( nodeConfig.appCfg.disablePrint ) then
-            logger.debug ( "startApp: DISABLE PRINT" );
+            logger:debug ( "startApp: DISABLE PRINT" );
             oldprint = print;
             print = function ( ... ) end
         end
-        logger.debug ( "startApp: starting mqttWifi heap=" .. node.heap () );
+        logger:debug ( "startApp: starting mqttWifi heap=" .. node.heap () );
         require ( "mqttWifi" ).start ();
     end
 
@@ -70,7 +70,7 @@ local function startup ()
         function ()
             startupTimer:unregister ();   -- disable the start up timer
             uart.on ( "data" );                 -- stop capturing the uart
-            logger.debug ( "startup: ABORTED" );
+            logger:debug ( "startup: ABORTED" );
         end,
         0   -- go not into Lua interpreter
     );
@@ -104,14 +104,14 @@ function M.init ( startTelnet)
     end
 
     logger = require ( "syslog" ).logger ( moduleName );
-    logger.notice ( "init: config loaded telnet=" .. tostring ( startTelnet ) );
+    logger:notice ( "init: config loaded telnet=" .. tostring ( startTelnet ) );
 
     --node.setonerror (
     --    function ( s )
     --        print ( "ONERROR => " .. s );
-    --        logger.emergency ( "init: ERROR occured ==> " .. s );
+    --        logger:emergency ( "init: ERROR occured ==> " .. s );
     --        syslog.restart ();
-    --        logger.alert ( "initnodemcu-tool upload: RESTARTING" ); -- to resolve the restart flag in syslog
+    --        logger:alert ( "initnodemcu-tool upload: RESTARTING" ); -- to resolve the restart flag in syslog
     --    end
     --)
 
@@ -125,20 +125,20 @@ function M.init ( startTelnet)
 
     if ( nodeConfig.appCfg.useAdc ) then
         if ( adc.force_init_mode ( adc.INIT_ADC ) ) then
-            logger.debug ( "init: force_init_adc" );
+            logger:debug ( "init: force_init_adc" );
             node.restart ();
             return; -- don't bother continuing, the restart is scheduled
         end
     else
         if ( adc.force_init_mode ( adc.INIT_VDD33 ) ) then
-            logger.debug ( "init: force_init_vdd33" );
+            logger:debug ( "init: force_init_vdd33" );
             node.restart ();
             return; -- don't bother continuing, the restart is scheduled
         end
     end
 
-    logger.notice ( "init: version=" .. nodeConfig.version .. " branch=" .. nodeConfig.branch .. " lua=" .. _VERSION );
-    logger.debug ( "init: waiting for application start" );
+    logger:notice ( "init: version=" .. nodeConfig.version .. " branch=" .. nodeConfig.branch .. " lua=" .. _VERSION );
+    logger:debug ( "init: waiting for application start" );
 
     if ( startTelnet ) then
         require ( "telnet" ):open ( wifiCredential.ssid, wifiCredential.password );
@@ -153,13 +153,13 @@ function M.init ( startTelnet)
         -- 5, wake from deep sleep
         -- 6, external reset
         local rawcode, bootreason = node.bootreason ();
-        logger.debug ( "init: rawcode=" .. rawcode .. " reason=" .. bootreason );
+        logger:debug ( "init: rawcode=" .. rawcode .. " reason=" .. bootreason );
         if ( nodeConfig.appCfg.useQuickStartupAfterDeepSleep and bootreason == 5 ) then
-            logger.notice ( "quick start" );
+            logger:notice ( "quick start" );
     --        startApp ();
             startupTimer:alarm ( 10, tmr.ALARM_SINGLE, startApp )
         else
-            logger.notice ( "classic start" );
+            logger:notice ( "classic start" );
             startupTimer:alarm ( nodeConfig.timer.startupDelay1, tmr.ALARM_SINGLE, startup )
         end
 

@@ -25,7 +25,7 @@ local deviceAdress; -- i2c address
 
 function M.readByte ( register )
 
-    --logger.debug ( "readByte: reg=" .. tohex ( register ) )
+    --logger:debug ( "readByte: reg=" .. tohex ( register ) )
 
     return string.byte ( M.readBytes ( register, 1 ), 1 );
 
@@ -33,18 +33,18 @@ end
 
 function M.readBytes ( register, len )
 
-    --logger.debug ( "writeBytes: reg=" .. tohex ( register ) .. " len=" .. len )
+    --logger:debug ( "writeBytes: reg=" .. tohex ( register ) .. " len=" .. len )
 
     i2c.start ( ID );
     local ackTransmit = i2c.address ( ID, deviceAdress, i2c.TRANSMITTER );
-    --logger.debug ( "readBytes: ack transmit=" .. tostring ( ackTransmit ) )
+    --logger:debug ( "readBytes: ack transmit=" .. tostring ( ackTransmit ) )
     local n = i2c.write ( ID, register );
-    --logger.debug ( "readBytes: n=" .. n )
+    --logger:debug ( "readBytes: n=" .. n )
     i2c.stop ( ID );
 
     i2c.start ( ID );
     local ackReceive = i2c.address ( ID, deviceAdress, i2c.RECEIVER );
-    --logger.debug ( "readBytes: ack receive=" .. tostring ( ackReceive ) )
+    --logger:debug ( "readBytes: ack receive=" .. tostring ( ackReceive ) )
     local data = i2c.read ( ID, len );
     i2c.stop ( ID );
 
@@ -54,27 +54,27 @@ end
 
 function M.writeByte ( register, byte )
 
-    --logger.debug ( "writeByte: reg=" .. tohex ( register ) .. " byte=" .. tohex ( byte ) )
+    --logger:debug ( "writeByte: reg=" .. tohex ( register ) .. " byte=" .. tohex ( byte ) )
 
     i2c.start ( ID );
     local ackTransmit = i2c.address ( ID, deviceAdress, i2c.TRANSMITTER );
-    --logger.debug ( "writeByte: ack transmit=" .. tostring ( ackTransmit ) )
+    --logger:debug ( "writeByte: ack transmit=" .. tostring ( ackTransmit ) )
     local n1 = i2c.write ( ID, register );
-    --logger.debug ( "writeByte: n1=" .. n1 )
+    --logger:debug ( "writeByte: n1=" .. n1 )
     local n2 = i2c.write ( ID, byte );
-    --logger.debug ( "writeByte: n2=" .. n2 )
+    --logger:debug ( "writeByte: n2=" .. n2 )
     i2c.stop ( ID );
 
 end
 
 function M.setBit ( reg, pos, value )
 
-    --logger.debug ( "setBit: reg=" .. tohex ( register ) .. " pos=" .. pos .. " value=" .. tohex ( value ) )
+    --logger:debug ( "setBit: reg=" .. tohex ( register ) .. " pos=" .. pos .. " value=" .. tohex ( value ) )
 
     if ( value == nil ) then value = 1; end
     local handleBit = value and bit.set or bit.clear;
     local n = M.writeByte ( reg, handleBit ( M.readByte ( reg ), pos ) );
-    --logger.debug ( "setBit: n=" .. n )
+    --logger:debug ( "setBit: n=" .. n )
 
 end
 
@@ -86,7 +86,7 @@ function M.setBits ( reg, highest, lowest, value )
 --    assert ( 8 >= lowest and lowest >= 0, "lowest bit is outside (lowest=" .. lowest .. ")" );
 --    assert ( highest >= lowest, "wrong order (highest=" .. highest .. ", lowest=" .. lowest ..")" );
 
-    --logger.debug ( "setBits: reg=" .. tohex ( register ) .. " highest=" .. highest .. " lowest=" .. lowest .. " value=" .. tohex ( value ) )
+    --logger:debug ( "setBits: reg=" .. tohex ( register ) .. " highest=" .. highest .. " lowest=" .. lowest .. " value=" .. tohex ( value ) )
 
     local old = M.readByte ( reg );
 
@@ -98,13 +98,13 @@ function M.setBits ( reg, highest, lowest, value )
     local new = bit.bor ( bit.band ( old, bit.bxor ( bit.lshift ( mask, lowest ), 0xFF ) ), bit.lshift ( bit.band ( value, mask ), lowest ) );
 
     local n = M.writeByte ( reg, new );
-    --logger.debug ( "setBits: n=" .. n )
+    --logger:debug ( "setBits: n=" .. n )
 
 end
 
 function M.readWord ( highByteReg, lowByteReg )
 
-    --logger.debug ( "setWord: highByteReg=" .. tohex ( highByteReg ) .. " lowByteReg=" .. tohex ( lowByteReg ) .. " threshold=" .. threshold )
+    --logger:debug ( "setWord: highByteReg=" .. tohex ( highByteReg ) .. " lowByteReg=" .. tohex ( lowByteReg ) .. " threshold=" .. threshold )
 
     local highValue = M.readByte ( highByteReg );
     local lowValue = M.readByte ( lowByteReg );
@@ -115,20 +115,20 @@ end
 
 function M.writeWord ( highByteReg, lowByteReg, word )
 
-    --logger.debug ( "setWord: highByteReg=" .. tohex ( highByteReg ) .. " lowByteReg=" .. tohex ( lowByteReg ) .. " threshold=" .. threshold )
+    --logger:debug ( "setWord: highByteReg=" .. tohex ( highByteReg ) .. " lowByteReg=" .. tohex ( lowByteReg ) .. " threshold=" .. threshold )
 
     local highValue = bit.rshift ( bit.band ( word, 0xFF00 ), 8 );
     local lowValue = bit.band ( word, 0x00FF );
 
     local n1 = M.writeByte ( highByteReg, highValue );
     local n2 = M.writeByte ( lowByteReg, lowValue );
-    --logger.debug ( "setWord: n1=" .. n1 .. " n2=" .. n2 )
+    --logger:debug ( "setWord: n1=" .. n1 .. " n2=" .. n2 )
 
 end
 
 function M.isBit ( reg, pos )
 
-    --logger.debug ( "isBit: reg=" .. tohex ( reg ) .. " pos=" .. pos )
+    --logger:debug ( "isBit: reg=" .. tohex ( reg ) .. " pos=" .. pos )
 
     return bit.isset ( M.readByte ( reg ), pos )
 
@@ -175,7 +175,7 @@ end
 --    local function printLine ( addr, name )
 --
 --        if ( name ) then
---            logger.debug ( "printLine: " .. tohex ( addr ) .. ": " .. string.format( "%-20s", name ) .. "-> " .. tohex ( M.readByte ( addr ) ) );
+--            logger:debug ( "printLine: " .. tohex ( addr ) .. ": " .. string.format( "%-20s", name ) .. "-> " .. tohex ( M.readByte ( addr ) ) );
 --        end
 --
 --    end
@@ -183,7 +183,7 @@ end
 --    if ( regs ) then
 --        if ( type ( regs ) == "table" ) then
 --            if ( addr ) then
---                --logger.debug ( "dumpRegisters: by address=" .. tohex ( addr ) );
+--                --logger:debug ( "dumpRegisters: by address=" .. tohex ( addr ) );
 --                for reg, _addr in pairs ( regs ) do
 --                    if ( _addr == addr ) then
 --                        printLine ( addr, tostring ( reg ) );
@@ -213,12 +213,12 @@ function M.init ( address, sda, scl, defaults )
 --    assert ( defaults == nil, "defaults is not nil" );
 --    assert ( verbose == nil or type ( verbose ) == "boolean", "verbose isnt boolean" );
 
-    --logger.debug ( "init: scl=" .. scl .. " sda=" .. sda  )
+    --logger:debug ( "init: scl=" .. scl .. " sda=" .. sda  )
 
     deviceAdress = address;
 
     local speed = i2c.setup ( ID, sda, scl, i2c.SLOW ); -- 100 kHz
-    logger.debug ( "init: speed=" .. speed .. " addr=" .. tohex ( deviceAdress ) );
+    logger:debug ( "init: speed=" .. speed .. " addr=" .. tohex ( deviceAdress ) );
 
     if ( defaults and type ( defaults ) == "table" ) then
         for register, value in pairs ( defaults ) do
@@ -233,7 +233,7 @@ end
 --------------------------------------------------------------------
 -- main
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

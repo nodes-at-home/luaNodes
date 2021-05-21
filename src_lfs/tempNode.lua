@@ -34,24 +34,24 @@ local retain = nodeConfig.mqtt.retain;
 
 local function getSensorData ( pin )
 
-    logger.info ( "getSensorData: pin=" .. pin );
+    logger:info ( "getSensorData: pin=" .. pin );
 
     local status, temperature, humidity, temp_decimial, humi_decimial = dht.read ( pin );
 
     if( status == dht.OK ) then
 
-        logger.debug ( "getSensorData: Temperature: " .. temperature .. " C" );
-        logger.debug ( "getSensorData: Humidity: " .. humidity .. "%" );
+        logger:debug ( "getSensorData: Temperature: " .. temperature .. " C" );
+        logger:debug ( "getSensorData: Humidity: " .. humidity .. "%" );
 
     elseif( status == dht.ERROR_CHECKSUM ) then
 
-        logger.debug ( "getSensorData: Checksum error" );
+        logger:debug ( "getSensorData: Checksum error" );
         temperature = nil;
         humidity = nil;
 
     elseif( status == dht.ERROR_TIMEOUT ) then
 
-        logger.notice ( "getSensorData: Time out" );
+        logger:notice ( "getSensorData: Time out" );
         temperature = nil;
         humidity = nil;
 
@@ -63,17 +63,17 @@ end
 
 local function publishValues ( client, topic, temperature, humidity, pressure, dhtstatus )
 
-    logger.info ( "publishValues: topic=" .. topic .. " temperature=" .. tostring ( temperature ) .. " humidity=" .. tostring ( humidity ) .. " pressure=" .. tostring ( pressure ) .. " dhtstatus=" .. tostring ( dhtstatus ) );
+    logger:info ( "publishValues: topic=" .. topic .. " temperature=" .. tostring ( temperature ) .. " humidity=" .. tostring ( humidity ) .. " pressure=" .. tostring ( pressure ) .. " dhtstatus=" .. tostring ( dhtstatus ) );
 
     -- all Values
     if ( temperature and humidity and pressure ) then
-        logger.debug ( "publishValues: temperature=" .. temperature );
+        logger:debug ( "publishValues: temperature=" .. temperature );
         client:publish ( topic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"°C"}]], 0, retain, -- qos, retain
             function ( client )
-                logger.debug ( "publishValues: humidity=" .. humidity );
+                logger:debug ( "publishValues: humidity=" .. humidity );
                 client:publish ( topic .. "/value/humidity", [[{"value":]] .. humidity .. [[,"unit":"%"}]], 0, retain, -- qos, retain
                     function ( client )
-                        logger.debug ( "publishValues: pressure=" .. pressure );
+                        logger:debug ( "publishValues: pressure=" .. pressure );
                         client:publish ( topic .. "/value/pressure", [[{"value":]] .. pressure .. [[, "unit":"hPa"}]], 0, retain, -- qos, retain
                             function ( client )
                                 require ( "deepsleep" ).go ( client, deepSleepDelay, timeBetweenSensorReadings );
@@ -85,10 +85,10 @@ local function publishValues ( client, topic, temperature, humidity, pressure, d
         );
     -- only temperature and humidity
     elseif ( temperature and humidity ) then
-        logger.debug ( "publishValues: temperature=" .. temperature );
+        logger:debug ( "publishValues: temperature=" .. temperature );
         client:publish ( topic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"°C"}]], 0, retain, -- qos, retain
             function ( client )
-                logger.debug ( "publishValues: humidity=" .. humidity );
+                logger:debug ( "publishValues: humidity=" .. humidity );
                 client:publish ( topic .. "/value/humidity", [[{"value":]] .. humidity .. [[,"unit":"%"}]], 0, retain, -- qos, retain
                     function ( client )
                         require ( "deepsleep" ).go ( client, deepSleepDelay, timeBetweenSensorReadings );
@@ -98,10 +98,10 @@ local function publishValues ( client, topic, temperature, humidity, pressure, d
         );
     -- only pressure and temperature
     elseif ( pressure and temperature ) then
-        logger.debug ( "publishValues: pressure=" .. pressure );
+        logger:debug ( "publishValues: pressure=" .. pressure );
         client:publish ( topic .. "/value/pressure", [[{"value":]] .. pressure .. [[, "unit":"hPa"}]], 0, retain, -- qos, retain
             function ( client )
-                logger.debug ( "publishValues: temperature=" .. temperature );
+                logger:debug ( "publishValues: temperature=" .. temperature );
                 client:publish ( topic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"°C"}]], 0, retain, -- qos, retain
                     function ( client )
                         require ( "deepsleep" ).go ( client, deepSleepDelay, timeBetweenSensorReadings );
@@ -110,7 +110,7 @@ local function publishValues ( client, topic, temperature, humidity, pressure, d
             end
         );
     else
-        logger.debug ( "publishValues: nothing published" );
+        logger:debug ( "publishValues: nothing published" );
         local t = temperature and temperature or "--";
         local h = humidity and humidity or "--";
         local p = pressure and pressure or "--"
@@ -130,7 +130,7 @@ end
 
 function M.connect ( client, topic )
 
-    logger.info ( "connect: topic=" .. topic );
+    logger:info ( "connect: topic=" .. topic );
 
     local temperature, humidity = 0;
 
@@ -143,25 +143,25 @@ function M.connect ( client, topic )
         if ( dhtstatus == dht.OK and ( temperature < -100 or temperature > 100 ) ) then
             temperature = nil;
         end
-        logger.debug ( "status=" .. dhtstatus .. " t=" .. tostring ( temperature ) .. " ,h=" .. tostring ( humidity ) );
+        logger:debug ( "status=" .. dhtstatus .. " t=" .. tostring ( temperature ) .. " ,h=" .. tostring ( humidity ) );
     end
 
     if ( bme280SdaPin and bme280SclPin ) then
         local speed = i2c.setup ( 0, bme280SdaPin, bme280SclPin, i2c.SLOW );
-        logger.debug ( "i2c speed=" .. speed );
+        logger:debug ( "i2c speed=" .. speed );
         local ret = bme280.setup ();
-        logger.debug ( "connect: ret=" .. tostring ( ret ) );
+        logger:debug ( "connect: ret=" .. tostring ( ret ) );
         if ( ret ) then
             bme280.startreadout ( 0, -- default delay 113ms
                 function ()
                     local pressure = bme280.baro () / 1000;
-                    logger.debug ( "connect: pressure=" .. pressure );
+                    logger:debug ( "connect: pressure=" .. pressure );
                     if ( dhtPin and temperature and humidity ) then
-                        logger.debug ( "connect: t=" .. temperature .. " ,h=" .. humidity );
+                        logger:debug ( "connect: t=" .. temperature .. " ,h=" .. humidity );
                         publishValues ( client, topic, temperature, humidity, pressure, dhtstatus );
                     else
                         temperature = bme280.temp () / 100;
-                        logger.debug ( "connect: temperature=" .. temperature );
+                        logger:debug ( "connect: temperature=" .. temperature );
                         publishValues ( client, topic, temperature, nil, pressure, dhtstatus );
                     end
                 end
@@ -175,9 +175,9 @@ end
 
 function M.periodic ( client, topic )
 
-    logger.info ( "periodic: topic=" .. topic );
+    logger:info ( "periodic: topic=" .. topic );
 
-    logger.warning ( "priodic: closing connections and restart" );
+    logger:warning ( "priodic: closing connections and restart" );
     restartConnection = false;
     client:close ();
     wifi.sta.disconnect ();
@@ -187,7 +187,7 @@ end
 
 function M.offline ( client )
 
-    logger.info ( "offline:" );
+    logger:info ( "offline:" );
 
     return restartConnection;
 
@@ -195,7 +195,7 @@ end
 
 function M.message ( client, topic, payload )
 
-    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger:info ( "message: topic=" .. topic .. " payload=" .. payload );
 
 end
 
@@ -207,7 +207,7 @@ if ( dhtPowerPin ) then
     gpio.write ( dhtPowerPin, gpio.HIGH );
 end
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

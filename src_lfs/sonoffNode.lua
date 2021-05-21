@@ -40,7 +40,7 @@ local debounceTmr = tmr.create ();
 
 local function changeState ( client, topic, payload )
 
-    logger.info ( "changeState: topic=" .. topic .. " payload=" .. payload );
+    logger:info ( "changeState: topic=" .. topic .. " payload=" .. payload );
 
     if ( ledPin and ( useLedForState == nil or useLedForState ) ) then
         gpio.write ( ledPin, payload == "ON" and gpio.LOW or gpio.HIGH );
@@ -48,7 +48,7 @@ local function changeState ( client, topic, payload )
 
     gpio.write ( relayPin, payload == "ON" and RELAY_ON or RELAY_OFF );
 
-    logger.debug ( "changeState: state=" .. payload .. " to " .. topic );
+    logger:debug ( "changeState: state=" .. payload .. " to " .. topic );
     client:publish ( topic .. "/state", payload, 0, nodeConfig.mqtt.retain, function () end ); -- qos, retain
 
 end
@@ -66,7 +66,7 @@ local function initTrigger ( client, topic )
             debounceTmr:alarm ( nodeConfig.timer.debounceDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
                 function ()
                     local level = gpio.read ( relayPin );
-                    logger.debug ( "initTrigger: level=" .. level );
+                    logger:debug ( "initTrigger: level=" .. level );
                     changeState ( client, topic, level == 0 and "ON" or "OFF" );
                 end
             );
@@ -81,7 +81,7 @@ end
 
 function M.connect ( client, topic )
 
-    logger.init ( "connect: topic=" .. topic );
+    logger:init ( "connect: topic=" .. topic );
 
     if ( ledPin ) then
         flashLed ( 2 );
@@ -96,7 +96,7 @@ end
 
 function M.message ( client, topic, payload )
 
-    logger.init ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger:init ( "message: topic=" .. topic .. " payload=" .. payload );
 
     local topicParts = util.splitTopic ( topic );
     local device = topicParts [#topicParts];
@@ -117,7 +117,7 @@ end
 
 function M.offline ( client )
 
-    logger.info ( "offline:" );
+    logger:info ( "offline:" );
 
     return true; -- restart mqtt connection
 
@@ -138,7 +138,7 @@ if ( buttonPin ) then
     gpio.mode ( buttonPin, gpio.INT, gpio.PULLUP );
 end
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

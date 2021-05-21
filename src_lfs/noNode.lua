@@ -25,19 +25,19 @@ local logger = require ( "syslog" ).logger ( moduleName );
 
 function M.connect ( client, topic )
 
-    logger.info ( "connect: topic=" .. topic );
+    logger:info ( "connect: topic=" .. topic );
 
 end
 
 function M.message ( client, topic, payload )
 
-    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger:info ( "message: topic=" .. topic .. " payload=" .. payload );
 
 end
 
 function M.offline ( client )
 
-    logger.info ( "offline:" );
+    logger:info ( "offline:" );
 
     return true; -- restart mqtt connection
 
@@ -45,14 +45,14 @@ end
 
 function M.periodic ( client, topic )
 
-    logger.info ( "periodic: topic=" .. topic );
+    logger:info ( "periodic: topic=" .. topic );
 
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

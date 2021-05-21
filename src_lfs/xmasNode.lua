@@ -78,7 +78,7 @@ local function rgbToHue ( r, g, b )
   local rest = h % 1;
   h = h - rest;
 
---  logger.debug ( "h=", h );
+--  logger:debug ( "h=", h );
 
   return h;
 
@@ -103,24 +103,24 @@ end
 
 local function changeState ( client, topic, payload )
 
-    logger.info ( "changeState: to state=" .. payload .. " at " .. topic );
+    logger:info ( "changeState: to state=" .. payload .. " at " .. topic );
 
     -- payload ist json
     local ok, json = pcall ( sjson.decode, payload );
     if ( ok and json.state ) then
 
-        logger.debug ( "changeState: state=" .. tostring ( json.state ) );
+        logger:debug ( "changeState: state=" .. tostring ( json.state ) );
 
         -- prepare answer
         state = json.state;
         local jsonState = sjson.encode ( { state = state } );
         if ( state == "ON" ) then
             if ( json.brightness ) then
-                logger.debug ( "changeState: brightness=" .. json.brightness );
+                logger:debug ( "changeState: brightness=" .. json.brightness );
                 brightness = json.brightness;
             end
             if ( json.color ) then
-                logger.debug ( "changeState: color=" .. json.color .. " ,r=" .. json.color.r .. " ,g=" .. json.color.g .. " ,b=" .. json.color.b );
+                logger:debug ( "changeState: color=" .. json.color .. " ,r=" .. json.color.r .. " ,g=" .. json.color.g .. " ,b=" .. json.color.b );
                 red = json.color.r;
                 green = json.color.g;
                 blue = json.color.b;
@@ -132,7 +132,7 @@ local function changeState ( client, topic, payload )
         local arduino = "###";
         if ( state == "ON" ) then
             if ( json.color ) then
-                logger.debug ( "changeState: red=" .. red .. " ,green=" .. green .. " ,blue=" .. blue );
+                logger:debug ( "changeState: red=" .. red .. " ,green=" .. green .. " ,blue=" .. blue );
                 if ( nodeConfig.appCfg.useRGB ) then -- use rgb
                     arduino = arduino .. "M6";
                     arduino = arduino .. "R" .. red;
@@ -167,7 +167,7 @@ end
 
 function M.connect ( client, topic )
 
-    logger.info ( "connect: topic=" .. topic );
+    logger:info ( "connect: topic=" .. topic );
 
     -- initialize uart
 --    uart.alt ( nodeConfig.appCfg.uartAlternatePins );
@@ -180,7 +180,7 @@ end
 
 function M.message ( client, topic, payload )
 
-    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger:info ( "message: topic=" .. topic .. " payload=" .. payload );
 
     local topicParts = util.splitTopic ( topic );
     local device = topicParts [#topicParts];
@@ -193,7 +193,7 @@ end
 
 function M.offline ( client )
 
-    logger.info ( "offline:" );
+    logger:info ( "offline:" );
 
     return true; -- restart mqtt connection
 
@@ -205,7 +205,7 @@ end
 gpio.mode ( nodeConfig.appCfg.arduinoResetPin, gpio.OUTPUT );
 gpio.write ( nodeConfig.appCfg.arduinoResetPin, gpio.LOW ); -- hold the arduino in reset mode
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

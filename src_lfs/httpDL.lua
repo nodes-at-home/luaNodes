@@ -18,7 +18,7 @@ local logger = require ( "syslog" ).logger ( moduleName );
 
 function M.download ( host, port, url, path, callback )
 
-    logger.info ( "download: server=" .. host .. ":" .. port .. " url=" .. url .. " path=" .. path );
+    logger:info ( "download: server=" .. host .. ":" .. port .. " url=" .. url .. " path=" .. path );
 
 	file.remove ( path );
 	file.open ( path, "w+" );
@@ -49,8 +49,8 @@ function M.download ( host, port, url, path, callback )
 	conn:on ( "receive",
         -- received one piece
         function ( conn, payload )
-            -- logger.debug ( "download: heap=" .. node.heap () );
-            -- logger.debug ( "download: payload=" .. payload );
+            -- logger:debug ( "download: heap=" .. node.heap () );
+            -- logger:debug ( "download: payload=" .. payload );
             if ( continueWrite ) then
                 file.write ( payload );
                 file.flush ();
@@ -79,7 +79,7 @@ function M.download ( host, port, url, path, callback )
         -- callback function called at closing
         function ( conn )
             local response = isHttpReponseOk and "ok" or httpResponseCode;
-            logger.debug ( "download: disconnection with response=" .. response );
+            logger:debug ( "download: disconnection with response=" .. response );
             conn = nil;
             file.close ()
             collectgarbage ();
@@ -95,7 +95,7 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

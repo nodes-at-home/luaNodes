@@ -40,7 +40,7 @@ local proximityThreshold = nodeConfig.appCfg.proximityThreshold or 20;
 
 local function publishAmbientJson ( client, topic )
 
-    logger.info ( "publishAmbientJson: topic=" .. topic );
+    logger:info ( "publishAmbientJson: topic=" .. topic );
 
     -- sensing ambient light
     local cdata = readWord ( apds9960.REG.CDATAH, apds9960.REG.CDATAL );
@@ -58,7 +58,7 @@ local function publishAmbientJson ( client, topic )
             "}"
         }
     );
-    logger.debug ( "publishAmbientJson: json=" .. json );
+    logger:debug ( "publishAmbientJson: json=" .. json );
 
     client:publish ( topic .. "/value/ambient", json, 0, 0,  -- qos, NO retain!!!
         function ( client )
@@ -73,7 +73,7 @@ end
 
 function M.start ( client, topic )
 
-    logger.info ( "start: topic=" .. topic );
+    logger:info ( "start: topic=" .. topic );
 
     apds9960.init ( sdaPin, sclPin );
 
@@ -82,7 +82,7 @@ function M.start ( client, topic )
 
         function ( level, when ) -- when is in us
 
---            logger.debug (
+--            logger:debug (
 --                table.concat (
 --                    {
 --                        "start: "
@@ -100,12 +100,12 @@ function M.start ( client, topic )
 --                )
 --            );
 
-            logger.debug ( "start: publish button press ON" );
+            logger:debug ( "start: publish button press ON" );
             client:publish ( topic .. "/value/state", "ON", 0, 0,  -- qos, NO retain!!!
                 function ( client )
                     tmr:create ():alarm ( offDelay, tmr.ALARM_SINGLE,
                         function ()
-                            logger.debug ( "start: publish button press OFF" );
+                            logger:debug ( "start: publish button press OFF" );
                             client:publish ( topic .. "/value/state", "OFF", 0, 0, -- qos, NO retain!!!
                                 function ( client )
                                     -- clear all interrupts
@@ -128,7 +128,7 @@ end
 
 function M.connect ( client, topic )
 
-    logger.info ( "connect: topic=" .. topic );
+    logger:info ( "connect: topic=" .. topic );
 
     setBit ( apds9960.REG.ENABLE, 3 );                                      -- wait enable, only usefull, when ALS is activated?
     setBit ( apds9960.REG.ENABLE, 5 );                                      -- ENABLE<5> proximity interrupt enable
@@ -144,13 +144,13 @@ end
 
 function M.message ( client, topic, payload )
 
-    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger:info ( "message: topic=" .. topic .. " payload=" .. payload );
 
 end
 
 function M.offline ( client )
 
-    logger.debug ( "offline:" );
+    logger:debug ( "offline:" );
 
     return true; -- restart mqtt connection
 
@@ -158,7 +158,7 @@ end
 
 function M.periodic ( client, topic )
 
-    logger.info ( "periodic: topic=" .. topic );
+    logger:info ( "periodic: topic=" .. topic );
 
     publishAmbientJson ( client, topic );
 
@@ -167,7 +167,7 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

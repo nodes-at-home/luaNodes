@@ -88,22 +88,22 @@ end
 
 function M.start ( client, topic )
 
-    logger.info ( "start: topic=" .. topic );
+    logger:info ( "start: topic=" .. topic );
 
     local resolution = nodeConfig.appCfg.resolution.width .. "x" .. nodeConfig.appCfg.resolution.height;
     if ( nodeConfig.appCfg.i2c ) then
         local sda = nodeConfig.appCfg.i2c.sdaPin;
         local scl = nodeConfig.appCfg.i2c.sclPin;
-        logger.debug ( "start: intialize i2c with sda=" .. sda .. " scl=" .. scl .. " res=" .. resolution );
+        logger:debug ( "start: intialize i2c with sda=" .. sda .. " scl=" .. scl .. " res=" .. resolution );
         display = i2cInit ( resolution, sda, scl );
     elseif ( nodeConfig.appCfg.spi ) then
         local cs = nodeConfig.appCfg.spi.csPin;
         local dc = nodeConfig.appCfg.spi.dcPin;
         local reset = nodeConfig.appCfg.spi.resetPin;
-        logger.debug ( "start: intialize spi with cs=" .. cs .. " dc=" .. dc .. " reset=" .. reset .. " res=" .. resolution );
+        logger:debug ( "start: intialize spi with cs=" .. cs .. " dc=" .. dc .. " reset=" .. reset .. " res=" .. resolution );
         display = spiInit ( resolution, cs, dc, reset );
     else
-        logger.debug ( "start: no device initialized" );
+        logger:debug ( "start: no device initialized" );
         return;
     end
 
@@ -116,11 +116,11 @@ end
 
 function M.connect ( client, topic )
 
-    logger.info ( "connect: topic=" .. topic );
+    logger:info ( "connect: topic=" .. topic );
 
     -- subscribe to message topic
     local t = topic .. "/message/+";
-    logger.debug ( "connect: subscribe to topic=" .. t );
+    logger:debug ( "connect: subscribe to topic=" .. t );
     client:subscribe ( t, 0, -- ..., qos
         function ( client )
         end
@@ -130,7 +130,7 @@ end
 
 function M.message ( client, topic, payload )
 
-    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger:info ( "message: topic=" .. topic .. " payload=" .. payload );
 
     -- special treatment for UTF-8 CHAR '°'
     local i1, i2 = payload:find ( string.char ( 0xC2 ) );
@@ -161,7 +161,7 @@ end
 
 function M.offline ( client )
 
-    logger.info ( "offline:" );
+    logger:info ( "offline:" );
 
     return true;
 
@@ -170,7 +170,7 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

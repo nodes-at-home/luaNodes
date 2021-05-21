@@ -157,17 +157,17 @@ local DEFAULT = {
 
 function M.init ( sda, scl )
 
-    logger.debug ( "init: sda=" .. sda .. " scl=" .. scl .. " verbose=" .. tostring ( verbose ) )
+    logger:debug ( "init: sda=" .. sda .. " scl=" .. scl .. " verbose=" .. tostring ( verbose ) )
 
     local speed = i2ctool.init ( DEVICE_ADDRESS, sda, scl, DEFAULT, verbose ); -- 100 kHz
-    logger.debug ( "init: speed=" .. speed );
+    logger:debug ( "init: speed=" .. speed );
 
 end
 
 --------------------------------------------------------------------
 -- main
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

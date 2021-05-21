@@ -35,7 +35,7 @@ end
 
 local function sendCode ( code, pin, repeats, period )
 
-    logger.info ( "sendCode: repeats=" .. repeats .. " period=" .. period .. " code=" .. code );
+    logger:info ( "sendCode: repeats=" .. repeats .. " period=" .. period .. " code=" .. code );
 
     local codeBase4 = 0;
     for i = 1, 12 do
@@ -44,7 +44,7 @@ local function sendCode ( code, pin, repeats, period )
         codeBase4 = bit.lshift ( codeBase4, 2 );
         codeBase4 = bit.bor ( codeBase4, mod );
     end
-    logger.debug ( "sendCode: codeBase4=" .. codeBase4 );
+    logger:debug ( "sendCode: codeBase4=" .. codeBase4 );
 
     --      (1) put delayTimes for all trits into one array and then fire en asyncronous serout
     --      (2) resuse table from (1)
@@ -73,7 +73,7 @@ local function sendCode ( code, pin, repeats, period )
 --    for i = 1, #delayTimes do
 --        table.insert ( t, delayTimes [i] / period );
 --    end
---    logger.debug ( "sendCode: sequence=", table.concat ( t ) );
+--    logger:debug ( "sendCode: sequence=", table.concat ( t ) );
 
     appendTable ( delayTimes , syncDelayTimes );
 
@@ -87,7 +87,7 @@ local function dequeueCommand ()
     if ( #M.queue > 0 and not isSending ) then
         isSending = true;
         local code = table.remove ( M.queue, 1 );
-        logger.debug ( "dequeueCommand: code=" .. code );
+        logger:debug ( "dequeueCommand: code=" .. code );
         sendCode ( code, nodeConfig.appCfg.rfpin, nodeConfig.appCfg.rfrepeats, nodeConfig.appCfg.rfperiod );
     end
 
@@ -95,7 +95,7 @@ end
 
 local function queueCommand ( device, state )
 
-    logger.info ( "queueCommand: device=" .. device .. " state=" .. state );
+    logger:info ( "queueCommand: device=" .. device .. " state=" .. state );
 
     local codes = {
 
@@ -129,7 +129,7 @@ local function queueCommand ( device, state )
     if ( deviceCodes and (state == "ON" or state == "OFF" ) ) then
         local code = deviceCodes [state];
         gpio.write ( nodeConfig.appCfg.ledpin, state == "ON" and gpio.HIGH or gpio.LOW );
-        logger.debug ( "send: code=" .. code );
+        logger:debug ( "send: code=" .. code );
         -- sendCode ( code );
         table.insert ( M.queue, code );
     end
@@ -142,9 +142,9 @@ end
 
 function M.message ( client, topic, payload )
 
-    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger:info ( "message: topic=" .. topic .. " payload=" .. payload );
 
-    logger.debug ( "message: topic=" .. topic .. " ,payload=" .. payload );
+    logger:debug ( "message: topic=" .. topic .. " ,payload=" .. payload );
     local topicParts = util.splitTopic ( topic );
     local device = topicParts [#topicParts];
     queueCommand ( device, payload );
@@ -153,7 +153,7 @@ end
 
 function M.offline ( client )
 
-    logger.info ( "offline:" );
+    logger:info ( "offline:" );
 
     return true; -- restart mqtt connection
 
@@ -171,7 +171,7 @@ gpio.write ( nodeConfig.appCfg.ledpin, gpio.LOW );
 M.queue = {};
 tmr.create ():alarm ( nodeConfig.timer.queuePeriod, tmr.ALARM_AUTO, dequeueCommand );
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

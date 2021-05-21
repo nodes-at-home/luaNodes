@@ -44,11 +44,11 @@ local lastTick = 0;
 
 local function publishRain ( client, topic, rain, ticks )
 
-    logger.info ( "publishRain: topic=" .. topic .. " rain=" .. rain .. " ticks=" .. ticks );
+    logger:info ( "publishRain: topic=" .. topic .. " rain=" .. rain .. " ticks=" .. ticks );
 
     local payload = ('{"rain":%.1f,"unit":"ml","ticks":%d}'):format ( rain, ticks );
 
-    logger.debug ( "publishRain: payload=" .. payload );
+    logger:debug ( "publishRain: payload=" .. payload );
 
     client:publish ( topic .. "/value/rain", payload, qos, retain,
         function ()
@@ -59,7 +59,7 @@ end
 
 local function displayValues ( rain, ticks )
 
-    logger.info ( "displayValues: rain=" .. rain .. " ticks=" .. ticks );
+    logger:info ( "displayValues: rain=" .. rain .. " ticks=" .. ticks );
 
     display:clearBuffer ();
 
@@ -76,7 +76,7 @@ end
 
 local function tick ( level, when, eventcount )
 
-    --logger.info ( "tick: level=" .. level .. " when=" .. when ..  " eventcount=" .. eventcount );
+    --logger:info ( "tick: level=" .. level .. " when=" .. when ..  " eventcount=" .. eventcount );
 
     if ( (when - lastTick) > suspendPeriod ) then
         lastTick = when;
@@ -93,7 +93,7 @@ end
 
 function M.start ( client, topic )
 
-    logger.info ( "start: topic=" .. topic );
+    logger:info ( "start: topic=" .. topic );
 
     gpio.mode ( tickPin, gpio.INT, gpio.PULLUP );
     gpio.trig ( tickPin, "down", tick );
@@ -107,19 +107,19 @@ end
 
 function M.connect ( client, topic )
 
-    logger.info ( "connect: topic=" .. topic );
+    logger:info ( "connect: topic=" .. topic );
 
 end
 
 function M.message ( client, topic, payload )
 
-    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger:info ( "message: topic=" .. topic .. " payload=" .. payload );
 
 end
 
 function M.periodic ( client, topic )
 
-    logger.info ( "periodic: topic=" .. topic );
+    logger:info ( "periodic: topic=" .. topic );
 
     --displayValues ( rain, ticks );
     publishRain ( client, topic, rain, ticks );
@@ -130,7 +130,7 @@ end
 
 function M.offline ( client )
 
-    logger.info ( "offline:" );
+    logger:info ( "offline:" );
 
     return true;
 
@@ -139,7 +139,7 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

@@ -32,17 +32,17 @@ local restartConnection = true;
 
 function M.connect ( client, topic )
 
-    logger.info ( "connect: topic=" .. topic );
+    logger:info ( "connect: topic=" .. topic );
 
     local rawcode, bootreason = node.bootreason ();
     if ( bootreason == 5 ) then -- 5 = wake from deep sleep
-        logger.debug ( "connect: publish button press ON" );
+        logger:debug ( "connect: publish button press ON" );
         client:publish ( topic .. "/value/state", "ON", 0, retain, -- qos, NO retain!!!
             function ( client )
                 tmr.create ():alarm ( offDelay, tmr.ALARM_SINGLE,  -- timer_id, interval_ms, mode
                     function ()
                         -- publishing OFF is not harmful
-                        logger.debug ( "connect: publish button press OFF" );
+                        logger:debug ( "connect: publish button press OFF" );
                         client:publish ( topic .. "/value/state", "OFF", 0, retain, -- qos, NO retain!!!
                             function ( client )
                                 require ( "deepsleep").go ( client, deepSleepDelay, 0 ); -- sleep forever
@@ -60,7 +60,7 @@ end
 
 function M.offline ( client )
 
-    logger.info ( "offline (local)" );
+    logger:info ( "offline (local)" );
 
     return restartConnection;
 
@@ -68,14 +68,14 @@ end
 
 function M.message ( client, topic, payload )
 
-    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger:info ( "message: topic=" .. topic .. " payload=" .. payload );
 
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

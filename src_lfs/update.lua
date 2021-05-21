@@ -58,8 +58,8 @@ end
 
 function M.next ( fromModule, nextModule, optMessage )
 
-    logger.info ( "next: from=" .. tostring ( fromModule ) .. " to=" .. tostring ( nextModule ) .. " msg=" .. tostring ( optMessage ) );
-    logger.debug ( "next: heap=" .. node.heap () );
+    logger:info ( "next: from=" .. tostring ( fromModule ) .. " to=" .. tostring ( nextModule ) .. " msg=" .. tostring ( optMessage ) );
+    logger:debug ( "next: heap=" .. node.heap () );
 
     if ( fromModule ) then
         M.unrequire ( fromModule );
@@ -78,7 +78,7 @@ end
 
 function M.update ()
 
-    logger.info ( "update: second stage of update" );
+    logger:info ( "update: second stage of update" );
 
     require ( "updateWifi" ).start ();
 
@@ -87,7 +87,7 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

@@ -26,7 +26,7 @@ local mqttClient = nil;     -- mqtt client
 local function restart ()
 
     syslog.restart ();
-    logger.alert ( "RESTARTING" ); -- to resolve the restart flag in syslog
+    logger:alert ( "RESTARTING" ); -- to resolve the restart flag in syslog
 
 end
 
@@ -38,28 +38,28 @@ function M.start ( message )
         mqttClient = mqtt.Client ( mqttClientName, nodeConfig.mqtt.keepAliveTime, "", "" ); -- ..., keep_alive_time, username, password
     end
 
-    logger.debug ( "start: connecting to " .. nodeConfig.mqtt.broker );
+    logger:debug ( "start: connecting to " .. nodeConfig.mqtt.broker );
 
-    logger.alert ( "start: " .. nodeConfig.app .. "@" .. nodeConfig.location .. " -> " .. message );
+    logger:alert ( "start: " .. nodeConfig.app .. "@" .. nodeConfig.location .. " -> " .. message );
 
     local result = mqttClient:connect( nodeConfig.mqtt.broker , 1883, false, -- broker, port, secure
         function ( client )
-            logger.debug ( "start: connected to MQTT Broker" );
-            logger.debug ( "start: node=" .. nodeConfig.topic );
+            logger:debug ( "start: connected to MQTT Broker" );
+            logger:debug ( "start: node=" .. nodeConfig.topic );
             -- 1) set node tag on update state topic
             local topic = "nodes@home/update/" .. node.chipid ();
             local msg = nodeConfig.app .. "@" .. nodeConfig.location;
-            logger.debug ( "start: publish topic=" .. topic .. " msg=" .. msg );
+            logger:debug ( "start: publish topic=" .. topic .. " msg=" .. msg );
             client:publish ( topic, msg, 0, nodeConfig.mqtt.retain, -- ..., qos, retain
                 -- 2) set update state
                 function (client )
                     local topic = "nodes@home/update/" .. node.chipid () .. "/state";
-                    logger.debug ( "start: publish topic=" .. topic .. " msg=" .. message );
+                    logger:debug ( "start: publish topic=" .. topic .. " msg=" .. message );
                     client:publish ( topic, message, 0, nodeConfig.mqtt.retain, -- ..., qos, retain
                         -- 3) reset update service topic
                         function ( client )
                             local topic = nodeConfig.topic .. "/service/update";
-                            logger.debug ( "start: publish reset topic=" .. topic );
+                            logger:debug ( "start: publish reset topic=" .. topic );
                             client:publish ( topic, "", 0, 1, -- ..., qos, retain
                                 -- 4) restart
                                 restart -- last step is restart node
@@ -70,18 +70,18 @@ function M.start ( message )
             );
         end,
         function ( client, reason )
-            logger.warning ( "start: not connected reason=" .. reason );
+            logger:warning ( "start: not connected reason=" .. reason );
         end
     );
 
-    logger.debug ( "connect result=" .. tostring ( result ) );
+    logger:debug ( "connect result=" .. tostring ( result ) );
 
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

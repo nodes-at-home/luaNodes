@@ -37,11 +37,11 @@ local qos = nodeConfig.mqtt.qos or 1;
 local function printSensors ()
 
     if ( ds18b20.sens ) then
-        logger.debug ( "printSensors: number of sensors=" .. #ds18b20.sens );
+        logger:debug ( "printSensors: number of sensors=" .. #ds18b20.sens );
         for i, s  in ipairs ( ds18b20.sens ) do
             local addr = ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X'):format ( s:byte ( 1, 8 ) );
             local parasitic = s:byte ( 9 ) == 1 and " (parasite)" or "";
-            logger.debug ( string.format ( "printSensors: sensor #%d address: %s%s",  i, addr, parasitic ) );
+            logger:debug ( string.format ( "printSensors: sensor #%d address: %s%s",  i, addr, parasitic ) );
         end
     end
 
@@ -59,8 +59,8 @@ local function readAndPublishTemperature ( client, topic )
                     i = i + 1;
                     if ( i == 1 ) then -- only first sensor
                         --local addr = ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X'):format ( address:byte ( 1, 8 ) );
-                        --logger.debug ( ("readAndPublishTemperature: Sensor %s -> %s°C %s"):format ( addr, temperature, address:byte ( 9 ) == 1 and "(parasite)" or "-" ) );
-                        logger.debug ( ("readAndPublishTemperature: temp=%f"):format ( brewTemperature ) );
+                        --logger:debug ( ("readAndPublishTemperature: Sensor %s -> %s°C %s"):format ( addr, temperature, address:byte ( 9 ) == 1 and "(parasite)" or "-" ) );
+                        logger:debug ( ("readAndPublishTemperature: temp=%f"):format ( brewTemperature ) );
                         local payload = ('{"value":%f,"unit":"°C"}'):format ( brewTemperature );
                         client:publish ( topic .. "/value/temperature", payload, qos, NO_RETAIN,
                             function ( client )
@@ -86,13 +86,13 @@ end
 
 function M.start ( client, topic )
 
-    logger.info ( "start: topic=" .. topic );
+    logger:info ( "start: topic=" .. topic );
 
 end
 
 function M.connect ( client, topic )
 
-    logger.info ( "connect: topic=" .. topic );
+    logger:info ( "connect: topic=" .. topic );
 
     readAndPublishTemperature ( client, topic );
 
@@ -100,7 +100,7 @@ end
 
 function M.offline ( client )
 
-    logger.info ( "offline:" );
+    logger:info ( "offline:" );
 
     return true; -- restart mqtt
 
@@ -108,7 +108,7 @@ end
 
 function M.message ( client, topic, payload )
 
-    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger:info ( "message: topic=" .. topic .. " payload=" .. payload );
 
     local topicParts = util.splitTopic ( topic );
     local device = topicParts [#topicParts];
@@ -121,17 +121,17 @@ function M.message ( client, topic, payload )
             end
         end
     else
-        logger.debug ( "message: nodeConfig.appCfg.sockets is not a table" );
+        logger:debug ( "message: nodeConfig.appCfg.sockets is not a table" );
     end
 
-    logger.debug ( "message: device=" .. device .. " pin=" .. tostring ( pin ) );
+    logger:debug ( "message: device=" .. device .. " pin=" .. tostring ( pin ) );
 
     if ( pin ) then
         if ( payload == "ON" or payload == "OFF" ) then
             local pinLevel = payload == "ON" and SOCKET_ON or SOCKET_OFF;
-            logger.debug ( "message: set pin=" .. pin .. " to level=" .. tostring ( pinLevel ) );
+            logger:debug ( "message: set pin=" .. pin .. " to level=" .. tostring ( pinLevel ) );
             gpio.write ( pin, pinLevel );
-            logger.debug ( "message: publish state=" .. payload .. " to " .. topic .. "/state" );
+            logger:debug ( "message: publish state=" .. payload .. " to " .. topic .. "/state" );
             client:publish ( topic .. "/state", payload, 0, nodeConfig.mqtt.retain, function () end ); -- qos, retain
         end
     end
@@ -140,7 +140,7 @@ end
 
 function M.periodic ( client, topic )
 
-    logger.info ( "periodic: topic=" .. topic );
+    logger:info ( "periodic: topic=" .. topic );
 
     readAndPublishTemperature ( client, topic );
 
@@ -156,7 +156,7 @@ if ( type ( nodeConfig.appCfg.sockets ) == "table" ) then
     end
 end
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

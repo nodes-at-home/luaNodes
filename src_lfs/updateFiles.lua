@@ -48,7 +48,7 @@ end
 
 local function updateFile ()
 
-    logger.info ( "updateFile:" );
+    logger:info ( "updateFile:" );
 
     local fileName = update.filesList [updateFilesListIndex].name;
     local pos = fileName:find ( "%." ); -- we mean the char '.'
@@ -59,7 +59,7 @@ local function updateFile ()
     end
     local fileUrl = update.path .. "/" .. fileName;
 
-    logger.debug ( "updateFile: i=" .. updateFilesListIndex .. " ,fileName=" .. fileName .. " ,url=" .. fileUrl );
+    logger:debug ( "updateFile: i=" .. updateFilesListIndex .. " ,fileName=" .. fileName .. " ,url=" .. fileUrl );
 
     require ( "httpDL" );
     httpDL.download ( update.host, update.port, fileUrl, otaFileName,
@@ -68,10 +68,10 @@ local function updateFile ()
                 -- before 2.0.0 was none stat function
                 local fileAttributes;
                 if ( file.stat ) then
-                    logger.debug ( "updateFile: file.stat exists" );
+                    logger:debug ( "updateFile: file.stat exists" );
                     fileAttributes = file.stat ( otaFileName );
                 else
-                    logger.debug ( "updateFile: create file.stat fake" );
+                    logger:debug ( "updateFile: create file.stat fake" );
                     fileAttributes = { size = update.filesList [updateFilesListIndex].size };
                 end
                 if ( fileAttributes ) then
@@ -80,7 +80,7 @@ local function updateFile ()
                         -- all fine
                         if ( updateFilesListIndex < #update.filesList ) then
                             updateFilesListIndex = updateFilesListIndex + 1;
-                            -- logger.debug ( "updateFile: updating index=" .. updateFilesListIndex );
+                            -- logger:debug ( "updateFile: updating index=" .. updateFilesListIndex );
                             node.task.post ( updateFile ); -- updates only the next file
                         else
                             updateCompletion ( "update finished normally for tag=" .. updateTag );
@@ -104,29 +104,29 @@ end
 
 function M.start ()
 
-    logger.info ( "start:" );
+    logger:info ( "start:" );
 
     if ( file.open ( update.UPDATE_JSON_FILENAME ) ) then
-        logger.debug ( "start: open file " .. update.UPDATE_JSON_FILENAME );
+        logger:debug ( "start: open file " .. update.UPDATE_JSON_FILENAME );
         local payload = "";
         repeat
             local content = file.read (); -- is rading max., 1024 bytes
             if ( content ) then payload = payload .. content end
         until not content
-        logger.debug ( "start: payload=" .. payload );
+        logger:debug ( "start: payload=" .. payload );
         local pcallOk, json = pcall ( sjson.decode, payload );
-        logger.debug ( "start: pcallOk=" .. tostring ( pcallOk ) .. " result=" .. tostring ( json ) );
+        logger:debug ( "start: pcallOk=" .. tostring ( pcallOk ) .. " result=" .. tostring ( json ) );
         if ( pcallOk ) then
             update.filesList = json and json.files or {};
             updateTag = json and json.tag or "unknown";
-            logger.debug ( "start: json.files=" .. tostring ( json.files ) .." json.tag=" .. tostring ( json.tag ) );
+            logger:debug ( "start: json.files=" .. tostring ( json.files ) .." json.tag=" .. tostring ( json.tag ) );
             -- start task for update
             if ( update.filesList and #update.filesList > 0 ) then -- update
                 updateFilesListIndex = 1;
-                logger.debug ( "start: update task chain" );
+                logger:debug ( "start: update task chain" );
                 node.task.post ( updateFile ); -- updates the next file
             else -- close update
-                logger.debug ( "start: NO update files -> FINISH" );
+                logger:debug ( "start: NO update files -> FINISH" );
                 updateCompletion ( "NO update files found for tag=" .. updateTag );
             end
         else
@@ -145,7 +145,7 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

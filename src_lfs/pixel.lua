@@ -72,7 +72,7 @@ end
 
 local function display ( startColumn )
 
-    --logger.debug ( "display: startColumn=" ..  startColumn );
+    --logger:debug ( "display: startColumn=" ..  startColumn );
 
     startColumn = startColumn or 1;
 
@@ -106,7 +106,7 @@ local umlaute = {
 
 local function printChar ( char, startCol )
 
-    --logger.debug ( "printChar: char=" .. tostring ( char ) .. " startCol=" .. tostring ( startCol ) );
+    --logger:debug ( "printChar: char=" .. tostring ( char ) .. " startCol=" .. tostring ( startCol ) );
 
     --assert ( startCol, "printChar: at not set" );
 
@@ -141,7 +141,7 @@ end
 
 function M.init ( pin, modules, period, ledBrightness )
 
-    --logger.debug ( "init: pin=" .. tostring ( pin ) .. " modules=" .. modules .. " period=" .. tostring ( period ) .. " brightness=" .. tostring ( brightness ) );
+    --logger:debug ( "init: pin=" .. tostring ( pin ) .. " modules=" .. modules .. " period=" .. tostring ( period ) .. " brightness=" .. tostring ( brightness ) );
 
     csPin = pin;
 
@@ -152,7 +152,7 @@ function M.init ( pin, modules, period, ledBrightness )
 
     brightness = ledBrightness;
 
-    --logger.debug ( "init: modules=" .. numberOfModules .. " displayCols=" .. numberOfDisplayColumns .. " bufferCols=" .. numberOfBufferColumns );
+    --logger:debug ( "init: modules=" .. numberOfModules .. " displayCols=" .. numberOfDisplayColumns .. " bufferCols=" .. numberOfBufferColumns );
 
     if ( not shakeTimer ) then
         shakeTimer = tmr.create ();
@@ -175,7 +175,7 @@ function M.init ( pin, modules, period, ledBrightness )
 
     spi.setup ( 1, spi.MASTER, spi.CPOL_LOW, spi.CPHA_LOW, 16, CLK_DIVIDER );
 
-    --logger.debug ( "init: set gpio mode");
+    --logger:debug ( "init: set gpio mode");
     -- Must NOT be done _before_ spi.setup() because that function configures all HSPI* pins for SPI. Hence,
     -- if you want to use one of the HSPI* pins for slave select spi.setup() would overwrite that.
     gpio.mode ( csPin, gpio.OUTPUT );
@@ -187,7 +187,7 @@ end
 
 function M.clear ()
 
-    --logger.debug ( "clear:");
+    --logger:debug ( "clear:");
 
     gpio.write ( csPin, gpio.HIGH );
 
@@ -197,7 +197,7 @@ function M.clear ()
 --    local MAX7219_REG_DISPLAYTEST = 0x0F;
 --    local MAX7219_REG_INTENSITY = 0x0A;
 
-    --logger.debug ( "init: set registers");
+    --logger:debug ( "init: set registers");
     setCommand ( 0x09, 0x00 );          -- using an led matrix (not digits)
     setCommand ( 0x0C, 0x01 );          -- not in shutdown mode
     setCommand ( 0x0B, 0x07 );          -- all 8 digits
@@ -235,7 +235,7 @@ end
 
 function M.printEmptyColumn ( startCol )
 
-    --logger.debug ( "printEmptyColumn: at=" .. at );
+    --logger:debug ( "printEmptyColumn: at=" .. at );
 
     if ( not startCol ) then startCol = 1 end
 
@@ -249,7 +249,7 @@ end
 
 function M.printString ( s, startCol )
 
-    --logger.debug ( "printString: s=" ..  s .. " at=" .. tostring ( at ) );
+    --logger:debug ( "printString: s=" ..  s .. " at=" .. tostring ( at ) );
 
     startCol = startCol or 1;
     local insertCol = startCol;
@@ -276,7 +276,7 @@ end
 
 function M.printDateTimeString ( s, insertCol )
 
-    --logger.debug ( "printDateTimeString: s=" ..  s .. " insertCol=" .. tostring ( insertCol ) );
+    --logger:debug ( "printDateTimeString: s=" ..  s .. " insertCol=" .. tostring ( insertCol ) );
 
     insertCol = insertCol or 1;
 
@@ -308,7 +308,7 @@ end
 
 function M.shake ( from, to )
 
-    --logger.debug ( "shake: from=" .. from .. " to=" .. to );
+    --logger:debug ( "shake: from=" .. from .. " to=" .. to );
 
 --    assert ( type ( from ) == "number", "shake: from is not a number from=" .. from );
 --    assert ( type ( to ) == "number", "shake: to is not a number to=" .. to );
@@ -330,7 +330,7 @@ end
 
 function M.static ( at )
 
-    --logger.debug ( "static: at=" .. at );
+    --logger:debug ( "static: at=" .. at );
 
 --    assert ( type ( at ) == "number", "static: at is not a number at=" .. at );
 --    assert ( at > 0 and at < numberOfBufferColumns, "static: at is not in range at=" .. at );
@@ -346,7 +346,7 @@ end
 
 function M.printAndShakeString ( s )
 
-    --logger.debug ( "printAndShakeString: s=" .. s );
+    --logger:debug ( "printAndShakeString: s=" .. s );
 
     local len = M.printString ( s );
 
@@ -375,11 +375,11 @@ if ( file.open ( "pixel.dat", "r" ) ) then
 
     sprites = line;
 
-    logger.debug ( "len=" .. line:len () );
+    logger:debug ( "len=" .. line:len () );
 
 end
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

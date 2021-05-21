@@ -23,7 +23,7 @@ local logger = require ( "syslog" ).logger ( moduleName );
 
 function M.start ( message )
 
-    logger.debug ( "start: msg=" .. message .. " heap=" .. node.heap () );
+    logger:debug ( "start: msg=" .. message .. " heap=" .. node.heap () );
 
     file.remove ( update.UPDATE_URL_FILENAME );
     file.remove ( update.UPDATE_JSON_FILENAME );
@@ -38,7 +38,7 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

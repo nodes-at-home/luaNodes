@@ -104,7 +104,7 @@ end
 
 loop = function () -- every 1sec
 
-    --logger.debug ( " loop: category=" .. tostring ( displayCategory ) ..  " heap=" .. node.heap () );
+    --logger:debug ( " loop: category=" .. tostring ( displayCategory ) ..  " heap=" .. node.heap () );
 
     if ( displayCategory == "time" and not dev ) then -- toggle colon
         local tm = rtctime.epoch2cal ( correctTimezone ( rtctime.get () ) );
@@ -160,7 +160,7 @@ end
 
 function M.start ( client, topic )
 
-    logger.info ( "start: topic=" .. topic );
+    logger:info ( "start: topic=" .. topic );
 
     pixel.init ( csPin, numberOfModules, shakePeriod, displayBrightness );
 
@@ -168,19 +168,19 @@ end
 
 function M.connect ( client, topic )
 
-    logger.info ( "connect: topic=" .. topic );
+    logger:info ( "connect: topic=" .. topic );
 
     -- subscribe to .../message/#
     -- subscription to .../command and .../alert is not necessary
 
     local t = topic .. "/message/#";
-    --logger.debug ( " subscripe to topic=" .. t );
+    --logger:debug ( " subscripe to topic=" .. t );
     client:subscribe ( t, 0, -- ..., qos
         function ( client )
-            logger.debug ( " syncing to server=" .. SNTP );
+            logger:debug ( " syncing to server=" .. SNTP );
             sntp.sync ( SNTP,
                 function ( sec, usec )
-                    logger.debug ( " setting time to sec=" .. sec .. " usec=" .. usec );
+                    logger:debug ( " setting time to sec=" .. sec .. " usec=" .. usec );
                     rtctime.set ( sec, usec );
                     if ( not loopTimer ) then
                         loopTimer = tmr.create ()
@@ -188,7 +188,7 @@ function M.connect ( client, topic )
                     end
                 end,
                 function ()
-                    logger.debug ( " sntp sync failed" );
+                    logger:debug ( " sntp sync failed" );
                     --node.task.post ( function () M.connect ( client, topic ) end );
                 end,
                 1       -- autorepeat
@@ -200,7 +200,7 @@ end
 
 function M.offline ( client )
 
-    logger.info ( " offline:" );
+    logger:info ( " offline:" );
 
     return true; -- restart mqtt
 
@@ -208,8 +208,8 @@ end
 
 function M.message ( client, topic, payload )
 
-    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
-    logger.debug ( "message: heap=" .. node.heap () );
+    logger:info ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger:debug ( "message: heap=" .. node.heap () );
 
     local detailTopic = topic:sub ( nodeConfig.topic:len () + 1 );
 
@@ -220,31 +220,31 @@ function M.message ( client, topic, payload )
 
             if ( json.display ) then
                 if ( json.display.duration ) then
-                    logger.debug ( "message: duration=" .. json.display.duration );
+                    logger:debug ( "message: duration=" .. json.display.duration );
                     standardDisplayCategoryPeriod = json.display.duration;
                 end
                 if ( json.display.brightness ) then
-                    logger.debug ( "message: brightness=" .. json.display.brightness );
+                    logger:debug ( "message: brightness=" .. json.display.brightness );
                     displayBrightness = json.display.brightness;
                     pixel.setBrightness ( displayBrightness );
                 end
                 if ( json.display.shakeperiod ) then
-                    logger.debug ( "message: shakeperiod=" .. json.display.shakeperiod );
+                    logger:debug ( "message: shakeperiod=" .. json.display.shakeperiod );
                     shakePeriod = json.display.shakeperiod;
                     pixel.setShakeperiod ( shakePeriod );
                 end
                 if ( json.display.time ) then
-                    --logger.debug ( "message: message: time=" .. json.display.time );
+                    --logger:debug ( "message: message: time=" .. json.display.time );
                     displayEnabled.time = (json.display.time == "on") and nil;
                 end
                 if ( json.display.date ) then
-                    --logger.debug ( "message: date=" .. json.display.date );
+                    --logger:debug ( "message: date=" .. json.display.date );
                     displayEnabled.date = (json.display.date == "on") and nil;
                 end
                 if ( json.display.enabled ) then
-                    --logger.debug ( "message: enabled" );
+                    --logger:debug ( "message: enabled" );
                     for i, v in ipairs ( json.display.enabled ) do
-                        --logger.debug ( "message: enabled i=" .. i .. " value=" .. v );
+                        --logger:debug ( "message: enabled i=" .. i .. " value=" .. v );
                         displayEnabled ["msg" .. i] = (v == "on") and nil;
                     end
                 end
@@ -274,14 +274,14 @@ end
 
 --function M.periodic ( client, topic )
 --
---    logger.debug ( "periodic: topic=" .. topic );
+--    logger:debug ( "periodic: topic=" .. topic );
 --
 --end
 
 -------------------------------------------------------------------------------
 -- main
 
-logger.debug ( " loaded:" )
+logger:debug ( " loaded:" )
 
 return M;
 

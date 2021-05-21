@@ -45,11 +45,11 @@ local qos = nodeConfig.mqtt.qos or 1;
 local function printSensors ()
 
     if ( ds18b20.sens ) then
-        logger.debug ( "printSensors: number of sensors=" .. #ds18b20.sens );
+        logger:debug ( "printSensors: number of sensors=" .. #ds18b20.sens );
         for i, s  in ipairs ( ds18b20.sens ) do
             local addr = ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X'):format ( s:byte ( 1, 8 ) );
             local parasitic = s:byte ( 9 ) == 1 and " (parasite)" or "";
-            logger.debug ( string.format ( "printSensors: sensor #%d address: %s%s",  i, addr, parasitic ) );
+            logger:debug ( string.format ( "printSensors: sensor #%d address: %s%s",  i, addr, parasitic ) );
         end
     end
 
@@ -57,7 +57,7 @@ end
 
 local function readAndPublishTemperature ( client, topic )
 
-    logger.info ( "readAndPublishTemperature: topic=" .. topic );
+    logger:info ( "readAndPublishTemperature: topic=" .. topic );
 
     -- temperature
     ds18b20:read_temp (
@@ -68,8 +68,8 @@ local function readAndPublishTemperature ( client, topic )
                 i = i + 1;
                 if ( i == 1 ) then -- only first sensor
                     local addr = ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X'):format ( address:byte ( 1, 8 ) );
-                    logger.debug ( ( "readAndPublishTemperature: Sensor %s -> %s°C %s"):format ( addr, temperature, address:byte ( 9 ) == 1 and "(parasite)" or "-" ) );
-                    logger.debug ( "readAndPublishTemperature: temperature=" .. temperature );
+                    logger:debug ( ( "readAndPublishTemperature: Sensor %s -> %s°C %s"):format ( addr, temperature, address:byte ( 9 ) == 1 and "(parasite)" or "-" ) );
+                    logger:debug ( "readAndPublishTemperature: temperature=" .. temperature );
                     local payload = ('{"value":%f,"unit":"°C"}'):format ( temperature );
                     client:publish ( topic .. "/value/temperature", payload, qos, retain,
                         function ( client )
@@ -91,7 +91,7 @@ end
 
 local function publishAcceleration ( client, topic, samples )
 
-    logger.info ( "publishAcceleration: topic=" .. topic .. " count=" .. #samples );
+    logger:info ( "publishAcceleration: topic=" .. topic .. " count=" .. #samples );
 
     local json = {"["};
     local first = true;
@@ -103,7 +103,7 @@ local function publishAcceleration ( client, topic, samples )
     end
     table.insert ( json, "]" );
     local s = table.concat ( json );
-    logger.debug ( "publishAcceleration: json=" .. s );
+    logger:debug ( "publishAcceleration: json=" .. s );
     client:publish ( topic .. "/value/acceleration", s, qos, retain,
         function ( client )
             readAndPublishTemperature ( client, topic );
@@ -118,12 +118,12 @@ end
 
 function M.start ( client, topic )
 
-    logger.info ( "start: topic=" .. topic );
+    logger:info ( "start: topic=" .. topic );
 
     -- initialize acceleration sensor
     mpu6050.init ( sdaPin, sclPin );
     local id = readByte ( mpu6050.REG.WHO_AM_I );
-    logger.debug ( "start: chipId=" .. tohex ( id ) );
+    logger:debug ( "start: chipId=" .. tohex ( id ) );
 
     -- power managemnt 1
     --  7: reset, 6: sleep, 5: cycle, see reg 108 for wake up frequency, 3: temperature disabled
@@ -187,7 +187,7 @@ end
 
 function M.connect ( client, topic )
 
-    logger.info ( "connect: topic=" .. topic );
+    logger:info ( "connect: topic=" .. topic );
 
     -- interrupt enable: Data Ready interrupt
     writeByte ( mpu6050.REG.INT_ENABLE, 0x01 );
@@ -196,7 +196,7 @@ end
 
 function M.offline ( client )
 
-    logger.info ( "offline:" );
+    logger:info ( "offline:" );
 
     return restartConnection;
 
@@ -204,14 +204,14 @@ end
 
 function M.message ( client, topic, payload )
 
-    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger:info ( "message: topic=" .. topic .. " payload=" .. payload );
 
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

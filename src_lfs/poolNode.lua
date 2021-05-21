@@ -37,7 +37,7 @@ local function printSensors ()
         for i, s  in ipairs ( ds18b20.sens ) do
             local addr = ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X'):format ( s:byte ( 1, 8 ) );
             local parasitic = s:byte ( 9 ) == 1 and " (parasite)" or "";
-            logger.debug ( string.format ( "printSensors: sensor #%d address: %s%s",  i, addr, parasitic ) );
+            logger:debug ( string.format ( "printSensors: sensor #%d address: %s%s",  i, addr, parasitic ) );
         end
     end
 
@@ -49,13 +49,13 @@ end
 
 function M.start ( client, topic)
 
-    logger.info ( "start: topic=" .. topic );
+    logger:info ( "start: topic=" .. topic );
 
 end
 
 function M.connect ( client, topic )
 
-    logger.info ( "connect: topic=" .. topic );
+    logger:info ( "connect: topic=" .. topic );
 
     ds18b20:read_temp (
         function ( sensorValues )
@@ -65,8 +65,8 @@ function M.connect ( client, topic )
                 i = i + 1;
                 if ( i == 1 ) then -- only first sensor
                     --local addr = ('%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X'):format ( address:byte ( 1, 8 ) );
-                    --logger.debug ( "connect: Sensor %s -> %s°C %s"):format ( addr, temperature, address:byte ( 9 ) == 1 and "(parasite)" or "-" ) );
-                    logger.debug ( "connect: publish temperature t=" .. temperature );
+                    --logger:debug ( "connect: Sensor %s -> %s°C %s"):format ( addr, temperature, address:byte ( 9 ) == 1 and "(parasite)" or "-" ) );
+                    logger:debug ( "connect: publish temperature t=" .. temperature );
                     local payload = ('{"value":%f,"unit":"°C"}'):format ( temperature );
                     client:publish ( topic .. "/value/temperature", payload, qos, retain,
                         function ( client )
@@ -87,7 +87,7 @@ end
 
 function M.offline ( client )
 
-    logger.info ( "offline:" );
+    logger:info ( "offline:" );
 
     return restartConnection;
 
@@ -95,14 +95,14 @@ end
 
 function M.message ( client, topic, payload )
 
-    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger:info ( "message: topic=" .. topic .. " payload=" .. payload );
 
 end
 
 -------------------------------------------------------------------------------
 -- main
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 

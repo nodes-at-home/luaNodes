@@ -35,7 +35,7 @@ local pwmScale = nodeConfig.appCfg.pwmScale and nodeConfig.appCfg.pwmScale or 4;
 
 local function setLedPwm ( pin, brightness )
 
-    logger.info ( "setLedPwm: pin=" .. pin .. " brightness=" .. brightness );
+    logger:info ( "setLedPwm: pin=" .. pin .. " brightness=" .. brightness );
 
     if ( brightness > 0 ) then
         -- in ha the slider is from 0 to 255
@@ -49,7 +49,7 @@ end
 
 local function changeState ( client, topic, payload )
 
-    logger.info ( "changeState: topic=" .. topic .. " payload=" .. payload );
+    logger:info ( "changeState: topic=" .. topic .. " payload=" .. payload );
 
     local brightnessWarm, brightnessCold = 0, 0;
 
@@ -85,20 +85,20 @@ end
 -- only for dynchrin actions on init
 function M.start ( client, topic )
 
-    logger.info ( "start: topic=" .. topic );
+    logger:info ( "start: topic=" .. topic );
 
 end
 
 -- last action in callback chain of mqtt connect
 function M.connect ( client, topic )
 
-    logger.info ( "connect: topic=" .. topic );
+    logger:info ( "connect: topic=" .. topic );
 
 end
 
 function M.message ( client, topic, payload )
 
-    logger.info ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger:info ( "message: topic=" .. topic .. " payload=" .. payload );
 
     local topicParts = util.splitTopic ( topic );
     local device = topicParts [#topicParts];
@@ -120,7 +120,7 @@ end
 
 function M.offline ( client )
 
-    logger.info ( "offline:" );
+    logger:info ( "offline:" );
 
     return true; -- restart mqtt connection
 
@@ -139,7 +139,7 @@ gpio.write ( nodeConfig.appCfg.coldLightPin, gpio.LOW );
 pwm.setup ( nodeConfig.appCfg.coldLightPin, 500, 0 ); -- pwm frequency, duty cycle
 pwm.stop ( nodeConfig.appCfg.coldLightPin );
 
-logger.debug ( "loaded: " );
+logger:debug ( "loaded: " );
 
 return M;
 
