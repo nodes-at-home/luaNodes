@@ -9,3 +9,4 @@ archive/
 playground/
 
 .vscode/settings.json
+.vscode/launch.json
