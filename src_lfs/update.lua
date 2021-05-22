@@ -78,6 +78,7 @@ end
 
 function M.update ()
 
+    syslog.setLevel ( "INFO" );
     logger:info ( "update: second stage of update" );
 
     require ( "updateWifi" ).start ();

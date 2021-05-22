@@ -60,10 +60,11 @@ local function wifiLoop ()
         -- Stop the loop
         wifiLoopTimer:stop ();
 
-        logger:setOnline ();
+        syslog.setOnline ();
 
         -- sdk version
-        local major, minor, patch = node.info ();
+        local swversion = node.info ( "sw_version" );
+        local major, minor, patch = swversion.node_version_major, swversion.node_version_minor, swversion.node_version_revision;
         logger:debug ( "wifiLoop: sdk=" .. major .. "." .. minor .. "." .. patch );
 
         if ( file.open ( update.UPDATE_URL_FILENAME ) ) then

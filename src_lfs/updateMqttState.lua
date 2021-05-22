@@ -42,7 +42,7 @@ function M.start ( message )
 
     logger:alert ( "start: " .. nodeConfig.app .. "@" .. nodeConfig.location .. " -> " .. message );
 
-    local result = mqttClient:connect( nodeConfig.mqtt.broker , 1883, false, -- broker, port, secure
+    mqttClient:connect( nodeConfig.mqtt.broker , 1883, false, -- broker, port, secure
         function ( client )
             logger:debug ( "start: connected to MQTT Broker" );
             logger:debug ( "start: node=" .. nodeConfig.topic );
@@ -73,8 +73,6 @@ function M.start ( message )
             logger:warning ( "start: not connected reason=" .. reason );
         end
     );
-
-    logger:debug ( "connect result=" .. tostring ( result ) );
 
 end
 

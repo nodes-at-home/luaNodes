@@ -39,8 +39,6 @@ local wifiLoopTimer = tmr.create ();
 ----------------------------------------------------------------------------------------
 -- private
 
-local apmac;
-
 local function connect ( client )
 
     logger:info ( "connect: baseTopic=" .. baseTopic );
@@ -62,7 +60,7 @@ local function connect ( client )
             client:publish ( baseTopic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], qos, retain,
                 function ( client )
                     client:publish ( rssiTopic,
-                        [[{"chipid":]] .. node.chipid () .. [[,"topic":"]] .. baseTopic .. [[","apmac":"]] .. apmac .. [[","value":]] .. rssi .. [[, "unit":"dBm"}]],
+                        [[{"chipid":]] .. node.chipid () .. [[,"topic":"]] .. baseTopic .. [[","apmac":"]] .. nodeConfig.wifi.apmac .. [[","value":]] .. rssi .. [[, "unit":"dBm"}]],
                         qos, retain,
                         function ( client )
                             local s = app .. "@" .. nodeConfig.location;
@@ -172,7 +170,6 @@ local function update ( payload )
             file.close ();
             if ( success ) then
                 logger:notice ( "update:  restart for second step url="  .. payload );
-                print ( "RESTART")
                 syslog.restart ();
                 logger:alert ( "update: RESTARTING" ); -- to resolve the restart flag in syslog
             end
@@ -296,7 +293,6 @@ local function wifiLoop ()
         --logger:info ( "wifiLoop: pwd=" .. tostring ( pwd ) );
         logger:info ( "wifiLoop: apmac=" .. tostring ( mac ) );
 
-        apmac = mac;
         if ( nodeConfig.wifi ) then
             nodeConfig.wifi.rssi= rssi;
             nodeConfig.wifi.apmac = mac;
@@ -366,7 +362,7 @@ function M.start ()
                     mqttClient:publish ( baseTopic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], qos, retain,
                         function ( client )
                             client:publish ( rssiTopic,
-                                [[{"chipid":]] .. node.chipid () .. [[,"topic":"]] .. baseTopic .. [[","apmac":"]] .. apmac .. [[","value":]] .. rssi .. [[, "unit":"dBm"}]],
+                                [[{"chipid":]] .. node.chipid () .. [[,"topic":"]] .. baseTopic .. [[","apmac":"]] .. nodeConfig.wifi.apmac .. [[","value":]] .. rssi .. [[, "unit":"dBm"}]],
                                 qos, retain,
                                 function ( client )
                                     if ( appNode.periodic ) then

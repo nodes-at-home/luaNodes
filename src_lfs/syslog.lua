@@ -26,11 +26,12 @@ local SEVERITY = {
     INFO      = 6;
     DEBUG     = 7;
 };
+M.SEVERITY = SEVERITY;
 
 local ip;
 local host = nodeConfig.syslog and nodeConfig.syslog.host;
 local port = nodeConfig.syslog and nodeConfig.syslog.port or 514;
-local level =  nodeConfig.syslog and nodeConfig.syslog.level or M.SEVERITY.DEBUG;
+local level =  nodeConfig.syslog and nodeConfig.syslog.level or SEVERITY.DEBUG;
 if ( type ( level ) == "string" ) then
     level = SEVERITY [level];
 end
@@ -117,7 +118,9 @@ function M.setOnline ()
                     local empty = not q:dequeue ( k ); -- dequeue next message
                     if ( restart and empty  ) then
                         print ( "### RESTART ###" );
-                        node.restart ();
+                        syslogclient:close ();
+                        syslogclient = nil;
+                        node.task.post ( node.restart );
                     end
                 end
             );

@@ -43,10 +43,8 @@ end
 
 local function renameUpdateFile ()
 
-    logger:info ( "renameUpdateFile: index=" .. index .. " heap=" .. node.heap () );
-
     local fileName = update.filesList [index].name;
-    logger:debug ( "renameUpdateFile: rename " .. fileName );
+    logger:info ( "renameUpdateFile: filename=" .. fileName .. " index=" .. index .. " heap=" .. node.heap () );
 
     local pos = fileName:find ( "%." );
     local suffix = pos and fileName:sub ( pos + 1 ) or nil;
