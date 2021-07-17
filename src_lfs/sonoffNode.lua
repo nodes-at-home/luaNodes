@@ -81,7 +81,7 @@ end
 
 function M.connect ( client, topic )
 
-    logger:init ( "connect: topic=" .. topic );
+    logger:info ( "connect: topic=" .. topic );
 
     if ( ledPin ) then
         flashLed ( 2 );
@@ -96,7 +96,7 @@ end
 
 function M.message ( client, topic, payload )
 
-    logger:init ( "message: topic=" .. topic .. " payload=" .. payload );
+    logger:info ( "message: topic=" .. topic .. " payload=" .. payload );
 
     local topicParts = util.splitTopic ( topic );
     local device = topicParts [#topicParts];

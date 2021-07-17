@@ -1,9 +1,9 @@
 {
-    "chipid": 13423304,
-    "app": "sonoffNode",
+    "chipid": 1266699,
     "class": "switch",
+    "app": "sonoffNode",
     "type": "sonoff",
-    "location": "brewery",
+    "location": "pool",
     "appCfg": {
         "device": "socket",
         "buttonPin": 3,
@@ -17,6 +17,6 @@
         "debounceDelay": 500
     },
     "wifi": {
-        "ip": "192.168.2.36"
+        "ip": "192.168.2.37"
     }
 }
