@@ -284,18 +284,20 @@ local function wifiLoop ()
         local dnsname = wifi.sta.gethostname ();
         logger:info ( "wifiLoop: dnsname=" .. dnsname );
         logger:info ( "wifiLoop: network=" .. (wifi.sta.getip () and wifi.sta.getip () or "NO_IP") );
-        logger:info ( "wifiLoop: mac=" .. wifi.sta.getmac () );
+        local mac = wifi.sta.getmac ();
+        logger:info ( "wifiLoop: mac=" .. mac );
         local rssi = wifi.sta.getrssi ();
         logger:info ( "wifiLoop: rssi=" .. rssi );
 
-        local ssid, pwd, _, mac = wifi.sta.getconfig ( false ); -- old sytle, true: returns table
+        local ssid, pwd, _, apmac = wifi.sta.getconfig ( false ); -- old sytle, true: returns table
         logger:info ( "wifiLoop: ssid=" .. tostring ( ssid ) );
         --logger:info ( "wifiLoop: pwd=" .. tostring ( pwd ) );
-        logger:info ( "wifiLoop: apmac=" .. tostring ( mac ) );
+        logger:info ( "wifiLoop: apmac=" .. tostring ( apmac ) );
 
         if ( nodeConfig.wifi ) then
             nodeConfig.wifi.rssi= rssi;
-            nodeConfig.wifi.apmac = mac;
+            nodeConfig.wifi.apmac = apmac;
+            nodeConfig.wifi.mac= mac;
             nodeConfig.wifi.dnsname = dnsname;
         end
 
