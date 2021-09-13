@@ -15,6 +15,8 @@ _G [moduleName] = M;
 
 local logger = require ( "syslog" ).logger ( moduleName );
 
+local tmr, node, i2c, u8g2, gpio = tmr, node, i2c, u8g2, gpio;
+
 -------------------------------------------------------------------------------
 --  Settings
 
@@ -38,7 +40,9 @@ local display;
 
 local rain = 0.0;
 local ticks = 0;
-local lastTick = 0;
+
+local suspendTimer = tmr.create ();
+local suspend = false;
 
 ----------------------------------------------------------------------------------------
 
@@ -67,7 +71,7 @@ local function displayValues ( rain, ticks )
     display:setFont ( u8g2.font_6x10_tf );
     display:setFontPosTop ();
     display:drawStr ( 1,  0, "Rain" );
-    display:drawStr ( 1, 12, ('%.2f ml'):format ( rain or 0.0 ) );
+    display:drawStr ( 1, 12, ('%.2f mm'):format ( rain or 0.0 ) );
     display:drawStr ( 1, 24, ('%d ticks'):format ( ticks or 0 ) );
 
     display:sendBuffer ();
@@ -76,10 +80,11 @@ end
 
 local function tick ( level, when, eventcount )
 
-    --logger:info ( "tick: level=" .. level .. " when=" .. when ..  " eventcount=" .. eventcount );
+    logger:debug ( "tick: level=" .. level .. " when=" .. when ..  " eventcount=" .. eventcount .. " suspend=" .. tostring ( suspend ) );
 
-    if ( (when - lastTick) > suspendPeriod ) then
-        lastTick = when;
+    if ( not suspend ) then
+        suspend = true;
+        suspendTimer:start ();
         rain = rain + rainPerTick;
         ticks = ticks + 1;
         node.task.post ( function () displayValues ( rain, ticks ) end );
@@ -94,6 +99,13 @@ end
 function M.start ( client, topic )
 
     logger:info ( "start: topic=" .. topic );
+
+    suspendTimer:register ( suspendPeriod, tmr.ALARM_SEMI,
+        function ()
+            logger:debug ( "start: set suspend flag to false" );
+            suspend = false;
+        end
+    );
 
     gpio.mode ( tickPin, gpio.INT, gpio.PULLUP );
     gpio.trig ( tickPin, "down", tick );
@@ -119,12 +131,12 @@ end
 
 function M.periodic ( client, topic )
 
-    logger:info ( "periodic: topic=" .. topic );
+    logger:notice ( "periodic: topic=" .. topic .. " rain=" .. rain .. " ticks=" .. ticks );
 
-    --displayValues ( rain, ticks );
     publishRain ( client, topic, rain, ticks );
     rain = 0;
     ticks = 0;
+    displayValues ( rain, ticks );
 
 end
 
