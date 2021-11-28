@@ -11,7 +11,8 @@
         "flashHighPulseLength": 50000,
         "flashLowPulseLength": 200000,
         "initialBrightness": 128,
-        "pwmScale": 4
+        "pwmScale": 4,
+        "pwmFrequency": 100
     },
     "wifi": {
         "ip": "192.168.2.42"

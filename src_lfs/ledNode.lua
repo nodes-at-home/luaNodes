@@ -26,6 +26,7 @@ local ledOn = false;
 local brightness = nodeConfig.appCfg.initialBrightness and nodeConfig.appCfg.initialBrightness or 128;
 local color = nodeConfig.appCfg.initialColor and nodeConfig.appCfg.initialColor or 300;
 local pwmScale = nodeConfig.appCfg.pwmScale and nodeConfig.appCfg.pwmScale or 4;
+local pwmFrequency = nodeConfig.appCfg.pwmScale and nodeConfig.appCfg.pwmFrequency or 100;
 
 ----------------------------------------------------------------------------------------
 -- private
@@ -131,12 +132,12 @@ end
 
 gpio.mode ( nodeConfig.appCfg.warmLightPin, gpio.OUTPUT );
 gpio.write ( nodeConfig.appCfg.warmLightPin, gpio.LOW );
-pwm.setup ( nodeConfig.appCfg.warmLightPin, 500, 0 ); -- pwm frequency, duty cycle
+pwm.setup ( nodeConfig.appCfg.warmLightPin, pwmFrequency, 0 ); -- pwm frequency, duty cycle
 pwm.stop ( nodeConfig.appCfg.warmLightPin );
 
 gpio.mode ( nodeConfig.appCfg.coldLightPin, gpio.OUTPUT );
 gpio.write ( nodeConfig.appCfg.coldLightPin, gpio.LOW );
-pwm.setup ( nodeConfig.appCfg.coldLightPin, 500, 0 ); -- pwm frequency, duty cycle
+pwm.setup ( nodeConfig.appCfg.coldLightPin, pwmFrequency, 0 ); -- pwm frequency, duty cycle
 pwm.stop ( nodeConfig.appCfg.coldLightPin );
 
 logger:debug ( "loaded: " );
