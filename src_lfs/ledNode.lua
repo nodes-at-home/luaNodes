@@ -17,6 +17,8 @@ local logger = require ( "syslog" ).logger ( moduleName );
 
 local util = require ( "util" );
 
+local pwm, gpio = pwm, gpio;
+
 -------------------------------------------------------------------------------
 --  Settings
 
@@ -25,13 +27,16 @@ local nodeDevice = nodeConfig.appCfg.device or "led";
 local ledOn = false;
 local brightness = nodeConfig.appCfg.initialBrightness and nodeConfig.appCfg.initialBrightness or 128;
 local color = nodeConfig.appCfg.initialColor and nodeConfig.appCfg.initialColor or 300;
-local pwmScale = nodeConfig.appCfg.pwmScale and nodeConfig.appCfg.pwmScale or 4;
+local pwmScale = nodeConfig.appCfg.pwmScale and nodeConfig.appCfg.pwmScale or 1;
 local pwmFrequency = nodeConfig.appCfg.pwmScale and nodeConfig.appCfg.pwmFrequency or 100;
+
+local warmLightPin = nodeConfig.appCfg.warmLightPin;
+local coldLightPin = nodeConfig.appCfg.coldLightPin;
 
 ----------------------------------------------------------------------------------------
 -- private
 
--- brighness: 0 .. 255
+-- brighness: 0 .. 1023 by using brightness_scale for mqtt light definition in home assistant
 -- color: 154 .. 500
 
 local function setLedPwm ( pin, brightness )
@@ -45,6 +50,17 @@ local function setLedPwm ( pin, brightness )
     else
         pwm.stop ( pin );
     end
+
+end
+
+local function initLedPin ( pin )
+
+    logger:info ( "initLedPin: pin=" .. pin );
+
+    gpio.mode ( pin, gpio.OUTPUT );
+    gpio.write ( pin, gpio.LOW );
+    pwm.setup ( pin, pwmFrequency, 0 ); -- pwm frequency, duty cycle
+    pwm.stop ( pin );
 
 end
 
@@ -72,8 +88,8 @@ local function changeState ( client, topic, payload )
 
     end
 
-    setLedPwm( nodeConfig.appCfg.warmLightPin, brightnessWarm );
-    setLedPwm( nodeConfig.appCfg.coldLightPin, brightnessCold );
+    setLedPwm ( warmLightPin, brightnessWarm );
+    setLedPwm ( coldLightPin, brightnessCold );
 
     client:publish ( topic .. "/state", payload, 0, nodeConfig.mqtt.retain, function () end ); -- qos, retain
 
@@ -130,15 +146,8 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-gpio.mode ( nodeConfig.appCfg.warmLightPin, gpio.OUTPUT );
-gpio.write ( nodeConfig.appCfg.warmLightPin, gpio.LOW );
-pwm.setup ( nodeConfig.appCfg.warmLightPin, pwmFrequency, 0 ); -- pwm frequency, duty cycle
-pwm.stop ( nodeConfig.appCfg.warmLightPin );
-
-gpio.mode ( nodeConfig.appCfg.coldLightPin, gpio.OUTPUT );
-gpio.write ( nodeConfig.appCfg.coldLightPin, gpio.LOW );
-pwm.setup ( nodeConfig.appCfg.coldLightPin, pwmFrequency, 0 ); -- pwm frequency, duty cycle
-pwm.stop ( nodeConfig.appCfg.coldLightPin );
+initLedPin ( warmLightPin );
+initLedPin ( coldLightPin );
 
 logger:debug ( "loaded: " );
 
