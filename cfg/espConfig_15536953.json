@@ -1,17 +1,17 @@
 {
-    "chipid": 13371818,
+    "chipid": 15536953,
     "app": "ledNode",
     "class": "light",
-    "type": "sonoff",
+    "type": "led",
     "location": "kitchen",
     "appCfg": {
-        "device:": "xyz",
-        "warmLightPin": 5,
-        "coldLightPin": 6,
+        "device": "led",
+        "warmLightPin": 2,
+        "coldLightPin": 1,
         "flashHighPulseLength": 50000,
         "flashLowPulseLength": 200000,
         "initialBrightness": 128,
-        "pwmScale": 4,
+        "pwmScale": 1,
         "pwmFrequency": 100
     },
     "wifi": {
