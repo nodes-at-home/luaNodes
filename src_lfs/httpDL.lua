@@ -14,6 +14,8 @@ _G [moduleName] = M;
 
 local logger = require ( "syslog" ).logger ( moduleName );
 
+local chunkcount;
+
 -------------------------------------------------------------------------------
 
 function M.download ( host, port, url, path, callback )
@@ -52,6 +54,8 @@ function M.download ( host, port, url, path, callback )
             -- logger:debug ( "download: heap=" .. node.heap () );
             -- logger:debug ( "download: payload=" .. payload );
             if ( continueWrite ) then
+                chunkcount = chunkcount + 1;
+                logger:debug ( "receive: write chunk " .. chunkcount );
                 file.write ( payload );
                 file.flush ();
             else
@@ -62,6 +66,8 @@ function M.download ( host, port, url, path, callback )
                     isHttpReponseOk = true;
                     local headerEnd = payload:find ( "\r\n\r\n" );
                     if (  headerEnd ) then
+                        logger:debug ( "receive: initial chunk" );
+                        chunkcount = 0;
                         file.write ( payload:sub ( headerEnd + 4 ) );
                         file.flush ();
                         continueWrite = true;
