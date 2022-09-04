@@ -1,0 +1,18 @@
+{
+    "chipid": 15556054,
+    "app": "tempNode",
+    "class": "sensor",
+    "type": "DHT11",
+    "location": "utilityroom",
+    "appCfg": {
+        "dhtPin": 7,
+        "timeBetweenSensorReadings": 900000
+    },
+    "timer": {
+        "deepSleepDelay": 5000,
+        "periodicPeriod": 60000
+    },
+    "wifi": {
+        "ip": "192.168.2.63"
+    }
+}
