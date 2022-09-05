@@ -12,6 +12,8 @@ local M = {};
 _G [moduleName] = M;
 
 local logger = require ( "syslog" ).logger ( moduleName );
+local bme280 = require ( "bme280" );
+local tau = require ( "tau" );
 
 -------------------------------------------------------------------------------
 --  Settings
@@ -65,16 +67,44 @@ local function publishValues ( client, topic, temperature, humidity, pressure, d
 
     logger:info ( "publishValues: topic=" .. topic .. " temperature=" .. tostring ( temperature ) .. " humidity=" .. tostring ( humidity ) .. " pressure=" .. tostring ( pressure ) .. " dhtstatus=" .. tostring ( dhtstatus ) );
 
+    local dewpoint;
+    if ( temperature and humidity ) then
+        dewpoint = tau.calculate ( temperature, humidity );
+    end
+
     -- all Values
     if ( temperature and humidity and pressure ) then
-        logger:debug ( "publishValues: temperature=" .. temperature );
-        client:publish ( topic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"°C"}]], 0, retain, -- qos, retain
+        logger:debug ( "publishValues: tau=" .. dewpoint );
+        client:publish ( topic .. "/value/tau", [[{"value":]] .. dewpoint .. [[,"unit":"°C"}]], 0, retain, -- qos, retain
             function ( client )
-                logger:debug ( "publishValues: humidity=" .. humidity );
-                client:publish ( topic .. "/value/humidity", [[{"value":]] .. humidity .. [[,"unit":"%"}]], 0, retain, -- qos, retain
+                logger:debug ( "publishValues: temperature=" .. temperature );
+                client:publish ( topic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"°C"}]], 0, retain, -- qos, retain
                     function ( client )
-                        logger:debug ( "publishValues: pressure=" .. pressure );
-                        client:publish ( topic .. "/value/pressure", [[{"value":]] .. pressure .. [[, "unit":"hPa"}]], 0, retain, -- qos, retain
+                        logger:debug ( "publishValues: humidity=" .. humidity );
+                        client:publish ( topic .. "/value/humidity", [[{"value":]] .. humidity .. [[,"unit":"%"}]], 0, retain, -- qos, retain
+                            function ( client )
+                                logger:debug ( "publishValues: pressure=" .. pressure );
+                                client:publish ( topic .. "/value/pressure", [[{"value":]] .. pressure .. [[, "unit":"hPa"}]], 0, retain, -- qos, retain
+                                    function ( client )
+                                        require ( "deepsleep" ).go ( client, deepSleepDelay, timeBetweenSensorReadings );
+                                    end
+                                );
+                            end
+                        );
+                    end
+                );
+            end
+        );
+-- only temperature and humidity
+    elseif ( temperature and humidity ) then
+        logger:debug ( "publishValues: tau=" .. dewpoint );
+        client:publish ( topic .. "/value/tau", [[{"value":]] .. dewpoint .. [[,"unit":"°C"}]], 0, retain, -- qos, retain
+            function ( client )
+                logger:debug ( "publishValues: temperature=" .. temperature );
+                client:publish ( topic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"°C"}]], 0, retain, -- qos, retain
+                    function ( client )
+                        logger:debug ( "publishValues: humidity=" .. humidity );
+                        client:publish ( topic .. "/value/humidity", [[{"value":]] .. humidity .. [[,"unit":"%"}]], 0, retain, -- qos, retain
                             function ( client )
                                 require ( "deepsleep" ).go ( client, deepSleepDelay, timeBetweenSensorReadings );
                             end
@@ -83,20 +113,7 @@ local function publishValues ( client, topic, temperature, humidity, pressure, d
                 );
             end
         );
-    -- only temperature and humidity
-    elseif ( temperature and humidity ) then
-        logger:debug ( "publishValues: temperature=" .. temperature );
-        client:publish ( topic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"°C"}]], 0, retain, -- qos, retain
-            function ( client )
-                logger:debug ( "publishValues: humidity=" .. humidity );
-                client:publish ( topic .. "/value/humidity", [[{"value":]] .. humidity .. [[,"unit":"%"}]], 0, retain, -- qos, retain
-                    function ( client )
-                        require ( "deepsleep" ).go ( client, deepSleepDelay, timeBetweenSensorReadings );
-                    end
-                );
-            end
-        );
-    -- only pressure and temperature
+-- only pressure and temperature
     elseif ( pressure and temperature ) then
         logger:debug ( "publishValues: pressure=" .. pressure );
         client:publish ( topic .. "/value/pressure", [[{"value":]] .. pressure .. [[, "unit":"hPa"}]], 0, retain, -- qos, retain
@@ -113,9 +130,10 @@ local function publishValues ( client, topic, temperature, humidity, pressure, d
         logger:debug ( "publishValues: nothing published" );
         local t = temperature and temperature or "--";
         local h = humidity and humidity or "--";
+        local tt = dewpoint and dewpoint or "--";
         local p = pressure and pressure or "--"
         local s = dhtstatus and dhtstatus or "--"
-        client:publish ( topic .. "/value/error", "nothing published dht=" .. s .. " t=" .. t .." h=" .. h .." p=" .. p, 0, retain, -- qos, retain
+        client:publish ( topic .. "/value/error", "nothing published dht=" .. s .. " t=" .. t .. " h=" .. h .. "tt=" .. tt .. " p=" .. p, 0, retain, -- qos, retain
             function ( client )
                 require ( "deepsleep" ).go ( client, deepSleepDelay, timeBetweenSensorReadings );
             end

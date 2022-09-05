@@ -12,9 +12,15 @@ local M = {};
 _G [moduleName] = M;
 
 local logger = require ( "syslog" ).logger ( moduleName );
+local tau = require ( "tau" );
+local dht = dht;
+local gpio = gpio;
+local tmr = tmr;
 
 -------------------------------------------------------------------------------
 --  Settings
+
+local nodeTopic = nodeConfig.topic;
 
 -- 0: closed
 -- 1: in move up
@@ -50,6 +56,18 @@ local movingPersistCount = 0;
 local positionPersistCount = 0;
 
 local stateTimer = tmr.create ();
+
+local triggerDelay = nodeConfig.timer.triggerDelay;
+local statePeriod = nodeConfig.timer.statePeriod;
+
+local relayPin = nodeConfig.appCfg.relayPin;
+local openPositionPin = nodeConfig.appCfg.openPositionPin;
+local closedPositionPin = nodeConfig.appCfg.closedPositionPin;
+
+local dhtPin = nodeConfig.appCfg.dhtPin;
+local dhtPowerPin = nodeConfig.appCfg.powerPin;
+
+local retain = nodeConfig.mqtt.retain;
 
 ----------------------------------------------------------------------------------------
 -- private
@@ -89,14 +107,14 @@ local function triggerCover ( count )
 
     logger:info ( "triggerCover: count=" .. count );
 
-    local delay = nodeConfig.timer.triggerDelay * 1000;
+    local delay = triggerDelay * 1000;
 
     local delays = {
         [1] = { delay, delay },
         [2] = { delay, delay, delay, delay },
     };
 
-    gpio.serout ( nodeConfig.appCfg.relayPin, 1, delays [count], 1, function () end );
+    gpio.serout ( relayPin, 1, delays [count], 1, function () end );
 
 end
 
@@ -106,14 +124,14 @@ local function publishState ( client, topic, state, callback )
 
     local s = POSITION_TEXT [state] or "unknown";
     logger:debug ( "publishState: state=" .. s );
-    client:publish ( topic .. "/value/position", s, 0, nodeConfig.mqtt.retain, callback ); -- qos, retain
+    client:publish ( topic .. "/value/position", s, 0, retain, callback ); -- qos, retain
 
 end
 
 local function checkSwitches ( client, topic )
 
-    local openSwitch = gpio.read ( nodeConfig.appCfg.openPositionPin );
-    local closeSwitch = gpio.read ( nodeConfig.appCfg.closedPositionPin );
+    local openSwitch = gpio.read ( openPositionPin );
+    local closeSwitch = gpio.read ( closedPositionPin );
 
 --    if ( openSwitch ~= closeSwitch ) then
 --        logger:debug ( "checkSwitches: position=" .. position .." openSwitch=" .. openSwitch .. " closeSwitch=" .. closeSwitch );
@@ -164,8 +182,8 @@ function M.start ( client, topic )
     logger:info ( "start: topic=" .. topic );
 
     -- initial door position
-    local openSwitch = gpio.read ( nodeConfig.appCfg.openPositionPin );
-    local closeSwitch = gpio.read ( nodeConfig.appCfg.closedPositionPin );
+    local openSwitch = gpio.read ( openPositionPin );
+    local closeSwitch = gpio.read ( closedPositionPin );
     if ( openSwitch == 1 and closeSwitch == 0 ) then
         position = POSITION_CLOSED;
     else
@@ -175,7 +193,7 @@ function M.start ( client, topic )
     logger:debug ( "start: initial position=" .. POSITION_TEXT [position] );
 
     -- register timer function when door is moving
-    stateTimer:register ( nodeConfig.timer.statePeriod, tmr.ALARM_AUTO,
+    stateTimer:register ( statePeriod, tmr.ALARM_AUTO,
         function ()
             checkSwitches ( client, topic )
         end
@@ -187,7 +205,7 @@ function M.connect ( client, topic )
 
     logger:info ( "connect: topic=" .. topic );
 
-    publishState ( client, nodeConfig.topic, position,
+    publishState ( client, nodeTopic, position,
         function ()
             stateTimer:start ();
         end
@@ -262,7 +280,7 @@ function M.message ( client, topic, payload )
         logger:debug ( "message: action=" .. action .. " position=" .. POSITION_TEXT [position] .. " newPosition=" .. (newPosition and POSITION_TEXT [newPosition] or "---") );
 
         if ( newPosition ) then
-            publishState ( client, nodeConfig.topic, newPosition );
+            publishState ( client, nodeTopic, newPosition );
             position = newPosition;
         end
 
@@ -284,19 +302,30 @@ function M.periodic ( client, topic )
 
     logger:info ( "periodic: topic=" .. topic );
 
-    local success, t, h = getSensorData ( nodeConfig.appCfg.dhtPin );
+    local success, t, h = getSensorData ( dhtPin );
 
     if ( success ) then
-        logger:debug ( "periodic: temperature t=" .. t );
-        client:publish ( topic .. "/value/temperature", [[{"value":]] .. t .. [[,"unit":"°C"}]], 0, nodeConfig.mqtt.retain, -- qos, retain
+
+        local dewpoint;
+        dewpoint = tau.calculate ( t, h );
+
+        logger:debug ( "periodic: tau=" .. dewpoint );
+        client:publish ( topic .. "/value/tau", [[{"value":]] .. dewpoint .. [[,"unit":"°C"}]], 0, retain, -- qos, retain
             function ( client )
-                logger:debug ( "periodic: humidity h=" .. h );
-                client:publish ( topic .. "/value/humidity", [[{"value":]] .. h .. [[,"unit":"%"}]], 0, nodeConfig.mqtt.retain, -- qos, retain
-                function ()
-                end
-            );
+                logger:debug ( "periodic: temperature t=" .. t );
+                client:publish ( topic .. "/value/temperature", [[{"value":]] .. t .. [[,"unit":"°C"}]], 0, retain, -- qos, retain
+                    function ( client )
+                        logger:debug ( "periodic: humidity h=" .. h );
+                        client:publish ( topic .. "/value/humidity", [[{"value":]] .. h .. [[,"unit":"%"}]], 0, retain, -- qos, retain
+                            function ()
+                            end
+                        );
+                    end
+                );
             end
+
         );
+
     end
 
 end
@@ -304,11 +333,16 @@ end
 -------------------------------------------------------------------------------
 -- main
 
-gpio.mode ( nodeConfig.appCfg.relayPin, gpio.OUTPUT );
-gpio.write ( nodeConfig.appCfg.relayPin, gpio.LOW );
+gpio.mode ( relayPin, gpio.OUTPUT );
+gpio.write ( relayPin, gpio.LOW );
 
-gpio.mode ( nodeConfig.appCfg.openPositionPin, gpio.INPUT, gpio.PULLUP );
-gpio.mode ( nodeConfig.appCfg.closedPositionPin, gpio.INPUT, gpio.PULLUP );
+gpio.mode ( openPositionPin, gpio.INPUT, gpio.PULLUP );
+gpio.mode ( closedPositionPin, gpio.INPUT, gpio.PULLUP );
+
+if ( dhtPowerPin ) then
+    gpio.mode ( dhtPowerPin, gpio.OUTPUT );
+    gpio.write ( dhtPowerPin, gpio.HIGH );
+end
 
 logger:debug ( "loaded: " );
 
