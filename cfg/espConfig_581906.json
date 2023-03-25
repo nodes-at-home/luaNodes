@@ -8,18 +8,17 @@
     "appCfg": {
         "useAdc": true,
         "irLedPin": 1,
-        "threshold": 155
+        "threshold": {
+            "_threshold": 155,
+            "voltage": 140,
+            "latency": 3
+        }
     },
     "timer": {
-        "_periodic": "nil",
-        "_periodicPeriod": "nil",
         "irPeriod": 500,
         "irDelay": 50
     },
     "wifi": {
         "ip": "192.168.2.48"
-    },
-    "trace": {
-        "onStartup": true
     }
 }

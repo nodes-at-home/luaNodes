@@ -13,17 +13,20 @@ _G [moduleName] = M;
 
 local logger = require ( "syslog" ).logger ( moduleName );
 
+local tmr, gpio = tmr, gpio;
+
 -------------------------------------------------------------------------------
 --  Settings
 
 local irLedPin = nodeConfig.appCfg.irLedPin;
-local threshold = nodeConfig.appCfg.threshold;
+
 local irPeriod = nodeConfig.timer.irPeriod;
 local irDelay = nodeConfig.timer.irDelay;
 
-local retain = nodeConfig.mqtt.retain;
+local voltageThreshold = nodeConfig.appCfg.threshold.voltage;
+local latencyThreshold = nodeConfig.appCfg.threshold.latency;
 
-local REVOLUTION_PER_kWh = 75;
+local retain = nodeConfig.mqtt.retain;
 
 ----------------------------------------------------------------------------------------
 -- private
@@ -31,9 +34,13 @@ local REVOLUTION_PER_kWh = 75;
 local loopTimer = tmr.create ();
 local shortTimer = tmr.create ();
 
-lastLevel = "high";
-lastTimestamp = nil;
-counter = 0;
+local lastEvent = "high";
+local level = "high";
+local lastLevel = "high";
+local lastTimestamp = nil;
+
+local lowCounter;
+local highCounter;
 
 --------------------------------------------------------------------
 -- public
@@ -54,46 +61,77 @@ function M.connect ( client, topic )
 
     loopTimer:alarm ( irPeriod, tmr.ALARM_AUTO,
         function ()
-            local voltageIrOff = 0;
-            local voltageIrOn = 0;
             shortTimer:alarm ( irDelay, tmr.ALARM_SINGLE,
                 function ()
-                    voltageIrOff = adc.read ( 0 );
+                    local voltageIrOff = adc.read ( 0 );
                     gpio.write ( irLedPin, gpio.HIGH );
                     shortTimer:alarm ( irDelay, tmr.ALARM_SINGLE,
                         function ()
-                            voltageIrOn = adc.read ( 0 );
+
+                            -- measure ir level
+                            local voltageIrOn = adc.read ( 0 );
                             gpio.write ( irLedPin, gpio.LOW );
                             local voltage = voltageIrOn - voltageIrOff;
-                            local level = voltage > threshold and "high" or "low";
-                            logger:debug ( "connect: voltages last=" .. lastLevel .. " level=" .. level .. " diff=" .. voltage .. " irOff" .. voltageIrOff .. " irOn=" .. voltageIrOn );
-                            if ( level ~= lastLevel ) then
-                                lastLevel = level;
-                                if ( level == "low" ) then
-                                    local timestamp = tmr.now (); -- µs
-                                    counter = counter + 1000 / REVOLUTION_PER_kWh; -- Wh
-                                    logger:debug ( "connect: voltages last=" .. lastLevel .. " level=" .. level .. " diff=" .. voltage .. " irOff" .. voltageIrOff .. " irOn=" .. voltageIrOn );
-                                    logger:debug ( "connect: counter" .. counter .. "Wh" );
-                                    local payload = string.format ( '{"electricity":%f,"unit":"Wh"}', counter );
-                                    client:publish ( topic .. "/value/counter", payload, 0, retain, -- qos, retain
+                            local event = voltage > voltageThreshold and "high" or "low";
+                            logger:debug ( "connect: voltages irOff=" .. voltageIrOff .. " irOn=" .. voltageIrOn .. " diff=" .. voltage .. " event=" .. event .. " lastevent=" .. lastEvent .. " level=" .. level .. " lastLevel=" .. lastLevel .. " highcounter=" .. tostring ( highCounter ) .. " lowCounter=" .. tostring ( lowCounter ) );
+
+                            -- count events for level change
+                            if ( lastEvent == event ) then
+                                if ( event == "low" ) then
+                                    if ( lowCounter ) then
+                                        lowCounter = lowCounter + 1;
+                                        if ( lowCounter >= latencyThreshold ) then
+                                            lowCounter = nil;
+                                            level = "low";
+                                        end
+                                    end
+                                elseif ( event == "high" ) then
+                                    if ( highCounter ) then
+                                        highCounter = highCounter + 1;
+                                        if ( highCounter >= latencyThreshold ) then
+                                            highCounter =  nil;
+                                            level = "high";
+                                        end
+                                    end
+                                end
+                            else
+                                if ( event == "low" ) then
+                                    if ( level == "high" ) then
+                                        lowCounter = 1;
+                                    else
+                                        lowCounter = nil;
+                                    end
+                                    highCounter = nil;
+                                elseif ( event == "high" ) then
+                                    if ( level == "low" ) then
+                                        highCounter = 1;
+                                    else
+                                        highCounter = nil;
+                                    end
+                                    lowCounter = nil;
+                                end
+                            end
+                            lastEvent = event;
+                            logger:debug ( "connect:  level=" .. level .. " lastLevel=" .. lastLevel .. " highcounter=" .. tostring ( highCounter ) .. " lowCounter=" .. tostring ( lowCounter ) );
+
+                            -- check level for next tick
+                            if ( lastLevel ~= level and level == "low" ) then
+                                local timestamp = tmr.now (); -- µs
+                                if (  lastTimestamp ) then
+                                    local dt = timestamp - lastTimestamp;
+                                    if dt < 0 then dt = dt + 2147483647 end;
+                                    dt = dt / 1000000; -- sec
+                                    local payload = string.format ( '{"dt":%f,"threshold":%d,"latency":%d}', dt, voltageThreshold, latencyThreshold );
+                                    logger:info ( "connect: payload=" .. payload );
+                                    client:publish ( topic .. "/value/tick", payload, 0, retain, -- qos, retain
                                         function ( client )
-                                            if (  lastTimestamp ) then
-                                                local dt = timestamp - lastTimestamp;
-                                                if dt < 0 then dt = dt + 2147483647 end;
-                                                dt = dt / 1000000; -- sec
-                                                local power = 1000 / REVOLUTION_PER_kWh * 3600 / dt; -- Watt
-                                                logger:debug ( "connect: power=" .. power .. "W" .. " dt=" .. dt .. "s" );
-                                                    local payload = string.format ( '{"power":%f,"unit":"W"}', power );
-                                                    client:publish ( topic .. "/value/power", payload, 0, retain, -- qos, retain
-                                                        function ( client )
-                                                        end
-                                                    );
-                                            end
-                                            lastTimestamp = timestamp;
                                         end
                                     );
                                 end
+                                lastTimestamp = timestamp;
                             end
+                            lastLevel = level;
+
                         end
                     );
                 end
@@ -115,13 +153,10 @@ function M.message ( client, topic, payload )
 
     logger:info ( "message: topic=" .. topic .. " payload=" .. payload );
 
-    if ( topic == nodeConfig.topic .. "/service/set" ) then
-        local pcallOk, json = pcall ( sjson.decode, payload );
-        logger:debug ( "message: pcallOk=" .. tostring ( pcallOk ) .. " result=" .. tostring ( json ) );
-        if ( pcallOk ) then
-            logger:debug ( "message: oldCounter=" .. counter/1000 .. " newCounter=" .. json.counter );
-            counter = 1000 * json.counter; -- kWh -> Wh
-        end
+    if ( topic == nodeConfig.topic .. "/service/threshold" ) then
+        voltageThreshold = tonumber ( payload ) or nodeConfig.appCfg.threshold.voltage;
+    elseif ( topic == nodeConfig.topic .. "/service/counter" ) then
+        latencyThreshold = tonumber ( payload ) or nodeConfig.appCfg.threshold.latency;
     end
 
 end
