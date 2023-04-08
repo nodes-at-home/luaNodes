@@ -117,6 +117,8 @@ local function printChar ( char, startCol )
         if ( umlaute [char] ) then
             offset = 1 + 6 * umlaute [char];
         else
+            -- every sprite has 6 bytes, rhe first byte ia the length info len and fivethen follwing up to five pixel columns, only the first len column bytes are relevant
+            -- the first 32 ascii "characters" are not defined
             offset = 1 + 6 * (tonumber ( char, 16 ) - 32 );
         end
 

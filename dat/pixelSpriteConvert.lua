@@ -2,7 +2,7 @@
 function tohex ( byte, len )
 
     return "0x" .. string.format( "%0" .. (len or 2) .. "X", byte );
-    
+
 end
 
 
@@ -21,7 +21,7 @@ local function createJson ()
         line = line .. " ] },"
         print ( line );
     end
-    
+
 end
 
 local function createSpriteFiles ()
@@ -42,7 +42,7 @@ local function createSpriteFiles ()
             file:close ();
         end
     end
-    
+
 end
 
 local function createSpriteFilesv2 ()
@@ -60,7 +60,7 @@ local function createSpriteFilesv2 ()
             file:close ();
         end
     end
-    
+
 end
 
 local function createSpriteStrings ()
@@ -77,7 +77,7 @@ local function createSpriteStrings ()
     };
 
     for i = 1, #SPRITE do
-        
+
         local index = 31 + i;
         --print ( i, index, tohex ( index ) );
 
@@ -85,7 +85,7 @@ local function createSpriteStrings ()
         if ( umlaute [i] ) then
             code = umlaute [i];
         end
-            
+
         local line = "sprite_" .. code .. " = string.char ";
         local first = true;
         for j = 1, #SPRITE [i] do
@@ -102,7 +102,7 @@ local function createSpriteStrings ()
 --            file:close ();
 --        end
     end
-    
+
 end
 
 local function createSpriteString ()
@@ -125,11 +125,11 @@ local function createSpriteString ()
         for j = 1, #SPRITE [i] do
             t [j + 1] = tonumber ( SPRITE [i] [j], 2 );
         end
-        print ( "len=" .. #t, unpack(t) )        
+        print ( "len=" .. #t, unpack(t) );
         file:write ( string.char ( unpack ( t ) ) );
     end
     file:close ();
-    
+
     print ( "dat file generated" );
 
 end
