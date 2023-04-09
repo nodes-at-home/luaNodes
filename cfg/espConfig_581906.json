@@ -4,19 +4,9 @@
     "class": "meter",
     "type": "electricity",
     "location": "utilityroom",
-    "comment": "use adc, but not for battery level; therefor as a ir light level detector",
     "appCfg": {
-        "useAdc": true,
-        "irLedPin": 1,
-        "threshold": {
-            "_threshold": 155,
-            "voltage": 140,
-            "latency": 3
-        }
-    },
-    "timer": {
-        "irPeriod": 500,
-        "irDelay": 50
+        "rxdPin": 7,
+        "baudrate": 9600
     },
     "wifi": {
         "ip": "192.168.2.48"
