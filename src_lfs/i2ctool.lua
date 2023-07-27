@@ -13,19 +13,21 @@ _G [moduleName] = M;
 
 local logger = require ( "syslog" ).logger ( moduleName );
 
+local i2c, bit = i2c, bit;
+
 --------------------------------------------------------------------
 -- settings
 
 local ID = 0;
 
-local deviceAdress; -- i2c address
+local deviceAdress; -- i2c address: first 7 bits are the device address, last bit marks read/write mode, coding is done by i2c.adderss
 
 -------------------------------------------------------------------------------
 -- i2c basics
 
 function M.readByte ( register )
 
-    --logger:debug ( "readByte: reg=" .. tohex ( register ) )
+    logger:debug ( "readByte: addr=" .. tohex ( deviceAdress )  .. " reg=" .. tohex ( register ) )
 
     return string.byte ( M.readBytes ( register, 1 ), 1 );
 
@@ -33,18 +35,18 @@ end
 
 function M.readBytes ( register, len )
 
-    --logger:debug ( "writeBytes: reg=" .. tohex ( register ) .. " len=" .. len )
+    logger:debug ( "readBytes: addr=" .. tohex ( deviceAdress ) .. " reg=" .. tohex ( register ) .. " len=" .. len )
 
     i2c.start ( ID );
     local ackTransmit = i2c.address ( ID, deviceAdress, i2c.TRANSMITTER );
-    --logger:debug ( "readBytes: ack transmit=" .. tostring ( ackTransmit ) )
+    logger:debug ( "readBytes: ack transmit=" .. tostring ( ackTransmit ) .. " addr=" .. tohex ( deviceAdress ) );
     local n = i2c.write ( ID, register );
-    --logger:debug ( "readBytes: n=" .. n )
+    logger:debug ( "readBytes: n=" .. n )
     i2c.stop ( ID );
 
     i2c.start ( ID );
     local ackReceive = i2c.address ( ID, deviceAdress, i2c.RECEIVER );
-    --logger:debug ( "readBytes: ack receive=" .. tostring ( ackReceive ) )
+    logger:debug ( "readBytes: ack receive=" .. tostring ( ackReceive ) )
     local data = i2c.read ( ID, len );
     i2c.stop ( ID );
 
@@ -54,15 +56,15 @@ end
 
 function M.writeByte ( register, byte )
 
-    --logger:debug ( "writeByte: reg=" .. tohex ( register ) .. " byte=" .. tohex ( byte ) )
+    logger:debug ( "writeByte: addr=" .. tohex ( deviceAdress )  .. " reg=" .. tohex ( register ) .. " byte=" .. tohex ( byte ) )
 
     i2c.start ( ID );
     local ackTransmit = i2c.address ( ID, deviceAdress, i2c.TRANSMITTER );
-    --logger:debug ( "writeByte: ack transmit=" .. tostring ( ackTransmit ) )
+    logger:debug ( "writeByte: ack transmit=" .. tostring ( ackTransmit ) )
     local n1 = i2c.write ( ID, register );
-    --logger:debug ( "writeByte: n1=" .. n1 )
+    logger:debug ( "writeByte: n1=" .. n1 )
     local n2 = i2c.write ( ID, byte );
-    --logger:debug ( "writeByte: n2=" .. n2 )
+    logger:debug ( "writeByte: n2=" .. n2 )
     i2c.stop ( ID );
 
 end
@@ -137,83 +139,83 @@ end
 -------------------------------------------------------------------------------
 -- debug
 
---function M.registerBits ( value, fields, full )
---
---    local line = { "<" };
---
---    if ( full == nil ) then full = false; end
---
---    if ( full ) then
---        for i = 7, 0, -1 do
---            table.insert ( line, fields [8-i] );
---            table.insert ( line, ":" );
---            table.insert ( line, bit.isset ( value, i ) and "1" or "0" );
---            if ( i > 0 ) then table.insert ( line, "," ); end
---        end
---    else
---        local first = true;
---        for i = 7, 0, -1 do
---            if ( bit.isset ( value, i ) ) then
---                if ( first ) then
---                    first = false;
---                else
---                    table.insert ( line, "," );
---                end
---                table.insert ( line, fields [8-i] );
---            end
---        end
---    end
---
---    table.insert ( line, ">" );
---
---    return ( table.concat ( line ) );
---
---end
+function M.registerBits ( value, fields, full )
 
---function M.dumpRegisters ( regs, addr )
---
---    local function printLine ( addr, name )
---
---        if ( name ) then
---            logger:debug ( "printLine: " .. tohex ( addr ) .. ": " .. string.format( "%-20s", name ) .. "-> " .. tohex ( M.readByte ( addr ) ) );
---        end
---
---    end
---
---    if ( regs ) then
---        if ( type ( regs ) == "table" ) then
---            if ( addr ) then
---                --logger:debug ( "dumpRegisters: by address=" .. tohex ( addr ) );
---                for reg, _addr in pairs ( regs ) do
---                    if ( _addr == addr ) then
---                        printLine ( addr, tostring ( reg ) );
---                    end
---                end
---            else
---                loger.debug ( "dumpRegisters: all" );
---                for reg, addr in pairs ( regs ) do
---                    printLine ( addr, tostring ( reg ) );
---                end
---            end
---        end
---    end
---
---end
+    local line = { "<" };
+
+    if ( full == nil ) then full = false; end
+
+    if ( full ) then
+        for i = 7, 0, -1 do
+            table.insert ( line, fields [8-i] );
+            table.insert ( line, ":" );
+            table.insert ( line, bit.isset ( value, i ) and "1" or "0" );
+            if ( i > 0 ) then table.insert ( line, "," ); end
+        end
+    else
+        local first = true;
+        for i = 7, 0, -1 do
+            if ( bit.isset ( value, i ) ) then
+                if ( first ) then
+                    first = false;
+                else
+                    table.insert ( line, "," );
+                end
+                table.insert ( line, fields [8-i] );
+            end
+        end
+    end
+
+    table.insert ( line, ">" );
+
+    return ( table.concat ( line ) );
+
+end
+
+function M.dumpRegisters ( regs, addr )
+
+    local function printLine ( addr, name )
+
+        if ( name ) then
+            logger:debug ( "printLine: " .. tohex ( addr ) .. ": " .. string.format( "%-20s", name ) .. "-> " .. tohex ( M.readByte ( addr ) ) );
+        end
+
+    end
+
+    if ( regs ) then
+        if ( type ( regs ) == "table" ) then
+            if ( addr ) then
+                logger:debug ( "dumpRegisters: by address=" .. tohex ( addr ) );
+                for reg, _addr in pairs ( regs ) do
+                    if ( _addr == addr ) then
+                        printLine ( addr, tostring ( reg ) );
+                    end
+                end
+            else
+                logger:debug ( "dumpRegisters: all" );
+                for reg, addr in pairs ( regs ) do
+                    printLine ( addr, tostring ( reg ) );
+                end
+            end
+        end
+    end
+
+end
 
 -------------------------------------------------------------------------------
 -- public functions
 
 function M.init ( address, sda, scl, defaults )
 
---    assert ( address, "address is undefined" );
---    assert ( sda, "sda is undefined" );
---    assert ( type ( sda ) == "number", "sda isnt number" );
---    assert ( scl, "scl is undefined" );
---    assert ( type ( scl ) == "number", "scl isnt number" );
---    assert ( defaults == nil, "defaults is not nil" );
---    assert ( verbose == nil or type ( verbose ) == "boolean", "verbose isnt boolean" );
+    --assert ( address, "address is undefined" );
+    --assert ( sda, "sda is undefined" );
+    --assert ( type ( sda ) == "number", "sda isnt number" );
+    --assert ( scl, "scl is undefined" );
+    --assert ( type ( scl ) == "number", "scl isnt number" );
+    --assert ( defaults == nil, "defaults is not nil" );
+    --assert ( verbose == nil or type ( verbose ) == "boolean", "verbose isnt boolean" );
 
-    --logger:debug ( "init: scl=" .. scl .. " sda=" .. sda  )
+    logger:debug ( "init: sda=" .. sda .. " scl=" .. scl  )
 
     deviceAdress = address;
 
