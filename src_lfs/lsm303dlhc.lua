@@ -62,7 +62,7 @@ M.REG = {
 --    TIME_LATENCY_A    = 0x3C,
 --    TIME_WINDOW_A     = 0x3D,
 
-    -- magnetic field
+    -- magnetic fields
     CRA_REG_M         = 0x00, -- [7] TEMP_EN, [6:5] 0, [4:2] DO, [1:0] 0,   DO (data output rate) default = 0x100 = 15Hz
     CRB_REG_M         = 0x01, -- [7:5] GN, [4:0] 0,                         GN (gain configuration)
     MR_REG_M          = 0x02, -- [7:2] 0, [1:0] MD                          MD (mode select)
@@ -89,9 +89,10 @@ M.REG = {
 
 local DEFAULT = {
     --[M.REG.CRA_REG_M]   = 0x80,         -- 1000 0000 - temp sensor enabled, 0.75 Hz data output rate
-    [M.REG.CRA_REG_M]   = 0x88,         -- 1000 1000 - temp sensor enabled, 3 Hz data output rate
+    --[M.REG.CRA_REG_M]   = 0x88,         -- 1000 1000 - temp sensor enabled, 3 Hz data output rate
+    [M.REG.CRA_REG_M]   = 0x88,         -- 1000 0000 - temp sensor enabled, 0.75 Hz data output rate
     [M.REG.CRB_REG_M]   = 0xE0,         -- 1110 0000 - gain, sensor input field range +-8.1 gauss
-    [M.REG.MR_REG_M]    = 0x00,         -- continous conversion mode
+    --[M.REG.MR_REG_M]    = 0x00,         -- continous conversion mode
 };
 
 --------------------------------------------------------------------

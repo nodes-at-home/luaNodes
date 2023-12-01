@@ -1,0 +1,20 @@
+{
+    "chipid": 1827691,
+    "app": "magneticNode",
+    "class": "sensor",
+    "type": "gas",
+    "location": "utilityroom",
+    "appCfg": {
+        "sdaPin": 5,
+        "sclPin": 6,
+        "intPin": 1,
+        "threshold": {
+            "high": 100000,
+            "low": 1000,
+            "delay": 500
+        }
+    },
+    "wifi": {
+        "ip": "192.168.2.64"
+    }
+}
