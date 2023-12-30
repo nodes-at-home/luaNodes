@@ -89,9 +89,9 @@ end
 --------------------------------------------------------------------
 -- public
 
-function M.init ( startTelnet)
+function M.init ()
 
-    print ( "[STARTUP] init: telnet=" .. tostring ( startTelnet ) );
+    print ( "[STARTUP] init: " );
 
     require ( "espConfig" );
     nodeConfig = espConfig.init ();
@@ -104,7 +104,7 @@ function M.init ( startTelnet)
     end
 
     logger = require ( "syslog" ).logger ( moduleName );
-    logger:notice ( "init: config loaded telnet=" .. tostring ( startTelnet ) );
+    logger:notice ( "init: config loaded" );
 
     --node.setonerror (
     --    function ( s )
@@ -120,49 +120,40 @@ function M.init ( startTelnet)
     unrequire ( "credential" );
     collectgarbage ();
 
-    local lfsTimestamp = node.LFS.time;
-    nodeConfig.lfsts = lfsTimestamp;
-
-    if ( nodeConfig.appCfg.useAdc ) then
-        if ( adc.force_init_mode ( adc.INIT_ADC ) ) then
-            logger:debug ( "init: force_init_adc" );
-            node.restart ();
-            return; -- don't bother continuing, the restart is scheduled
-        end
-    else
-        if ( adc.force_init_mode ( adc.INIT_VDD33 ) ) then
-            logger:debug ( "init: force_init_vdd33" );
-            node.restart ();
-            return; -- don't bother continuing, the restart is scheduled
-        end
-    end
+    --if ( nodeConfig.appCfg.useAdc ) then
+    --    if ( adc.force_init_mode ( adc.INIT_ADC ) ) then
+    --        logger:debug ( "init: force_init_adc" );
+    --        node.restart ();
+    --        return; -- don't bother continuing, the restart is scheduled
+    --    end
+    --else
+    --    if ( adc.force_init_mode ( adc.INIT_VDD33 ) ) then
+    --        logger:debug ( "init: force_init_vdd33" );
+    --        node.restart ();
+    --        return; -- don't bother continuing, the restart is scheduled
+    --    end
+    --end
 
     logger:notice ( "init: version=" .. nodeConfig.version .. " branch=" .. nodeConfig.branch .. " lua=" .. _VERSION );
     logger:debug ( "init: waiting for application start" );
 
-    if ( startTelnet ) then
-        require ( "telnet" ):open ( wifiCredential.ssid, wifiCredential.password );
+    -- boot reason https://nodemcu.readthedocs.io/en/master/en/modules/node/#nodebootreason
+    -- 0, power-on
+    -- 1, hardware watchdog reset
+    -- 2, exception reset
+    -- 3, software watchdog reset
+    -- 4, software restart
+    -- 5, wake from deep sleep
+    -- 6, external reset
+    local rawcode, bootreason = node.bootreason ();
+    logger:debug ( "init: rawcode=" .. rawcode .. " reason=" .. bootreason );
+    if ( nodeConfig.appCfg.useQuickStartupAfterDeepSleep and bootreason == 5 ) then
+        logger:notice ( "quick start" );
+--        startApp ();
+        startupTimer:alarm ( 10, tmr.ALARM_SINGLE, startApp )
     else
-
-        -- boot reason https://nodemcu.readthedocs.io/en/master/en/modules/node/#nodebootreason
-        -- 0, power-on
-        -- 1, hardware watchdog reset
-        -- 2, exception reset
-        -- 3, software watchdog reset
-        -- 4, software restart
-        -- 5, wake from deep sleep
-        -- 6, external reset
-        local rawcode, bootreason = node.bootreason ();
-        logger:debug ( "init: rawcode=" .. rawcode .. " reason=" .. bootreason );
-        if ( nodeConfig.appCfg.useQuickStartupAfterDeepSleep and bootreason == 5 ) then
-            logger:notice ( "quick start" );
-    --        startApp ();
-            startupTimer:alarm ( 10, tmr.ALARM_SINGLE, startApp )
-        else
-            logger:notice ( "classic start" );
-            startupTimer:alarm ( nodeConfig.timer.startupDelay1, tmr.ALARM_SINGLE, startup )
-        end
-
+        logger:notice ( "classic start" );
+        startupTimer:alarm ( nodeConfig.timer.startupDelay1, tmr.ALARM_SINGLE, startup )
     end
 
 end

@@ -12,6 +12,8 @@ _G [moduleName] = M;
 
 local logger = require ( "syslog" ).logger ( moduleName );
 
+local node, tmr, sjson, wifi, syslog, mqtt = node, tmr, sjson, wifi, syslog, mqtt;
+
 -------------------------------------------------------------------------------
 --  Settings
 
@@ -48,19 +50,20 @@ local function connect ( client )
     client:publish ( baseTopic, version, qos, retain,
         function ( client )
             local voltage = -1;
-            if ( nodeConfig.appCfg.useAdc ) then
-                    local scale = nodeConfig.appCfg.adcScale or 4200;
-                    logger:debug ( "adcScale=" .. scale );
-                    voltage = adc.read ( 0 ) / 1023 * scale; -- mV
-            else
-                voltage = adc.readvdd33 ();
-            end
-            local rssi = wifi.sta.getrssi ();
+            --if ( nodeConfig.appCfg.useAdc ) then
+            --        local scale = nodeConfig.appCfg.adcScale or 4200;
+            --        logger:debug ( "adcScale=" .. scale );
+            --        voltage = adc.read ( 0 ) / 1023 * scale; -- mV
+            --else
+            --    voltage = adc.readvdd33 ();
+            --end
+            --local rssi = wifi.sta.getrssi ();
+            local rssi = 0;
             logger:debug ( "connect: send voltage=" .. voltage .. " rssi=" .. rssi );
             client:publish ( baseTopic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], qos, retain,
                 function ( client )
                     client:publish ( rssiTopic,
-                        [[{"chipid":]] .. node.chipid () .. [[,"topic":"]] .. baseTopic .. [[","apmac":"]] .. nodeConfig.wifi.apmac .. [[","value":]] .. rssi .. [[, "unit":"dBm"}]],
+                        [[{"chipid":]] .. node.chipid () .. [[,"topic":"]] .. baseTopic .. [[","value":]] .. rssi .. [[, "unit":"dBm"}]],
                         qos, retain,
                         function ( client )
                             local s = app .. "@" .. nodeConfig.location;
@@ -185,16 +188,17 @@ local function startMqtt ()
     -- Setup MQTT client and events
     if ( mqttClient == nil ) then
 
-        local mqttClientName = wifi.sta.gethostname () .. "-" .. nodeConfig.class .. "-" .. nodeConfig.type .. "-" .. nodeConfig.location;
-        mqttClient = mqtt.Client ( mqttClientName, nodeConfig.mqtt.keepAliveTime, "", "" ); -- ..., keep_alive_time, username, password
+        --local mqttClientName = wifi.sta.gethostname () .. "-" .. nodeConfig.class .. "-" .. nodeConfig.type .. "-" .. nodeConfig.location;
+        local mqttClientName ="nodemcu-" .. nodeConfig.class .. "-" .. nodeConfig.type .. "-" .. nodeConfig.location;
+        mqttClient = mqtt.Client ( mqttClientName, nodeConfig.mqtt.keepAliveTime ); -- ..., keep_alive_time, username, password
 
         -- this is never called, because the last registration wins
-        -- mqttClient:on ( "connect",
-            -- function ( client )
-                -- logger:info ( "CONNECTED" );
-                -- appNode.connect ();
-            -- end
-        -- );
+        mqttClient:on ( "connect",
+            function ( client )
+                logger:info ( "startMqtt.connect: connected" );
+                connect ( client );
+            end
+        );
 
         mqttClient:on ( "message",
             function ( client, topic, payload )
@@ -232,10 +236,10 @@ local function startMqtt ()
         mqttClient:on ( "offline",
             function ( client )
                 logger:warning ( "startMqtt.offline:" );
-                periodicTimer:stop ();
+                --periodicTimer:stop ();
                 if ( not startTelnet and appNode.offline and appNode.offline ( client ) ) then
                     logger:notice ( "startMqtt.offline: restart connection" );
-                    wifiLoopTimer:start ();
+                    --wifiLoopTimer:start ();
                 end
             end
         );
@@ -244,25 +248,9 @@ local function startMqtt ()
 
     mqttClient:lwt ( mqttTopic, "offline", qos, retain );
 
-    while not pcall (
-        function ()
-            local broker = nodeConfig.mqtt.broker;
-            logger:notice ( "startMqtt: connect to broker=" .. broker );
-            mqttClient:connect( broker, 1883, false, -- broker, port, secure
-                function ( client )
-                    periodicTimer:start ();
-                    connect ( client );
-                end,
-                function ( client, reason )
-                    logger:notice ( "startMqtt: not connected reason=" .. reason );
-                    wifiLoopTimer:start ();
-                end
-            )
-        end
-    )
-    do
-        logger:warning ( "startMqtt: retry connecting" );
-    end
+    local broker = nodeConfig.mqtt.broker;
+    logger:notice ( "startMqtt: connect to broker=" .. broker );
+    mqttClient:connect( broker, 1883, false ); -- broker, port, secure
 
 end
 
@@ -319,24 +307,29 @@ function M.start ()
     logger:info ( "start: app=" .. app  );
     appNode = require ( app );
 
+    wifi.start ();
+
     -- Connect to the wifi network
     logger:notice ( "start: connecting to " .. wifiCredential.ssid );
-    wifi.setmode ( wifi.STATION, true ); -- save to flash
-    local phymode = nodeConfig.phymode and wifi [nodeConfig.phymode] or wifi.PHYMODE_N;
-    wifi.setphymode ( phymode );
-    logger:debug ( "start: phymode=" .. wifi.getphymode () .. " (1=B,2=G,3=N) country=" .. wifi.getcountry ().country );
-    wifi.nullmodesleep ( false );
-    logger:debug ( "start: nullmodesleep=" .. tostring ( wifi.nullmodesleep () ) );
+    wifi.mode ( wifi.STATION, true ); -- save to flash
+    --local phymode = nodeConfig.phymode and wifi [nodeConfig.phymode] or wifi.PHYMODE_N;
+    --wifi.setphymode ( phymode );
+    --logger:debug ( "start: phymode=" .. wifi.getphymode () .. " (1=B,2=G,3=N) country=" .. wifi.getcountry ().country );
+    --wifi.nullmodesleep ( false );
+    --logger:debug ( "start: nullmodesleep=" .. tostring ( wifi.nullmodesleep () ) );
+
     local configok = wifi.sta.config (
         {
             ssid = wifiCredential.ssid,
             pwd = wifiCredential.password,
-            auto = true,
+            scan_method = "all";
+            --auto = true,
             save = true
         }
     );
     logger:debug ( "start: wifi config loaded=" .. tostring ( configok ) );
-    --wifi.sta.connect ();
+    wifi.sta.powersave ( "none" );
+    wifi.sta.connect ();
 
     local wificfg = nodeConfig.wifi;
     if ( wificfg ) then
@@ -345,21 +338,74 @@ function M.start ()
     end
 
     -- loop to wait up to connected to wifi
-    wifiLoopTimer:alarm ( nodeConfig.timer.wifiLoopPeriod, tmr.ALARM_AUTO, wifiLoop ); -- timer_id, interval_ms, mode
+    --wifiLoopTimer:alarm ( nodeConfig.timer.wifiLoopPeriod, tmr.ALARM_AUTO, wifiLoop ); -- timer_id, interval_ms, mode
+
+    wifi.sta.on ( "start",
+        function ( event )
+            logger:info ( "start.start: event=" .. event );
+        end
+    );
+
+    wifi.sta.on ( "connected",
+        function ( event, ssid, bssid, channel, auth )
+            logger:info ( "start.connected: event=" .. tostring ( event ) .. " ssid=" .. tostring ( ssid ) .. " bssid=" .. tostring ( bssid ) .. " channel=" .. tostring ( channel ) .. " auth=" .. tostring ( auth ) );
+        end
+    );
+
+    wifi.sta.on ( "disconnected",
+        function ( event, ssid, bssid, reason )
+            logger:info ( "start.disconnected: event=" .. tostring ( event ) .. " ssid=" .. tostring ( ssid ) .. " bssid=" .. tostring ( bssid ) .. " reasopn=" .. tostring ( reason ) );
+        end
+    );
+
+    wifi.sta.on ( "got_ip",
+        function ( event, info )
+
+            logger:info ( "start.got_ip: event=:" .. event .. " ip=" .. info.ip .. " netmask=" .. info.netmask .. " gw=", info.gw );
+
+            syslog.setOnline ();
+
+            --local dnsname = wifi.sta.gethostname ();
+            --logger:info ( "wifiLoop: dnsname=" .. dnsname );
+            logger:info ( "start.got_ip: network=" .. tostring ( info.ip ) );
+            local mac = wifi.sta.getmac ();
+            logger:info ( "start.got_ip: mac=" .. mac );
+            --local rssi = wifi.sta.getrssi ();
+            local rssi = 0;
+            logger:info ( "start.got_ip: rssi=" .. rssi );
+
+--            local ssid, pwd, _, apmac = wifi.sta.getconfig ( false ); -- old sytle, true: returns table
+--            logger:info ( "start: ssid=" .. tostring ( ssid ) );
+--            --logger:info ( "start: pwd=" .. tostring ( pwd ) );
+--            logger:info ( "start: apmac=" .. tostring ( apmac ) );
+--
+--            if ( nodeConfig.wifi ) then
+--                nodeConfig.wifi.rssi= rssi;
+--                nodeConfig.wifi.apmac = apmac;
+--                nodeConfig.wifi.mac= mac;
+--                --nodeConfig.wifi.dnsname = dnsname;
+--            end
+
+            startMqtt ();
+
+        end
+    );
 
     if ( nodeConfig.timer.periodicPeriod ) then
+
         periodicTimer:register ( nodeConfig.timer.periodicPeriod, tmr.ALARM_AUTO, -- timer_id, interval_ms, mode
             function ()
                 if ( mqttClient ) then
                     local voltage = -1;
-                    if ( nodeConfig.appCfg.useAdc ) then
-                        local scale = nodeConfig.appCfg.adcScale or 4200;
-                        logger:debug ( "periodic: adcScale=" .. scale );
-                        voltage = adc.read ( 0 ) / 1023 * scale; -- mV
-                    else
-                        voltage = adc.readvdd33 ();
-                    end
-                    local rssi = wifi.sta.getrssi ();
+                    --if ( nodeConfig.appCfg.useAdc ) then
+                    --    local scale = nodeConfig.appCfg.adcScale or 4200;
+                    --    logger:debug ( "periodic: adcScale=" .. scale );
+                    --    voltage = adc.read ( 0 ) / 1023 * scale; -- mV
+                    --else
+                    --    voltage = adc.readvdd33 ();
+                    --end
+                    --local rssi = wifi.sta.getrssi ();
+                    local rssi = 0;
                     logger:notice ( "periodic: send voltage=" .. voltage .. " rssi=" .. rssi );
                     mqttClient:publish ( baseTopic .. "/value/voltage", [[{"value":]] .. voltage .. [[, "unit":"mV"}]], qos, retain,
                         function ( client )

@@ -11,6 +11,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local file, io, sjson, node = file, io, sjson, node;
+
 --------------------------------------------------------------------
 -- vars
 
@@ -37,6 +39,7 @@ local DEFAULT_CONFIG = {
         gateway = "192.168.2.1",
         netmask = "255.255.255.0",
         ip = "192.168.2.90",
+        dns = "192.168.2.1"
     },
     mqtt = {
         broker = HOST,
@@ -121,9 +124,10 @@ end
 function M.init ()
 
     -- read version
-    if ( file.open ( "_version.txt" ) ) then
-        version = file.read ();
-        file.close ();
+    local f = io.open ( "_version.txt" );
+    if ( f ) then
+        version = f:read ();
+        f:close ();
     else
         local v = require ( "_version" );
         version = v and v or version;
@@ -137,27 +141,26 @@ function M.init ()
     local files = { "default", tostring ( node.chipid () ), "fixip", "mqtt", "local" };
 
     for _, f in ipairs ( files ) do
-        local loadFile = "espConfig_" .. f .. ".json";
-        print ( "[CONFIG] try to load config: " .. loadFile );
-        if ( file.exists ( loadFile ) ) then
-            if ( file.open ( loadFile, "r" ) ) then
-                print ( "[CONFIG] open config file: " .. loadFile );
-                --local jsonStr = file.read ();
-                local jsonStr = "";
-                repeat
-                    local content = file.read (); -- is reading max. 1024 bytes
-                    if ( content ) then jsonStr = jsonStr .. content end
-                until not content
-                if ( jsonStr ) then
-                    local ok, json = pcall ( sjson.decode, jsonStr );
-                    if ( ok ) then
-                        print ( "[CONFIG] config loaded")
-                        tableMerge ( result, json );
-                        --printTable ( result );
-                    end
+        local configFileName = "espConfig_" .. f .. ".json";
+        print ( "[CONFIG] try to load config: " .. configFileName );
+        local configFile = io.open ( configFileName, "r" );
+        if ( configFile ) then
+            print ( "[CONFIG] open config file: " .. configFileName );
+            --local jsonStr = file.read ();
+            local jsonStr = "";
+            repeat
+                local content = configFile:read (); -- is reading max. 1024 bytes
+                if ( content ) then jsonStr = jsonStr .. content end
+            until not content
+            if ( jsonStr ) then
+                local ok, json = pcall ( sjson.decode, jsonStr );
+                if ( ok ) then
+                    print ( "[CONFIG] config loaded")
+                    tableMerge ( result, json );
+                    --printTable ( result );
                 end
-                file.close ();
             end
+            configFile:close ();
         end
     end
 
@@ -168,14 +171,19 @@ function M.init ()
     result.topic = table.concat ( { "nodes@home/", result.class, "/", result.type, "/", result.location } );
 
     -- result.version = VERSION .. " (" .. result.app .. ")";
-    local swversion = node.info ( "sw_version" );
-    local major, minor, patch = swversion.node_version_major, swversion.node_version_minor, swversion.node_version_revision;
-    local sdk = table.concat ( { major, ".", minor, ".", patch } );
+    --local swversion = node.info ( "sw_version" );
+    --local major, minor, patch = swversion.node_version_major, swversion.node_version_minor, swversion.node_version_revision;
+    --local sdk = table.concat ( { major, ".", minor, ".", patch } );
+    local sdk = "edp32";
     local app = result.app;
     local pos = app:find ( "Node" );
     local nodeName = pos and app:sub ( 1, pos - 1 ) or app;
     result.version = table.concat ( { sdk, "-", nodeName, "-", version } );
-    result.branch = swversion.git_branch;
+    --result.branch = swversion.git_branch;
+    result.branch = "dev-esp32-idf5-testing";
+
+    local lfsTimestamp = node.LFS.time;
+    result.lfsts = lfsTimestamp;
 
     replaceNil ( result );
 

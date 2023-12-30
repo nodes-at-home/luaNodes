@@ -7,14 +7,12 @@
 --------------------------------------------------------------------
 -- junand 22.09.2016
 
--- dofile ( "startup.lua" );
-
 -------------------------------------------------------------------------------
 --  Settings
 
+local node, file = node, file;
+
 local NO_BOOT_FILE = "no_boot";
-local LFS_RELOAD_FILE = "lfs_reload";
-local LFS_TS_FILE = "lfs.img.ts";
 
 ----------------------------------------------------------------------------------------
 -- private
@@ -29,8 +27,6 @@ local LFS_TS_FILE = "lfs.img.ts";
 -- 6, external reset
 local rawcode, bootreason, cause = node.bootreason ();
 
-local startTelnet;
-
 --------------------------------------------------------------------
 -- public
 
@@ -39,33 +35,25 @@ package.loaders [3] = function ( module ) -- loader_flash
     return ba and "Module not in LFS" or fn;
 end
 
+--------------------------------------------------------------------
+
 print ( "[INIT] boot: rawcode=" .. rawcode .. " reason=" .. bootreason .. " cause=" .. tostring ( cause ) );
 
-
-if ( file.exists ( LFS_RELOAD_FILE ) ) then
-    file.remove ( LFS_RELOAD_FILE );
-    file.remove ( "_" .. LFS_TS_FILE );
-    node.restart ();
-    print ( "[INIT] restart after lfs reload" );
-    return;
-else
-    if ( bootreason == 1 or bootreason == 2 or bootreason == 3 ) then
-        if ( file.exists ( NO_BOOT_FILE ) ) then
-            print ( "[INIT] booting after error; NO STARTUP" );
-            startTelnet = true;
-        else
-            file.open ( NO_BOOT_FILE, "w" );
-            file.close ();
-        end
+local nobootfile = io.open ( NO_BOOT_FILE );
+if ( bootreason == 1 or bootreason == 2 or bootreason == 3 ) then
+    if ( nobootfile ) then
+        print ( "[INIT] booting after error; NO STARTUP" );
+        require ( "telnet" ):open ( wifiCredential.ssid, wifiCredential.password );
+        return
     else
-        if ( file.exists ( NO_BOOT_FILE ) ) then
-            file.remove ( NO_BOOT_FILE );
-        end
+        file.open ( NO_BOOT_FILE, "w" );
+        file.close ();
     end
-
+else
+    if ( nobootfile ) then
+        file.remove ( NO_BOOT_FILE );
+    end
 end
 
---require ( "_lfs" );
-
-require ( "startup" ).init ( startTelnet );
+require ( "startup" ).init ();
 
