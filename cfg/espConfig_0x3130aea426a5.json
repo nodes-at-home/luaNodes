@@ -1,0 +1,18 @@
+{
+    "chipid": 54085158184613,
+    "app": "tftNode",
+    "class": "display",
+    "type": "tft",
+    "location": "test",
+    "mode":"prod",
+    "appCfg": {
+    },
+    "timer": {
+    },
+    "mqtt": {
+        "broker": "nodesathome2"
+    },
+    "trace": {
+        "ip": "nodesathome2"
+    }
+}
