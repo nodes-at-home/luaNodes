@@ -1,4 +1,4 @@
-nodemcu-tool.cmd upload ^
+nodemcu-tool.cmd --io-module upload ^
 src\__init.lua ^
 bin\credential.lc ^
 bin\lfs.img ^

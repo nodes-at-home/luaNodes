@@ -1,6 +1,6 @@
 {
     "baudrate": "115200",
-    "port": "COM3",
+    "port": "COM9",
     "optimize": false,
     "compile": false,
     "keeppath": false
