@@ -1,0 +1,24 @@
+{
+    "chipid": 918950,
+    "app": "heatingNode",
+    "class": "sensor",
+    "type": "ds18b20",
+    "location": "firstfloor",
+    "appCfg": {
+        "dsPin": 3,
+        "addr": {
+            "28:CC:9E:57:04:19:3C:6A": { "label": "1", "heatcircle": "bath" },
+            "28:39:12:57:04:E1:3C:F6": { "label": "2", "heatcircle": "bedroom" },
+            "28:A4:DF:57:04:E1:3C:C3": { "label": "3", "heatcircle": "gallery" },
+            "28:A4:D0:57:04:E1:3C:AC": { "label": "4", "heatcircle": "nursery" },
+            "28:B5:28:57:04:E1:3C:58": { "label": "5", "heatcircle": "office" },
+            "28:78:8F:57:04:E1:3C:EF": { "label": "6", "heatcircle": "flow" }
+        }
+    },
+    "timer": {
+        "periodicPeriod": 300000
+    },
+    "wifi": {
+        "ip": "192.168.2.66"
+    }
+}

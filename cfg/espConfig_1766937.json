@@ -1,0 +1,29 @@
+{
+    "chipid": 1766937,
+    "app": "heatingNode",
+    "class": "sensor",
+    "type": "ds18b20",
+    "location": "groundfloor",
+    "appCfg": {
+        "dsPin": 3,
+        "addr": {
+            "28:2D:ED:57:04:E1:3C:B8": { "label": "1", "heatcircle": "lounge1" },
+            "28:50:B3:57:04:E1:3C:5D": { "label": "2", "heatcircle": "lounge2" },
+            "28:0C:26:57:04:E1:3C:6B": { "label": "3", "heatcircle": "dining1" },
+            "28:2C:36:57:04:E1:3C:A1": { "label": "4", "heatcircle": "dining2" },
+            "28:54:75:57:04:E1:3C:3F": { "label": "5", "heatcircle": "dining3" },
+            "28:4D:4F:57:04:E1:3C:CB": { "label": "6", "heatcircle": "kitchen" },
+            "28:5C:92:57:04:E1:3C:15": { "label": "7", "heatcircle": "corridor" },
+            "28:DC:B0:57:04:E1:3C:84": { "label": "8", "heatcircle": "utilityroom" },
+            "28:C4:BB:57:04:E1:3C:0E": { "label": "9", "heatcircle": "floor" },
+            "28:80:F5:57:04:E1:3C:EC": { "label": "10", "heatcircle": "shower" },
+            "28:E8:FE:57:04:E1:3C:FE": { "label": "11", "heatcircle": "flow" }
+        }
+    },
+    "timer": {
+        "periodicPeriod": 300000
+    },
+    "wifi": {
+        "ip": "192.168.2.67"
+    }
+}
