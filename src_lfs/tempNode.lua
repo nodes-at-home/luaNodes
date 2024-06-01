@@ -13,7 +13,9 @@ _G [moduleName] = M;
 
 local logger = require ( "syslog" ).logger ( moduleName );
 local bme280 = require ( "bme280" );
-local tau = require ( "tau" );
+local util = require ( "util" );
+
+local dht, wifi, node, gpio = dht, wifi, node, gpio;
 
 -------------------------------------------------------------------------------
 --  Settings
@@ -69,7 +71,7 @@ local function publishValues ( client, topic, temperature, humidity, pressure, d
 
     local dewpoint;
     if ( temperature and humidity ) then
-        dewpoint = tau.calculate ( temperature, humidity );
+        dewpoint = util.tau ( temperature, humidity );
     end
 
     -- all Values
@@ -86,7 +88,7 @@ local function publishValues ( client, topic, temperature, humidity, pressure, d
                                 logger:debug ( "publishValues: pressure=" .. pressure );
                                 client:publish ( topic .. "/value/pressure", [[{"value":]] .. pressure .. [[, "unit":"hPa"}]], 0, retain, -- qos, retain
                                     function ( client )
-                                        require ( "deepsleep" ).go ( client, deepSleepDelay, timeBetweenSensorReadings );
+                                        util.deepsleep ( client, deepSleepDelay, timeBetweenSensorReadings );
                                     end
                                 );
                             end
@@ -106,7 +108,7 @@ local function publishValues ( client, topic, temperature, humidity, pressure, d
                         logger:debug ( "publishValues: humidity=" .. humidity );
                         client:publish ( topic .. "/value/humidity", [[{"value":]] .. humidity .. [[,"unit":"%"}]], 0, retain, -- qos, retain
                             function ( client )
-                                require ( "deepsleep" ).go ( client, deepSleepDelay, timeBetweenSensorReadings );
+                                util.deepsleep ( client, deepSleepDelay, timeBetweenSensorReadings );
                             end
                         );
                     end
@@ -121,7 +123,7 @@ local function publishValues ( client, topic, temperature, humidity, pressure, d
                 logger:debug ( "publishValues: temperature=" .. temperature );
                 client:publish ( topic .. "/value/temperature", [[{"value":]] .. temperature .. [[,"unit":"°C"}]], 0, retain, -- qos, retain
                     function ( client )
-                        require ( "deepsleep" ).go ( client, deepSleepDelay, timeBetweenSensorReadings );
+                        util.deepsleep ( client, deepSleepDelay, timeBetweenSensorReadings );
                     end
                 );
             end
@@ -135,7 +137,7 @@ local function publishValues ( client, topic, temperature, humidity, pressure, d
         local s = dhtstatus and dhtstatus or "--"
         client:publish ( topic .. "/value/error", "nothing published dht=" .. s .. " t=" .. t .. " h=" .. h .. "tt=" .. tt .. " p=" .. p, 0, retain, -- qos, retain
             function ( client )
-                require ( "deepsleep" ).go ( client, deepSleepDelay, timeBetweenSensorReadings );
+                util.deepsleep ( client, deepSleepDelay, timeBetweenSensorReadings );
             end
         );
     end
@@ -150,7 +152,7 @@ function M.connect ( client, topic )
 
     logger:info ( "connect: topic=" .. topic );
 
-    local temperature, humidity = 0;
+    local temperature, humidity = 0, 0;
 
     local dhtstatus;
     if ( dhtPin ) then

@@ -73,7 +73,7 @@ local function readAndPublishTemperature ( client, topic )
                     local payload = ('{"value":%f,"unit":"°C"}'):format ( temperature );
                     client:publish ( topic .. "/value/temperature", payload, qos, retain,
                         function ( client )
-                            require ( "deepsleep" ).go ( client, deepSleepDelay, timeBetweenSensorReadings );
+                            require ( "util" ).deepsleep ( client, deepSleepDelay, timeBetweenSensorReadings );
                         end
                     );
                 end
