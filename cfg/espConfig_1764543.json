@@ -1,0 +1,16 @@
+{
+    "chipid": 1764543,
+    "class": "switch",
+    "app": "hydroNode",
+    "type": "relay",
+    "location": "hydrotower",
+    "appCfg": {
+        "device": "pump",
+        "activeHigh": false,
+        "relayPin": 5,
+        "dsPin": 4
+    },
+    "wifi": {
+        "ip": "192.168.2.68"
+    }
+}
