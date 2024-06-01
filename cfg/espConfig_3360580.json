@@ -1,0 +1,19 @@
+{
+    "chipid": 3360580,
+    "app": "rgbNode",
+    "class": "light",
+    "type": "ws2812",
+    "location": "x1c",
+    "appCfg": {
+        "device:": "led",
+        "ledCount": 79,
+        "order": "grb",
+        "initialBrightness": 255,
+        "initialColor": { "red": 255, "green": 255, "blue": 255 },
+        "initialEffect": "static",
+        "initialDelay": 1500
+    },
+    "wifi": {
+        "ip": "192.168.2.70"
+    }
+}

@@ -13,6 +13,8 @@ _G [moduleName] = M;
 
 local logger = require ( "syslog" ).logger ( moduleName );
 
+local ws2812, ws2812_effects, sjson, gpio = ws2812, ws2812_effects, sjson, gpio;
+
 -------------------------------------------------------------------------------
 -- Settings
 
@@ -42,7 +44,6 @@ local function changeState ( client, topic )
     if ( state == "ON" ) then
         logger:debug ( "changeState: red=" .. red .. " green=" .. green .. " blue=" .. blue .. " brightness=" .. brightness .. " effect=" .. effect );
         ws2812_effects.stop ();
-        ws2812_effects.set_brightness ( brightness );
         ws2812_effects.set_brightness ( brightness );
         if ( order == "rgb" ) then
             ws2812_effects.set_color ( red, green, blue );
