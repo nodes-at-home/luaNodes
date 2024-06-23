@@ -67,5 +67,5 @@ end
 
 --require ( "_lfs" );
 
-require ( "startup" ).init ( startTelnet );
+require ( "startup" ).start ( startTelnet );
 

@@ -1,9 +1,5 @@
 {
-    "mqtt": {
-        "broker": "nodesathome2"
-    },
     "syslog": {
-        "_host": "nodesathome2",
         "level": "DEBUG"
     }
 }

@@ -48,7 +48,7 @@ local function startApp ()
 
     if ( file.exists ( "update.url" ) ) then
         logger:debug ( "startApp: update file found" );
-        require ( "update" ).update ();
+        require ( "update" ).start ();
     else
         if ( nodeConfig.appCfg.disablePrint ) then
             logger:debug ( "startApp: DISABLE PRINT" );
@@ -89,7 +89,7 @@ end
 --------------------------------------------------------------------
 -- public
 
-function M.init ( startTelnet)
+function M.start ( startTelnet)
 
     print ( "[STARTUP] init: telnet=" .. tostring ( startTelnet ) );
 
