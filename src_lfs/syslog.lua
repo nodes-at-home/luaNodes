@@ -31,9 +31,10 @@ M.SEVERITY = SEVERITY;
 local ip;
 local host = nodeConfig.syslog and nodeConfig.syslog.host;
 local port = nodeConfig.syslog and nodeConfig.syslog.port or 514;
-local level =  nodeConfig.syslog and nodeConfig.syslog.level or SEVERITY.DEBUG;
-if ( type ( level ) == "string" ) then
-    level = SEVERITY [level];
+local _level =  nodeConfig.syslog and nodeConfig.syslog.level;
+local level = SEVERITY.DEBUG
+if ( type ( _level ) == "string" ) then
+    level = SEVERITY [_level];
 end
 
 --print ( "ip=" .. ip .. " port=" .. port .. " level=" .. level );
@@ -45,6 +46,8 @@ local syslogclient;
 
 local restart = false;
 
+local mode = "online"; -- set to "offline" for developement
+
 -- < prival > version space timestamp space hostname space appname space procid space msgid space structureddata space msg
 local hostname = nodeConfig.class .. "/" .. nodeConfig.type .."/" .. nodeConfig.location;
 local appname = nodeConfig.app;
@@ -52,14 +55,19 @@ local procid = nodeConfig.version;
 local msgid = "-";
 local syslogpattern = ("<%s>1 - %s %s %s %s - %s.%s"):format ( "%d", hostname, appname, procid, msgid, "%s", "%s" );
 
+local function printmsg ( severity, module, msg )
+
+    local txt = { "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFO", "DEBUG" };
+    print ( ("<%s>%s.%s"):format ( txt [severity + 1], module, msg ) );
+
+end
+
 local function _send ( severity, module, msg )
 
     --print ( "send: severity=" .. severity .. " module=" .. module .. " msg=" .. msg );
 
     syslogclient:send ( port, ip, syslogpattern:format ( severity, module, msg ) );
-
-    local txt = { "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFO", "DEBUG" };
-    print ( ("<%s>%s.%s"):format ( txt [severity + 1], module, msg ) );
+    printmsg ( severity, module, msg );
 
 end
 
@@ -70,7 +78,7 @@ local function k ( a, islast )
     if ( syslogclient ) then
         _send ( a.severity, a.module, a. msg );
         --return nil, true; -- dequeue until queue is empty
-        return nil; -- stop dequeueing, next deque call is in callback of udpsockert.on
+        return nil; -- stop dequeueing, next deque call is in callback of udpsocket.on
     else
         return a; -- dont dequeue
     end
@@ -79,11 +87,12 @@ end
 
 local function send ( severity, module, msg )
 
-    --local txt = { "EMERGENCY", "ALERT", "CRITICAL", "ERROR", "WARNING", "NOTICE", "INFO", "DEBUG" };
-    --print ( ("_<%s>%s.%s"):format ( txt [severity + 1], tostring ( module ), msg ) );
-
     if ( severity <= level ) then
-        q:queue ( {severity = severity, module = tostring ( module ), msg = tostring ( msg ) }, k );
+        if ( mode == "online" ) then
+            q:queue ( {severity = severity, module = tostring ( module ), msg = tostring ( msg ) }, k );
+        elseif ( mode == "offline" ) then
+            printmsg ( severity, module, msg );
+        end
     end
 
 end
@@ -102,6 +111,14 @@ function M.setLevel ( newLevel )
     if ( type ( newLevel ) == "string" ) then
         level = SEVERITY [newLevel];
     end
+
+end
+
+function M.setOffline ()
+
+    print ( "------------------- syslog offline -------------------" );
+
+    mode = "offline";
 
 end
 
