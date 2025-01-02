@@ -8,7 +8,6 @@ credential.*
 archive/
 playground/
 
-.vscode/settings.json
-.vscode/launch.json
+.vscode/
 
 logarex*
