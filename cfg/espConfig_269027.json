@@ -1,0 +1,19 @@
+{
+    "chipid": 269027,
+    "app": "rgbNode",
+    "class": "light",
+    "type": "ws2812",
+    "location": "office",
+    "appCfg": {
+        "device:": "led",
+        "ledCount": 208,
+        "order": "grb",
+        "initialBrightness": 16,
+        "initialColor": { "red": 128, "green": 0, "blue": 0 },
+        "initialEffect": "static",
+        "initialDelay": 1500
+    },
+    "wifi": {
+        "ip": "192.168.2.72"
+    }
+}
