@@ -15,6 +15,8 @@ local pixel = require ( "pixel" );
 
 local logger = require ( "syslog" ).logger ( moduleName );
 
+local rtctime, sntp, sjson = rtctime, sntp, sjson;
+
 -------------------------------------------------------------------------------
 --  Settings
 

@@ -118,7 +118,7 @@ local function createSpriteString ()
         [103] = "0xC2_0xB0",
     };
 
-    local file = io.open ( "pixel.dat", "w" );
+    local f = file.open ( "pixel.dat", "w" );
     for i = 1, #SPRITE do
         local s = SPRITE [i];
         local t = { #s, 0, 0, 0, 0, 0 };
@@ -126,9 +126,9 @@ local function createSpriteString ()
             t [j + 1] = tonumber ( SPRITE [i] [j], 2 );
         end
         print ( "len=" .. #t, unpack(t) );
-        file:write ( string.char ( unpack ( t ) ) );
+        f:write ( string.char ( unpack ( t ) ) );
     end
-    file:close ();
+    f:close ();
 
     print ( "dat file generated" );
 

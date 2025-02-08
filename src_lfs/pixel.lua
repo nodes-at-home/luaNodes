@@ -101,14 +101,15 @@ local umlaute = {
     ["0xC3_0xB6"] = 99,
     ["0xC3_0xBC"] = 100,
     ["0xC3_0x9F"] = 101,
-    ["0xC2_0xB0"] = 102
+    ["0xC2_0xB0"] = 102,
+    ["0xC3_0xB8"] = 103
 };
 
 local function printChar ( char, startCol )
 
     --logger:debug ( "printChar: char=" .. tostring ( char ) .. " startCol=" .. tostring ( startCol ) );
 
-    --assert ( startCol, "printChar: at not set" );
+    --print ( "printChar: char=" .. tostring ( char ) );
 
     local insertCol = startCol;
 
