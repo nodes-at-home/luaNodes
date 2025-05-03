@@ -1,0 +1,16 @@
+{
+    "chipid": 5972902,
+    "app": "valveNode",
+    "class": "switch",
+    "type": "relay",
+    "location": "garden2",
+    "appCfg": {
+        "device": "valve",
+        "activeHigh": false,
+        "relayPins": [ 2, 5, 1 ]
+    },
+    "wifi": {
+        "ip": "192.168.2.41"
+    }
+}
+    
