@@ -32,6 +32,9 @@ if ( activeHigh == nil ) then activeHigh = true end;
 local RELAY_ON = activeHigh and gpio.HIGH or gpio.LOW;
 local RELAY_OFF = activeHigh and gpio.LOW or gpio.HIGH;
 
+local openDrain = nodeConfig.appCfg.openDrain;
+if ( openDrain == nil ) then openDrain = false end;
+
 local retain = nodeConfig.mqtt.retain;
 local qos = nodeConfig.mqtt.qos or 1;
 
@@ -153,8 +156,11 @@ end
 -------------------------------------------------------------------------------
 -- main
 
---gpio.mode ( relayPin, gpio.OUTPUT );
-gpio.mode ( relayPin, gpio.OPENDRAIN, gpio.PULLUP );
+if ( openDrain ) then
+    gpio.mode ( relayPin, gpio.OPENDRAIN, gpio.PULLUP );
+else
+    gpio.mode ( relayPin, gpio.OUTPUT );
+end
 gpio.write ( relayPin, RELAY_OFF );
 
 logger:debug ( "loaded: " );
