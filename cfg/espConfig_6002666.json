@@ -1,5 +1,5 @@
 {
-    "chipid": 6517025,
+    "chipid": 6002666,
     "app": "poolNode",
     "class": "sensor",
     "type": "ds18b20",
@@ -13,7 +13,8 @@
         "deepSleepDelay": 5000
     },
     "wifi": {
-        "ip": "192.168.2.44"
+        "ip": "192.168.2.44",
+        "phymode": 1
     },
     "trace": {
         "onStartup": true
