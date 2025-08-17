@@ -1,0 +1,19 @@
+{
+    "chipid": 2605572,
+    "app": "rgb2Node",
+    "class": "light",
+    "type": "led",
+    "location": "kitchen2",
+    "appCfg": {
+        "device:": "led",
+        "pin": {
+            "red": 7,
+            "green": 6,
+            "blue": 5
+        },
+        "initialBrightness": 128
+    },
+    "wifi": {
+        "ip": "192.168.2.20"
+    }
+}
