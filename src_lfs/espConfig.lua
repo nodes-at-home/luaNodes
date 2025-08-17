@@ -11,6 +11,8 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
+local wifi, file, node = wifi, file, node;
+
 --------------------------------------------------------------------
 -- vars
 
@@ -37,6 +39,7 @@ local DEFAULT_CONFIG = {
         gateway = "192.168.2.1",
         netmask = "255.255.255.0",
         ip = "192.168.2.90",
+        phymode = wifi.PHYMODE_N, -- wifi.PHYMODE_B = 1, wifi.PHYMODE_G = 2, wifi.PHYMODE_N = 3
     },
     mqtt = {
         broker = HOST,
@@ -45,6 +48,7 @@ local DEFAULT_CONFIG = {
         keepAliveTime = 5 * 60, -- in seconds
     },
     syslog = {
+        mode = "online",
         host = HOST,
         port = 514,
         level = "NOTICE",

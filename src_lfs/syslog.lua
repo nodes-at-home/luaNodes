@@ -46,7 +46,9 @@ local syslogclient;
 
 local restart = false;
 
-local mode = "online"; -- set to "offline" for developement
+-- local mode = "online"; -- set to "offline" for developement
+local mode = nodeConfig.syslog and nodeConfig.syslog.mode or "offline";
+print ( "syslog: mode=" .. mode );
 
 -- < prival > version space timestamp space hostname space appname space procid space msgid space structureddata space msg
 local hostname = nodeConfig.class .. "/" .. nodeConfig.type .."/" .. nodeConfig.location;
@@ -97,6 +99,39 @@ local function send ( severity, module, msg )
 
 end
 
+-- This function checks if a given IP address is valid.
+-- @param ip: The IP address to validate.
+-- @return: Returns true if the IP address is valid, false otherwise.
+-- https://codepal.ai/code-generator/query/3pyHMepp/lua-ip-address-validation-function-example
+local function isIpAddress ( ip )
+
+    -- Split the IP address into its components using '.' as the delimiter.
+    local octets = {};
+    for octet in ip:gmatch ( "[^.]+" ) do
+        table.insert ( octets, octet );
+    end
+
+    -- An IP address must have exactly 4 octets.
+    if #octets ~= 4 then
+        return false;
+    end
+
+    -- Validate each octet.
+    for _, octet in ipairs ( octets ) do
+        -- Each octet must be a number between 0 and 255.
+        if not tonumber ( octet ) or tonumber ( octet ) < 0 or tonumber ( octet ) > 255 then
+            return false;
+        end
+        -- Check for leading zeros (e.g., "01" is invalid).
+        if string.len ( octet ) > 1 and octet:sub ( 1, 1 ) == "0" then
+            return false;
+        end
+    end
+
+    return true;
+
+end
+
 --------------------------------------------------------------------
 -- public
 
@@ -116,7 +151,7 @@ end
 
 function M.setOffline ()
 
-    print ( "------------------- syslog offline -------------------" );
+    print ( "------------------- syslog offline ------------------------" );
 
     mode = "offline";
 
@@ -124,38 +159,62 @@ end
 
 function M.setOnline ()
 
-    print ( "------------------- syslog start -------------------" );
+    print ( "------------------- syslog online -------------------------" );
 
-    syslogclient = net.createUDPSocket ();
+    mode = "online";
 
-    syslogclient:on ( "sent",
-        function ( s )
-            node.task.post (
-                function ()
-                    local empty = not q:dequeue ( k ); -- dequeue next message
-                    if ( restart and empty  ) then
+end
+
+function M.startOnline ()
+
+    mode = nodeConfig.syslog.mode; -- set to initial config
+
+    if ( mode == "online" ) then
+
+        print ( "------------------- syslog start online -------------------" );
+
+        syslogclient = net.createUDPSocket ();
+
+        syslogclient:on ( "sent",
+            function ( s )
+                node.task.post (
+                    function ()
+                        local empty = not q:dequeue ( k ); -- dequeue next message
+                        if ( restart and empty  ) then
+                            print ( "### RESTART ###" );
+                            syslogclient:close ();
+                            syslogclient = nil;
+                            node.task.post ( node.restart );
+                        end
+                    end
+                );
+            end
+        );
+
+        local function go ()
+            _send ( SEVERITY.ALERT, moduleName, "start: goes online" ); -- dequeueing starts in udpsocket send callback
+        end
+
+        if ( isIpAddress ( host ) ) then
+            print ( "IP address found: " .. host );
+            ip = host;
+            go ();
+        else
+            syslogclient:dns ( host,
+                function ( s, ipaddr )
+                    print ( "ipaddr=" .. tostring ( ipaddr ) );
+                    if ( ipaddr ) then
+                        ip = ipaddr;
+                        go ();
+                    else
                         print ( "### RESTART ###" );
-                        syslogclient:close ();
-                        syslogclient = nil;
-                        node.task.post ( node.restart );
+                        node.restart ();
                     end
                 end
             );
         end
-    );
 
-    syslogclient:dns ( host,
-        function ( s, ipaddr )
-            print ( "ipaddr=" .. tostring ( ipaddr ) );
-            if ( ipaddr ) then
-                ip = ipaddr;
-                _send ( SEVERITY.ALERT, moduleName, "start: goes online" ); -- dequeueing starts in udpsocket send callback
-            else
-                print ( "### RESTART ###" );
-                node.restart ();
-            end
-        end
-    );
+    end
 
 end
 

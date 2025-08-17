@@ -12,6 +12,8 @@ _G [moduleName] = M;
 
 local logger = require ( "syslog" ).logger ( moduleName );
 
+local tmr, node, adc, wifi, sjson, file, syslog, mqtt = tmr, node, adc, wifi, sjson, file, syslog, mqtt;
+
 -------------------------------------------------------------------------------
 --  Settings
 
@@ -78,6 +80,7 @@ local function connect ( client )
                                                     if ( appNode.start ) then
                                                         appNode.start ( client, baseTopic );
                                                     end
+                                                    -- TODO use table to subscibe
                                                     -- subscribe to service topics
                                                     local topic = baseTopic .. "/service/+";
                                                     logger:debug ( "connect: subscribe to topic=" .. topic );
@@ -233,9 +236,12 @@ local function startMqtt ()
             function ( client )
                 logger:warning ( "startMqtt.offline:" );
                 periodicTimer:stop ();
+                syslog.setOffline ();
                 if ( not startTelnet and appNode.offline and appNode.offline ( client ) ) then
                     logger:notice ( "startMqtt.offline: restart connection" );
                     wifiLoopTimer:start ();
+                    -- TODO check for (direct) reboot
+                    -- node.restart ()
                 end
             end
         );
@@ -249,10 +255,12 @@ local function startMqtt ()
             local broker = nodeConfig.mqtt.broker;
             logger:notice ( "startMqtt: connect to broker=" .. broker );
             mqttClient:connect( broker, 1883, false, -- broker, port, secure
+                -- aliases with the "connect" callback available through :on()
                 function ( client )
                     periodicTimer:start ();
                     connect ( client );
                 end,
+                -- aliases with the "connfail" callback available through :on()
                 function ( client, reason )
                     logger:notice ( "startMqtt: not connected reason=" .. reason );
                     wifiLoopTimer:start ();
@@ -279,7 +287,7 @@ local function wifiLoop ()
 
         wifiLoopTimer:stop ();
 
-        syslog.setOnline ();
+        syslog.startOnline (); -- starts only (checked in syslog module), when initial configured mode is "online"
 
         local dnsname = wifi.sta.gethostname ();
         logger:info ( "wifiLoop: dnsname=" .. dnsname );
@@ -294,12 +302,13 @@ local function wifiLoop ()
         --logger:info ( "wifiLoop: pwd=" .. tostring ( pwd ) );
         logger:info ( "wifiLoop: apmac=" .. tostring ( apmac ) );
 
-        if ( nodeConfig.wifi ) then
-            nodeConfig.wifi.rssi= rssi;
-            nodeConfig.wifi.apmac = apmac;
-            nodeConfig.wifi.mac= mac;
-            nodeConfig.wifi.dnsname = dnsname;
+        if ( nodeConfig.wifi == nil ) then
+            nodeConfig.wifi = {};
         end
+        nodeConfig.wifi.rssi= rssi;
+        nodeConfig.wifi.apmac = apmac;
+        nodeConfig.wifi.mac= mac;
+        nodeConfig.wifi.dnsname = dnsname;
 
         startMqtt ();
 

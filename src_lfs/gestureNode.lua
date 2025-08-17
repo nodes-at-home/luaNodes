@@ -100,12 +100,12 @@ function M.start ( client, topic )
 --                )
 --            );
 
-            logger:debug ( "start: publish button press ON" );
+            logger:info ( "start: publish button press ON" );
             client:publish ( topic .. "/value/state", "ON", 0, 0,  -- qos, NO retain!!!
                 function ( client )
                     tmr:create ():alarm ( offDelay, tmr.ALARM_SINGLE,
                         function ()
-                            logger:debug ( "start: publish button press OFF" );
+                            logger:info ( "start: publish button press OFF" );
                             client:publish ( topic .. "/value/state", "OFF", 0, 0, -- qos, NO retain!!!
                                 function ( client )
                                     -- clear all interrupts
