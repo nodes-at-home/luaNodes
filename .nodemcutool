@@ -1,6 +1,7 @@
 {
     "baudrate": "115200",
-    "port": "COM3",
+    "port_": "COM3",
+    "port": "/dev/ttyUSB0",
     "optimize": false,
     "compile": false,
     "keeppath": false
