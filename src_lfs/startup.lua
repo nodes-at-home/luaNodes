@@ -12,7 +12,9 @@ local moduleName = ...;
 local M = {};
 _G [moduleName] = M;
 
-local node, tmr, file, uart, adc = node, tmr, file, uart, adc;
+local node, tmr, file, _uart, adc, console = node, tmr, file, uart, adc, console;
+
+local uart = is_ESP32 and console or uart;
 
 --------------------------------------------------------------------
 -- vars
@@ -20,24 +22,6 @@ local node, tmr, file, uart, adc = node, tmr, file, uart, adc;
 local startupTimer = tmr.create ();
 
 local logger; -- syslog will be required after config load in init ()
---------------------------------------------------------------------
--- application global
-
-function unrequire ( module )
-
-    local m = package.loaded [module];
-    if ( m and m.subunrequire ) then m.subunrequire (); end
-
-    package.loaded [module] = nil
-    _G [module] = nil
-
-end
-
-function tohex ( byte, len )
-
-    return "0x" .. string.format( "%0" .. (len or 2) .. "X", byte );
-
-end
 
 --------------------------------------------------------------------
 -- private
@@ -106,12 +90,13 @@ function M.start ( startTelnet)
     logger = require ( "syslog" ).logger ( moduleName );
     logger:notice ( "init: config loaded telnet=" .. tostring ( startTelnet ) );
 
+    -- TODO test on both esps
     --node.setonerror (
     --    function ( s )
     --        print ( "ONERROR => " .. s );
-    --        logger:emergency ( "init: ERROR occured ==> " .. s );
+    --        logger:emergency ( "ONERROR: ERROR occured ==> " .. s );
     --        syslog.restart ();
-    --        logger:alert ( "initnodemcu-tool upload: RESTARTING" ); -- to resolve the restart flag in syslog
+    --        logger:alert ( "ONERROR: RESTARTING" ); -- to resolve the restart flag in syslog
     --    end
     --)
 
@@ -123,17 +108,21 @@ function M.start ( startTelnet)
     local lfsTimestamp = node.LFS.time;
     nodeConfig.lfsts = lfsTimestamp;
 
-    if ( nodeConfig.appCfg.useAdc ) then
-        if ( adc.force_init_mode ( adc.INIT_ADC ) ) then
-            logger:debug ( "init: force_init_adc" );
-            node.restart ();
-            return; -- don't bother continuing, the restart is scheduled
-        end
+    if ( is_ESP32 ) then
+        -- TODO porting to esp32
     else
-        if ( adc.force_init_mode ( adc.INIT_VDD33 ) ) then
-            logger:debug ( "init: force_init_vdd33" );
-            node.restart ();
-            return; -- don't bother continuing, the restart is scheduled
+        if ( nodeConfig.appCfg.useAdc ) then
+            if ( adc.force_init_mode ( adc.INIT_ADC ) ) then
+                logger:debug ( "init: force_init_adc" );
+                node.restart ();
+                return; -- don't bother continuing, the restart is scheduled
+            end
+        else
+            if ( adc.force_init_mode ( adc.INIT_VDD33 ) ) then
+                logger:debug ( "init: force_init_vdd33" );
+                node.restart ();
+                return; -- don't bother continuing, the restart is scheduled
+            end
         end
     end
 

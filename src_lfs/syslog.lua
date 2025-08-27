@@ -202,7 +202,7 @@ function M.startOnline ()
         else
             syslogclient:dns ( host,
                 function ( s, ipaddr )
-                    print ( "ipaddr=" .. tostring ( ipaddr ) );
+                    print ( "host=" .. host .. " ipaddr=" .. tostring ( ipaddr ) );
                     if ( ipaddr ) then
                         ip = ipaddr;
                         go ();

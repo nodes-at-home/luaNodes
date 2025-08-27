@@ -36,9 +36,9 @@ local DEFAULT_CONFIG = {
         periodicPeriod = 15 * 60 * 1000,
     },
     wifi = {
-        gateway = "192.168.2.1",
-        netmask = "255.255.255.0",
-        ip = "192.168.2.90",
+        -- gateway = "192.168.2.1",
+        -- netmask = "255.255.255.0",
+        -- ip = "192.168.2.90",
         phymode = wifi.PHYMODE_N, -- wifi.PHYMODE_B = 1, wifi.PHYMODE_G = 2, wifi.PHYMODE_N = 3
     },
     mqtt = {
@@ -125,13 +125,7 @@ end
 function M.init ()
 
     -- read version
-    if ( file.open ( "_version.txt" ) ) then
-        version = file.read ();
-        file.close ();
-    else
-        local v = require ( "_version" );
-        version = v and v or version;
-    end
+    local version = require ( "_version" );
     print ( "[CONFIG] init: version=" .. version );
 
     local result = DEFAULT_CONFIG;
@@ -141,15 +135,15 @@ function M.init ()
     local files = { "default", tostring ( node.chipid () ), "fixip", "mqtt", "local" };
 
     for _, f in ipairs ( files ) do
-        local loadFile = "espConfig_" .. f .. ".json";
-        print ( "[CONFIG] try to load config: " .. loadFile );
-        if ( file.exists ( loadFile ) ) then
-            if ( file.open ( loadFile, "r" ) ) then
-                print ( "[CONFIG] open config file: " .. loadFile );
-                --local jsonStr = file.read ();
+        local configFileName = "espConfig_" .. f .. ".json";
+        print ( "[CONFIG] try to load config: " .. configFileName );
+        if ( file.exists ( configFileName ) ) then
+            local configFile = file.open ( configFileName, "r" );
+            if ( configFile ) then
+                print ( "[CONFIG] open config file: " .. configFileName );
                 local jsonStr = "";
                 repeat
-                    local content = file.read (); -- is reading max. 1024 bytes
+                    local content = configFile:read (); -- is reading max. 1024 bytes
                     if ( content ) then jsonStr = jsonStr .. content end
                 until not content
                 if ( jsonStr ) then
@@ -160,7 +154,7 @@ function M.init ()
                         --printTable ( result );
                     end
                 end
-                file.close ();
+                configFile:close ();
             end
         end
     end
