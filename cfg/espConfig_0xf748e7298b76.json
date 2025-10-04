@@ -1,0 +1,13 @@
+{
+    "app": "luxNode",
+    "class": "sensor",
+    "type": "lux",
+    "location": "dining",
+    "appCfg": {
+        "sdaPin": 22,
+        "sclPin": 21
+    },
+    "timer": {
+        "periodicPeriod": 300000
+    }
+}

@@ -26,25 +26,10 @@ local i2c, bit = i2c, bit;
 --------------------------------------------------------------------
 -- settings
 
-local ID = 0;
+local ID = is_ESP32 and i2c.SW or 0; -- for ESP32 use software i2c
 
 -------------------------------------------------------------------------------
 -- i2c basics
-
-function device_mt:readByte ( register )
-
-    assert ( self, "self is undefined" );
-    assert ( getmetatable ( self ) and getmetatable ( self).__index and getmetatable ( self ).__index == device_mt, "no i2c device, __index metatable wrong" )
-    assert ( register, "register is undefined" );
-
-    local logger = self.logger;
-    local deviceAddress = self.deviceAddress;
-
-    logger:debug ( "readByte: addr=" .. tohex ( deviceAddress )  .. " register=" .. tohex ( register ) );
-
-    return string.byte ( self:readBytes ( register, 1 ), 1 );
-
-end
 
 function device_mt:readBytes ( register, len )
 
@@ -76,26 +61,18 @@ function device_mt:readBytes ( register, len )
 
 end
 
-function device_mt:writeByte ( register, byte )
+function device_mt:readByte ( register )
 
     assert ( self, "self is undefined" );
     assert ( getmetatable ( self ) and getmetatable ( self).__index and getmetatable ( self ).__index == device_mt, "no i2c device, __index metatable wrong" )
     assert ( register, "register is undefined" );
-    assert ( byte, "byte is undefined" );
 
     local logger = self.logger;
     local deviceAddress = self.deviceAddress;
 
-    logger:debug ( "writeByte: addr=" .. tohex ( deviceAddress )  .. " register=" .. tohex ( register ) .. " byte=" .. tohex ( byte ) )
+    logger:debug ( "readByte: addr=" .. tohex ( deviceAddress )  .. " register=" .. tohex ( register ) );
 
-    i2c.start ( ID );
-    local ackTransmit = i2c.address ( ID, deviceAddress, i2c.TRANSMITTER );
-    logger:debug ( "writeByte: ack transmit=" .. tostring ( ackTransmit ) );
-    local n1 = i2c.write ( ID, register );
-    logger:debug ( "writeByte: n1=" .. n1 );
-    local n2 = i2c.write ( ID, byte );
-    logger:debug ( "writeByte: n2=" .. n2 );
-    i2c.stop ( ID );
+    return string.byte ( self:readBytes ( register, 1 ), 1 );
 
 end
 
@@ -122,6 +99,33 @@ function device_mt:writeBytes ( register, bytes )
     i2c.stop ( ID );
 
 end
+
+-- TODO erfactor to use writeBytes
+function device_mt:writeByte ( register, byte )
+
+    assert ( self, "self is undefined" );
+    assert ( getmetatable ( self ) and getmetatable ( self).__index and getmetatable ( self ).__index == device_mt, "no i2c device, __index metatable wrong" )
+    assert ( register, "register is undefined" );
+    assert ( byte, "byte is undefined" );
+
+    local logger = self.logger;
+    local deviceAddress = self.deviceAddress;
+
+    logger:debug ( "writeByte: addr=" .. tohex ( deviceAddress )  .. " register=" .. tohex ( register ) .. " byte=" .. tohex ( byte ) )
+
+    i2c.start ( ID );
+    local ackTransmit = i2c.address ( ID, deviceAddress, i2c.TRANSMITTER );
+    logger:debug ( "writeByte: ack transmit=" .. tostring ( ackTransmit ) );
+    local n1 = i2c.write ( ID, register );
+    logger:debug ( "writeByte: n1=" .. n1 );
+    local n2 = i2c.write ( ID, byte );
+    logger:debug ( "writeByte: n2=" .. n2 );
+    i2c.stop ( ID );
+
+end
+
+-------------------------------------------------------------------------------
+-- bit funtions for byte read/write
 
 function device_mt:setBit ( register, pos, value )
 
@@ -171,6 +175,22 @@ function device_mt:setBits ( register, highest, lowest, value )
 
 end
 
+function device_mt:isBit ( register, pos )
+
+    assert ( self, "self is undefined" );
+    assert ( getmetatable ( self ) and getmetatable ( self).__index and getmetatable ( self ).__index == device_mt, "no i2c device, __index metatable wrong" );
+
+    local logger = self.logger;
+
+    logger:debug ( "isBit: register=" .. tohex ( register ) .. " pos=" .. pos );
+
+    return bit.isset ( self:readByte ( register ), pos )
+
+end
+
+-------------------------------------------------------------------------------
+-- word funtions
+
 function device_mt:readWord ( highByteReg, lowByteReg )
 
     assert ( self, "self is undefined" );
@@ -209,50 +229,58 @@ function device_mt:writeWord ( highByteReg, lowByteReg, word )
 
 end
 
-function device_mt:readWordLSB ( register )
+local SIGNIFICANT_BYTE_INDEX = {
+    wordmsb = { 1, 2 },
+    wordlsb = { 2, 1 }
+}; 
+
+-- reads word only when device uses word readings
+function device_mt:readWordByMode ( register )
 
     assert ( self, "self is undefined" );
     assert ( getmetatable ( self ) and getmetatable ( self).__index and getmetatable ( self ).__index == device_mt, "no i2c device, __index metatable wrong" );
+    assert ( self.mode, "mode is undefined" );
+    assert ( self.mode == "wordmsb" or self.mode == "wordlsb", "mode is not a word mode" );
     assert ( register, "register is undefined" );
 
     local logger = self.logger;
+    local mode = self.mode;
 
-    logger:debug ( "readWordLSB: register=" .. tohex ( register ) );
+    local i1 = SIGNIFICANT_BYTE_INDEX [mode] [1];
+    local i2 = SIGNIFICANT_BYTE_INDEX [mode] [2];
+
+    logger:debug ( "readWordByMode: register=" .. tohex ( register ) .. " mode=" .. mode .. " i1=" .. i1 .. " i2=" .. i2 );
 
     local data = self:readBytes ( register, 2 ); -- data is a string of bytes
 
-    return 256 * string.byte ( data, 2 ) + string.byte ( data, 1 );
+    return 256 * string.byte ( data, i1 ) + string.byte ( data, i2 );
 
 end
 
-function device_mt:writeWordLSB ( register, word )
+function device_mt:writeWordByMode ( register, word )
 
     assert ( self, "self is undefined" );
     assert ( getmetatable ( self ) and getmetatable ( self).__index and getmetatable ( self ).__index == device_mt, "no i2c device, __index metatable wrong" );
     assert ( register, "register is undefined" );
     assert ( word, "word is undefined" );
+    assert ( self.mode, "mode is undefined" );
+    assert ( self.mode == "wordmsb" or self.mode == "wordlsb", "mode is not a word mode" );
+    assert ( register, "register is undefined" );
 
     local logger = self.logger;
+    local mode = self.mode;
 
-    logger:debug ( "writeWordLSB: Register=" .. tohex ( register ) .. " word=" .. tohex ( word, 4 ) );
+    local i1 = SIGNIFICANT_BYTE_INDEX [mode] [1];
+    local i2 = SIGNIFICANT_BYTE_INDEX [mode] [2];
+
+    logger:debug ( "writeWordByMode: Register=" .. tohex ( register ) .. " word=" .. tohex ( word, 4 ) .. " mode=" .. mode .. " i1=" .. i1 .. " i2=" .. i2 );
 
     local highValue = bit.rshift ( bit.band ( word, 0xFF00 ), 8 );
     local lowValue = bit.band ( word, 0x00FF );
 
-    self:writeBytes ( register, { lowValue, highValue } );
+    local bytes = { highValue, lowValue };
 
-end
-
-function device_mt:isBit ( register, pos )
-
-    assert ( self, "self is undefined" );
-    assert ( getmetatable ( self ) and getmetatable ( self).__index and getmetatable ( self ).__index == device_mt, "no i2c device, __index metatable wrong" );
-
-    local logger = self.logger;
-
-    logger:debug ( "isBit: register=" .. tohex ( register ) .. " pos=" .. pos );
-
-    return bit.isset ( self:readByte ( register ), pos )
+    self:writeBytes ( register, { bytes [i1], bytes [i2] } );
 
 end
 
@@ -319,8 +347,8 @@ function device_mt:init ()
         for register, value in pairs ( defaults ) do
             if ( mode == "byte" ) then
                 self:writeByte ( register, value );
-            elseif ( mode == "wordlsb" ) then
-                self:writeWordLSB ( register, value );
+            elseif ( mode:sub ( 1, 4 ) == "word" ) then
+                self:writeWordByMode ( register, value );
             end
         end
     end
@@ -399,8 +427,9 @@ function M.veml7700 ( sda, scl )
 
     local DEFAULT = {
 
-        [REG.ALS_CONF]        = 0x0000, -- 000 0|0 0 00|11 00| 00 0 0  gain 1x,  integration time 800ms,  persistance protect number 1, int disable, power on
-        [REG.POWER_SAVING]    = 0x0000, -- 0000 0000 0000 0 11 1    power saving mode 4 enabled
+        -- set default values as in app note and power off device
+        [REG.ALS_CONF]        = 0x0001, -- 000 0|0 0 00|00 00| 00 0 1  gain 1x,  integration time 100ms,  persistance protect number 1, int disable, power off
+        [REG.POWER_SAVING]    = 0x0000, -- 0000 0000 0000 0 00 0    power saving mode 1, disabled
 
     };
 
@@ -412,67 +441,128 @@ function M.veml7700 ( sda, scl )
 
     device.mode = "wordlsb";
 
+    -- for factors see application notes "APPLICATION DEPENDENT LUX CALCULATION"
     local GAIN = {
-        x2      = { conf = 0x0800, factor = 1/1.8435 },
-        x1      = { conf = 0x0000, factor = 1/0.92175 },
-        x1_4    = { conf = 0x1800, factor = 1/0.5 },
-        x1_8    = { conf = 0x1000, factor = 1/0.125 },
+        { desc="2x", conf = 0x0800, factor = 1/1.8435 },     -- 2x gain
+        { desc="1x", conf = 0x0000, factor = 1/0.92175 },    -- 1x gain
+        { desc="1/4x", conf = 0x1800, factor = 1/0.25 },       -- 1/4x gain
+        { desc="1/8x", conf = 0x1000, factor = 1/0.125 },      -- 1/8x gain
     };
     device.GAIN = GAIN;
 
     local INT_TIME = {
-        ms25  = { conf = 0x0300, factor = 10/25 },
-        ms50  = { conf = 0x0200, factor = 10/50 },
-        ms100 = { conf = 0x0000, factor = 10/100 },
-        ms200 = { conf = 0x0040, factor = 10/200 },
-        ms400 = { conf = 0x0080, factor = 10/400 },
-        ms800 = { conf = 0x00C0, factor = 10/800 },
+        { desc="25ms", conf = 0x0300, factor = 10/25 },  -- 25 ms
+        { desc="50ms", conf = 0x0200, factor = 10/50 },  -- 50 ms
+        { desc="100ms", conf = 0x0000, factor = 10/100 }, -- 100 ms
+        { desc="200ms", conf = 0x0040, factor = 10/200 }, -- 200 ms
+        { desc="400ms", conf = 0x0080, factor = 10/400 }, -- 400 ms
+        { desc="800ms", conf = 0x00C0, factor = 10/800 }, -- 800 ms
     }
     device.INT_TIME = INT_TIME;
 
-    local function setEnabled ( enable )
+    local PERSISTENCE_PROTECT_NUMBER = {
+        n1  = 0x0000,
+        n2  = 0x0010,
+        n4  = 0x0020,
+        n8  = 0x0030,
+    };
+    device.PERSISTENCE_PROTECT_NUMBER = PERSISTENCE_PROTECT_NUMBER;
 
-        logger:debug ( "setEnabled: enable=" .. tostring ( enable ) );
+    local function setShutdown ( shutdown )
+
+        logger:debug ( "setShutdown: shutdown=" .. tostring ( shutdown ) );
 
         -- Bit 0 is ALS shut down setting
         --      0 = ALS power on
         --      1 = ALS shut down
-        local handleBit = enable and bit.clear or bit.set;
+        local handleBit = shutdown and bit.set or bit.clear;
 
         local data = device:readBytes ( REG.ALS_CONF, 2 );
         -- first byte is LSB
         local b = handleBit ( string.byte ( data, 1 ), 0 );
-        logger:debug ( "setEnabled: b=" .. tohex ( b ) );
+        logger:debug ( "setShutdown: b=" .. tohex ( b ) );
         device:writeBytes ( REG.ALS_CONF, { b, string.byte ( data, 2 ) } );
 
     end
 
-    local function enable () setEnabled ( true ) end
-    device.enable = enable;
+    local function poweroff () setShutdown ( true ) end
+    device.poweroff = poweroff;
 
-    local function disable () setEnabled ( false ) end
-    device.disable = disable;
+    local function poweron () setShutdown ( false ) end
+    device.poweron = poweron;
 
-    local alsFactor = GAIN.x1.factor * INT_TIME.ms100.factor; -- default config, change when default is changed
+    local alsFactor = 0;
 
-    function device:setConfiguration ( gain, integrationtime )
+    function device.setConfiguration ( gain, integrationtime, persistanceprotectnumber )
 
-        disable ();
-        self:writeWordLSB ( REG.ALS_CONF, gain.conf + integrationtime.conf ); -- implicite start/enable
+        assert ( gain, "gain is undefined" );
+        assert ( integrationtime, "integrationtime is undefined" );
+        assert ( persistanceprotectnumber, "persistanceprotectnumber is undefined" );
+
+        logger:info ( "setConfiguration: gain=" .. gain.desc .. "-" .. tohex ( gain.conf, 4 ) .. " integrationtime=" .. integrationtime.desc .. "-" .. tohex ( integrationtime.conf, 4 ) .. " persistanceprotectnumber=" .. tohex ( persistanceprotectnumber, 4 ) );
+
+        poweroff ();
+
+        -- setting the config register with Bit0 = 0 sets poweron - implicite poweron
+        device:writeWordByMode ( REG.ALS_CONF, gain.conf + integrationtime.conf + persistanceprotectnumber );
         alsFactor = gain.factor * integrationtime.factor;
 
     end
 
-    function device:readAmbientLight ()
+    function device.readAmbientLight () -- TODO implement overflow handling and cyclus
 
-        local raw = self:readWordLSB ( REG.ALS );
+        local raw = device:readWordByMode ( REG.ALS );
         local lux = alsFactor * raw;
 
-        logger:debug ( "readAmbientLight: raw=" .. raw .. " lux=" .. lux );
+        logger:info ( "readAmbientLight: lux=" .. lux .. " raw=" .. raw .. " alsFactor=" .. alsFactor );
 
         return lux, raw;
 
     end
+
+    function device.validate ( raw, gain_index, inttime_index )
+
+        logger:info ( "validate: raw=" .. raw .. " gain_index=" .. gain_index .. " inttime_index=" .. inttime_index );
+
+        local result = "adjust";
+
+        if ( raw <= 100 ) then
+            logger:info ( "validate: raw too low, increase sensitivity" );
+            if ( gain_index > 1 ) then
+                logger:info ( "validate: gain index decreased" );
+                -- increase sensitivity
+                gain_index = gain_index - 1;
+            else
+                logger:info ( "validate: max sensitivity reached, increase integration time" );
+                -- increase integration time
+                if ( inttime_index < #veml7700.INT_TIME ) then
+                    logger:info ( "validate: increase int time index" );
+                    inttime_index = inttime_index + 1;
+                else
+                    logger:info ( "validate: max sensitivity reached" );
+                    result = "max";
+                end
+            end
+        else
+            if ( raw >= 10000 ) then
+                logger:info ( "validate: raw too high, decrease integration time" );
+                if ( inttime_index > 1 ) then
+                    logger:info ( "validate: decrease int time index" );
+                    inttime_index = inttime_index - 1;
+                else
+                    logger:info ( "validate: min sensitivity reached" );
+                    result = "min";
+                end
+            else
+                logger:info ( "validate: measurement is valid" );
+                result = "ok";
+            end
+        
+        end
+
+    return result, gain_index, inttime_index;
+
+end
 
     return device;
 
@@ -629,13 +719,13 @@ function M.apds9960 ( sda, scl )
     local STATUS_BITS = { "CPSAT", "PGSAT", "PINT", "AINT", "reserved", "GINT", "PVALID", "AVALID" };
     local GSTATUS_BITS = { "reserved", "reserved", "reserved", "reserved", "reserved", "reserved", "GFOV", "GVALID" };
 
-    function device:registerBits_ENABLE ()
+    function device.registerBits_ENABLE ()
 
         return registerBits ( device:readByte ( REG.ENABLE ), ENABLE_BITS );
 
     end
 
-    function device:registerBits_STATUS ()
+    function device.registerBits_STATUS ()
 
         return registerBits ( device:readByte ( REG.STATUS ), STATUS_BITS );
 
@@ -647,7 +737,7 @@ function M.apds9960 ( sda, scl )
 
     end
 
-    function device:dumpRam ()
+    function device.dumpRam ()
 
         local ram = {};
 
