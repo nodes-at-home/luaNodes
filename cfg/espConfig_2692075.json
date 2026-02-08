@@ -8,13 +8,13 @@
         "modules": 8,
         "csPin": 8,
         "brightness": 3,
-        "sntpServer": "192.168.2.1"
+        "sntpServer": "192.168.20.1"
     },
     "timer": {
         "shakePeriod": 130,
         "periodicPeriod": 300000
     },
-    "wifi": {
+    "_wifi": {
         "ip": "192.168.2.49"
     }
 }
