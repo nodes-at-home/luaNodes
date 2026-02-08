@@ -175,25 +175,40 @@ function M.connect ( client, topic )
     -- subscribe to .../message/#
     -- subscription to .../command and .../alert is not necessary
 
+    local initloop = function ( sec, usec )
+        logger:notice ( " setting time to sec=" .. sec .. " usec=" .. usec );
+        rtctime.set ( sec, usec );
+        if ( not loopTimer ) then
+            loopTimer = tmr.create ()
+            loopTimer:alarm ( 1000, tmr.ALARM_AUTO, loop );
+        end
+    end
+
     local t = topic .. "/message/#";
     --logger:debug ( " subscripe to topic=" .. t );
     client:subscribe ( t, 0, -- ..., qos
         function ( client )
-            logger:debug ( " syncing to server=" .. SNTP );
+            logger:notice ( " syncing to server=" .. SNTP );
             sntp.sync ( SNTP,
                 function ( sec, usec )
-                    logger:debug ( " setting time to sec=" .. sec .. " usec=" .. usec );
-                    rtctime.set ( sec, usec );
-                    if ( not loopTimer ) then
-                        loopTimer = tmr.create ()
-                        loopTimer:alarm ( 1000, tmr.ALARM_AUTO, loop );
-                    end
+                    initloop ( sec, usec );
+                    -- logger:notice ( " setting time to sec=" .. sec .. " usec=" .. usec );
+                    -- rtctime.set ( sec, usec );
+                    -- if ( not loopTimer ) then
+                    --     loopTimer = tmr.create ()
+                    --     loopTimer:alarm ( 1000, tmr.ALARM_AUTO, loop );
+                    -- end
                 end,
-                function ()
-                    logger:debug ( " sntp sync failed" );
+                function ( errno, srv )
+                    -- 1: DNS lookup failed (the second parameter is the failing DNS name)
+                    -- 2: Memory allocation failure
+                    -- 3: UDP send failed
+                    -- 4: Timeout, no NTP response received
+                    logger:notice ( "connect: sntp sync failed errno=" .. errno .. " srv=" .. tostring ( srv ) );
                     --node.task.post ( function () M.connect ( client, topic ) end );
+                    initloop ( 0, 0 ); -- start loop with 1.1.2018, 00:00:00 if sntp sync fails
                 end,
-                1       -- autorepeat
+                5       -- autorepeat
             );
         end
     );
